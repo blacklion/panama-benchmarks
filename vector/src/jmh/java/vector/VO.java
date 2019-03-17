@@ -31,6 +31,7 @@ import jdk.incubator.vector.FloatVector;
 
 /**
  * @author Lev Serebryakov
+ * @noinspection CStyleArrayDeclaration
  */
 @SuppressWarnings({ "PointlessArithmeticExpression", "UnusedDeclaration" })
 public final class VO {
