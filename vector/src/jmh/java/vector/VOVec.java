@@ -44,13 +44,13 @@ public final class VOVec {
 	private final static FloatVector ZERO = PFS.zero();
 	private final static int[] LOAD_RV_TO_CV_RE;
 	private final static int[] LOAD_RV_TO_CV_BOTH;
-	private final static int[] LOAD_CS_SPREAD;
-	private final static int[] LOAD_CS_SPREAD_RE;
-	private final static int[] LOAD_CS_SPREAD_IM;
-	private final static int[] LOAD_CV_SPREAD_RE;
+	private final static int[] LOAD_CS_TO_CV_SPREAD;
+	private final static int[] LOAD_CS_TO_CV_SPREAD_RE;
+	private final static int[] LOAD_CS_TO_CV_SPREAD_IM;
+	private final static int[] LOAD_CV_TO_CV_SPREAD_RE;
 	private final static int[] LOAD_CV_SPREAD_IM;
-	private final static int[] LOAD_CV_PACK_RE;
-	private final static int[] LOAD_CV_PACK_IM;
+	private final static int[] LOAD_CV_TO_CV_PACK_RE;
+	private final static int[] LOAD_CV_TO_CV_PACK_IM;
 	private final static Vector.Shuffle<Float> SHUFFLE_CV_SWAP_RE_IM;
 
 	static {
@@ -63,51 +63,53 @@ public final class VOVec {
 
 		LOAD_RV_TO_CV_RE = new int[EPV];
 		LOAD_RV_TO_CV_BOTH = new int[EPV];
-		LOAD_CS_SPREAD = new int[EPV];
-		LOAD_CS_SPREAD_RE = new int[EPV];
-		LOAD_CS_SPREAD_IM = new int[EPV];
-		LOAD_CV_SPREAD_RE = new int[EPV];
+		LOAD_CS_TO_CV_SPREAD = new int[EPV];
+		LOAD_CS_TO_CV_SPREAD_RE = new int[EPV];
+		LOAD_CS_TO_CV_SPREAD_IM = new int[EPV];
+		LOAD_CV_TO_CV_SPREAD_RE = new int[EPV];
 		LOAD_CV_SPREAD_IM = new int[EPV];
-		LOAD_CV_PACK_RE = new int[EPV];
-		LOAD_CV_PACK_IM = new int[EPV];
-		for (int i = 0; i < LOAD_CS_SPREAD.length; i += 2) {
+		LOAD_CV_TO_CV_PACK_RE = new int[EPV];
+		LOAD_CV_TO_CV_PACK_IM = new int[EPV];
+		for (int i = 0; i < EPV; i += 2) {
 			// Load real vector to complex vector's RE part
-			// [re0
+			// [r1, r2, ...] -> [(r1, 0), (r2, 0), ...]
 			if (i % 2 == 0)
 				LOAD_RV_TO_CV_RE[i] = i / 2;
 
+			// Load real vector to complex vector's IM part
+			// [r1, r2, ...] -> [(r1, r1), (r2, r2), ...]
 			LOAD_RV_TO_CV_BOTH[i] = i / 2;
 
-			// Scalar complex to vector
+			// Complex scalar complex to complex vector with spread to each element
 			// [re, im] -> [re, im, re, im, re, im, ...]
-			LOAD_CS_SPREAD[i + 0] = 0;
-			LOAD_CS_SPREAD[i + 1] = 1;
+			LOAD_CS_TO_CV_SPREAD[i + 0] = 0;
+			LOAD_CS_TO_CV_SPREAD[i + 1] = 1;
 
-			// Scalar complex to vector of real parts:
+			// Complex scalar to complex vector of real parts:
 			// [re, im] -> [re, re, re, re, ...]
-			LOAD_CS_SPREAD_RE[i + 0] = LOAD_CS_SPREAD_RE[i + 1] = 0;
+			LOAD_CS_TO_CV_SPREAD_RE[i + 0] = LOAD_CS_TO_CV_SPREAD_RE[i + 1] = 0;
 
-			// Scalar complex to vector of imaginary parts:
+			// Complex scalar to complex vector of imaginary parts:
 			// [re, im] -> [im, im, im, im, ...]
-			LOAD_CS_SPREAD_IM[i + 0] = LOAD_CS_SPREAD_IM[i + 1] = 1;
+			LOAD_CS_TO_CV_SPREAD_IM[i + 0] = LOAD_CS_TO_CV_SPREAD_IM[i + 1] = 1;
 
-			// Vector complex to vector of duplicated real parts:
-			// [re1, im1, re2, im2, ...] -> [re1, re1, re2, re2, ...]
-			LOAD_CV_SPREAD_RE[i + 0] = LOAD_CV_SPREAD_RE[i + 1] = (i / 2) * 2;
+			// Complex vector to complex vector of duplicated real parts:
+			// [(re1, im1), (re2, im2), ...] -> [re1, re1, re2, re2, ...]
+			LOAD_CV_TO_CV_SPREAD_RE[i + 0] = LOAD_CV_TO_CV_SPREAD_RE[i + 1] = (i / 2) * 2;
 
-			// Vector complex to vector of duplicated imaginary parts:
-			// [re1, im1, re2, im2, ...] -> [im1, im1, im2, im2, ...]
+			// Complex vector to complex vector of duplicated image parts:
+			// [(re1, im1), (re2, im2), ...] -> [im1, im1, im2, im2, ...]
 			LOAD_CV_SPREAD_IM[i + 0] = LOAD_CV_SPREAD_IM[i + 1] = (i / 2) * 2 + 1;
 
 			// Vector complex to vector of twice as much real parts
-			// [re1, im1, re2, im2, ...] -> [re1, re2, ...]
-			LOAD_CV_PACK_RE[i + 0] = i * 2;
-			LOAD_CV_PACK_RE[i + 1] = i * 2 + 2;
+			// [(re1, im1), (re2, im2), ...] -> [re1, re2, ...]
+			LOAD_CV_TO_CV_PACK_RE[i + 0] = i * 2;
+			LOAD_CV_TO_CV_PACK_RE[i + 1] = i * 2 + 2;
 
-			// Vector complex to vector of twice as much real parts
-			// [re1, im1, re2, im2, ...] -> [im1, im2, ...]
-			LOAD_CV_PACK_IM[i + 0] = i * 2 + 1;
-			LOAD_CV_PACK_IM[i + 1] = i * 2 + 3;
+			// Vector complex to vector of twice as much imaginary parts
+			// [(re1, im1), (re2, im2), ...] -> [im1, im2, ...]
+			LOAD_CV_TO_CV_PACK_IM[i + 0] = i * 2 + 1;
+			LOAD_CV_TO_CV_PACK_IM[i + 1] = i * 2 + 3;
 		}
 
 		int[] shuffle_c_swap_re_im = new int[EPV];
@@ -173,7 +175,7 @@ public final class VOVec {
 	}
 
 	public static void cv_add_cs_i(float z[], int zOffset, float x[], int count) {
-		final FloatVector fx = FloatVector.fromArray(PFS, x, 0, LOAD_CS_SPREAD, 0);
+		final FloatVector fx = FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0);
 		zOffset <<= 1;
 		while (count >= EPV2) {
 			final FloatVector fz = FloatVector.fromArray(PFS, z, zOffset);
@@ -273,7 +275,7 @@ public final class VOVec {
 	}
 
 	public static void cv_add_cs(float z[], int zOffset, float x[], int xOffset, float y[], int count) {
-		final FloatVector fy = FloatVector.fromArray(PFS, y, 0, LOAD_CS_SPREAD, 0);
+		final FloatVector fy = FloatVector.fromArray(PFS, y, 0, LOAD_CS_TO_CV_SPREAD, 0);
 		zOffset <<= 1;
 		xOffset <<= 1;
 		while (count >= EPV2) {
@@ -375,9 +377,9 @@ public final class VOVec {
 	public static void cv_mul_cs_i(float z[], int zOffset, float x[], int count) {
 		// Load x twice (or better load once and shuffle twice?)
 		// vxre is [(x.re, x.re), (x.re, x.re), ...]
-		final FloatVector vxre = FloatVector.fromArray(PFS, x, 0, LOAD_CS_SPREAD_RE, 0);
+		final FloatVector vxre = FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD_RE, 0);
 		// vxim is [(x.im, x.im), (x.im, x.im), ...]
-		final FloatVector vxim = FloatVector.fromArray(PFS, x, 0, LOAD_CS_SPREAD_IM, 0);
+		final FloatVector vxim = FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD_IM, 0);
 
 		float k0, k1, k2;
 
@@ -429,7 +431,7 @@ public final class VOVec {
 			// @@TODO: Check
 			// Load x twice (or better load once and shuffle twice?)
 			// vxre is [(x[0].re, x[0].re), (x[1].re, x[1].re), ...]
-			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_SPREAD_RE, 0);
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_RE, 0);
 			// vxim is [(x[0].im, x[0].im), (x[1].im, x[1].im), ...]
 			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_SPREAD_IM, 0);
 
@@ -541,9 +543,9 @@ public final class VOVec {
 	public static void cv_mul_cs(float z[], int zOffset, float x[], int xOffset, float y[], int count) {
 		// Load y twice (or better load once and shuffle twice?)
 		// vyre is [(y.re, y.re), (y.re, y.re), ...]
-		final FloatVector vyre = FloatVector.fromArray(PFS, y, 0, LOAD_CS_SPREAD_RE, 0);
+		final FloatVector vyre = FloatVector.fromArray(PFS, y, 0, LOAD_CS_TO_CV_SPREAD_RE, 0);
 		// vyim is [(y.im, y.im), (y.im, y.im), ...]
-		final FloatVector vyim = FloatVector.fromArray(PFS, y, 0, LOAD_CS_SPREAD_IM, 0);
+		final FloatVector vyim = FloatVector.fromArray(PFS, y, 0, LOAD_CS_TO_CV_SPREAD_IM, 0);
 
 		zOffset <<= 1;
 		while (count >= EPV2) {
@@ -598,9 +600,9 @@ public final class VOVec {
 			// @@TODO: Check
 			// Load y twice (or better load once and shuffle twice?)
 			// vyre is [(y.re, y.re), (y.re, y.re), ...]
-			final FloatVector vyre = FloatVector.fromArray(PFS, y, yOffset, LOAD_CS_SPREAD_RE, 0);
+			final FloatVector vyre = FloatVector.fromArray(PFS, y, yOffset, LOAD_CS_TO_CV_SPREAD_RE, 0);
 			// vyim is [(y.im, y.im), (y.im, y.im), ...]
-			final FloatVector vyim = FloatVector.fromArray(PFS, y, yOffset, LOAD_CS_SPREAD_IM, 0);
+			final FloatVector vyim = FloatVector.fromArray(PFS, y, yOffset, LOAD_CS_TO_CV_SPREAD_IM, 0);
 
 			// Load x
 			// vx is [(x[0].re, x[0].im), (x[1].re, x[1].im), ...]
@@ -873,8 +875,8 @@ public final class VOVec {
 		while(count >= EPV) {
 			//@@TODO: CHECK
 			// Or load and reshuffle?
-			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_PACK_RE, 0);
-			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_PACK_IM, 0);
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
 			vxre.hypot(vxim).intoArray(z, zOffset);
 			// We load twice as much complex numbers
 			xOffset += EPV * 2;
@@ -894,8 +896,8 @@ public final class VOVec {
 		while(count >= EPV) {
 			//@@TODO: CHECK
 			// Or load and reshuffle?
-			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_PACK_RE, 0);
-			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_PACK_IM, 0);
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
 			vxim.atan2(vxre).intoArray(z, zOffset);
 			// We load twice as much complex numbers
 			xOffset += EPV * 2;
@@ -915,8 +917,8 @@ public final class VOVec {
 		while(count >= EPV) {
 			//@@TODO: CHECK
 			// Or load and reshuffle?
-			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_PACK_RE, 0);
-			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_PACK_IM, 0);
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
 			vxim.atan2(vxre).mul(y).intoArray(z, zOffset);
 			// We load twice as much complex numbers
 			xOffset += EPV * 2;
@@ -963,8 +965,8 @@ public final class VOVec {
 		while (count >= EPV2) {
 			//@@TODO: Check
 			// Or load and reshuffle?
-			final FloatVector vzre = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_PACK_RE, 0);
-			final FloatVector vzim = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_PACK_IM, 0);
+			final FloatVector vzre = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_TO_CV_PACK_RE, 0);
+			final FloatVector vzim = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_TO_CV_PACK_IM, 0);
 
 			//@@TODO: Check
 			// Or better with masks?
@@ -994,8 +996,8 @@ public final class VOVec {
 		while (count >= EPV2) {
 			//@@TODO: Check
 			// Or load and reshuffle?
-			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_PACK_RE, 0);
-			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_PACK_IM, 0);
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
 
 			//@@TODO: Check
 			// Or better with masks?
@@ -1023,8 +1025,8 @@ public final class VOVec {
 		while (count >= EPV2) {
 			//@@TODO: Check
 			// Or load and reshuffle?
-			final FloatVector vzre = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_PACK_RE, 0);
-			final FloatVector vzim = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_PACK_IM, 0);
+			final FloatVector vzre = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_TO_CV_PACK_RE, 0);
+			final FloatVector vzim = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_TO_CV_PACK_IM, 0);
 
 			//@@TODO: Check
 			// Or better with masks?
@@ -1054,8 +1056,8 @@ public final class VOVec {
 		while (count >= EPV2) {
 			//@@TODO: Check
 			// Or load and reshuffle?
-			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_PACK_RE, 0);
-			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_PACK_IM, 0);
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
 
 			//@@TODO: Check
 			// Or better with masks?
@@ -1156,9 +1158,14 @@ public final class VOVec {
 		yOffset <<= 1;
 
 		while (count >= EPV) {
-			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset, LOAD_RV_TO_CV_BOTH);
-			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
-			sum += vx.mul(vy).addAll();
+			//@@TODO: Check
+			// Maybe, load vy once and reshuffle?
+			// Or load real argument with spread and call addAll() twice with mask?
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vyre = FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_PACK_RE, 0);
+			final FloatVector vyim = FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			re += vx.mul(vyre).addAll();
+			im += vx.mul(vyim).addAll();
 			count -= EPV;
 		}
 
@@ -1172,1664 +1179,183 @@ public final class VOVec {
 		z[1] = im;
 	}
 
-	public static void rv_dot_cv(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
-		float re = 0.0f;
-		float im = 0.0f;
-		yOffset <<= 1;
-		while (count-- > 0) {
-			re += x[xOffset] * y[yOffset + 0];
-			im += x[xOffset] * y[yOffset + 1];
-			xOffset += 1;
-			yOffset += 2;
-		}
-		z[(zOffset << 1) + 0] = re;
-		z[(zOffset << 1) + 1] = im;
-	}
-
-	public static void rv_dot_cv_w(float z[], float x[], int xOffset, float y[], int count) {
-		float re = 0.0f;
-		float im = 0.0f;
-		xOffset = preWrap(xOffset, x.length);
-		int yOffset = 0;
-		while (count-- > 0) {
-			re += x[xOffset] * y[yOffset + 0];
-			im += x[xOffset] * y[yOffset + 1];
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 2;
-		}
-		z[0] = re;
-		z[1] = im;
-	}
-
-	public static void rv_dot_cv_w(float z[], float x[], int xOffset, float y[], int yOffset, int count) {
-		float re = 0.0f;
-		float im = 0.0f;
-		xOffset = preWrap(xOffset, x.length);
-		yOffset = preWrap(yOffset << 1, y.length);
-		while (count-- > 0) {
-			re += x[xOffset] * y[yOffset + 0];
-			im += x[xOffset] * y[yOffset + 1];
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 2;
-			if (yOffset == y.length) yOffset = 0;
-		}
-		z[0] = re;
-		z[1] = im;
-	}
-
-	public static void rv_dot_cv_w(float z[], int zOffset, float x[], int xOffset, float y[], int count) {
-		float re = 0.0f;
-		float im = 0.0f;
-		xOffset = preWrap(xOffset, x.length);
-		int yOffset = 0;
-		while (count-- > 0) {
-			re += x[xOffset] * y[yOffset + 0];
-			im += x[xOffset] * y[yOffset + 1];
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 2;
-		}
-		zOffset <<= 1;
-		z[zOffset + 0] = re;
-		z[zOffset + 1] = im;
-	}
-
-	public static void rv_dot_cv_w(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
-		float re = 0.0f;
-		float im = 0.0f;
-		xOffset = preWrap(xOffset, x.length);
-		yOffset = preWrap(yOffset << 1, y.length);
-		while (count-- > 0) {
-			re += x[xOffset] * y[yOffset + 0];
-			im += x[xOffset] * y[yOffset + 1];
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 2;
-			if (yOffset == y.length) yOffset = 0;
-		}
-		zOffset <<= 1;
-		z[zOffset + 0] = re;
-		z[zOffset + 1] = im;
-	}
-
-	public static void cv_dot_rv_w(float z[], float x[], int xOffset, float y[], int count) {
-		float re = 0.0f;
-		float im = 0.0f;
-		xOffset = preWrap(xOffset << 1, x.length);
-		int yOffset = 0;
-		while (count-- > 0) {
-			re += x[xOffset + 0] * y[yOffset];
-			im += x[xOffset + 1] * y[yOffset];
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 1;
-		}
-		z[0] = re;
-		z[1] = im;
-	}
-
-	public static void cv_dot_rv_w(float z[], int zOffset, float x[], int xOffset, float y[], int count) {
-		float re = 0.0f;
-		float im = 0.0f;
-		xOffset = preWrap(xOffset << 1, x.length);
-		int yOffset = 0;
-		while (count-- > 0) {
-			re += x[xOffset + 0] * y[yOffset];
-			im += x[xOffset + 1] * y[yOffset];
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 1;
-		}
-		zOffset <<= 1;
-		z[zOffset + 0] = re;
-		z[zOffset + 1] = im;
-	}
-
-	public static void cv_dot_cv(float z[], float x[], int xOffset, float y[], int yOffset, int count) {
-		float re = 0.0f;
-		float im = 0.0f;
-		xOffset <<= 1;
-		yOffset <<= 1;
-		while (count-- > 0) {
-			re += x[xOffset + 0] * y[yOffset + 0] - x[xOffset + 1] * y[yOffset + 1];
-			im += x[xOffset + 1] * y[yOffset + 0] + x[xOffset + 0] * y[yOffset + 1];
-			xOffset += 2;
-			yOffset += 2;
-		}
-		z[0] = re;
-		z[1] = im;
-	}
-
-	public static void cv_dot_cv(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
-		float re = 0.0f;
-		float im = 0.0f;
-		zOffset <<= 1;
-		xOffset <<= 1;
-		yOffset <<= 1;
-		while (count-- > 0) {
-			re += x[xOffset + 0] * y[yOffset + 0] - x[xOffset + 1] * y[yOffset + 1];
-			im += x[xOffset + 1] * y[yOffset + 0] + x[xOffset + 0] * y[yOffset + 1];
-			xOffset += 2;
-			yOffset += 2;
-		}
-		z[zOffset + 0] = re;
-		z[zOffset + 1] = im;
-	}
-
-	public static void cv_dot_cv_w(float z[], float x[], int xOffset, float y[], int count) {
-		float re = 0.0f;
-		float im = 0.0f;
-		xOffset = preWrap(xOffset << 1, x.length);
-		int yOffset = 0;
-		while (count-- > 0) {
-			re += x[xOffset + 0] * y[yOffset + 0] - x[xOffset + 1] * y[yOffset + 1];
-			im += x[xOffset + 1] * y[yOffset + 0] + x[xOffset + 0] * y[yOffset + 1];
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 2;
-		}
-		z[0] = re;
-		z[1] = im;
-	}
-
-	public static void cv_dot_cv_w(float z[], float x[], int xOffset, float y[], int yOffset, int count) {
-		float re = 0.0f;
-		float im = 0.0f;
-		xOffset = preWrap(xOffset << 1, x.length);
-		yOffset = preWrap(yOffset << 1, y.length);
-		while (count-- > 0) {
-			re += x[xOffset + 0] * y[yOffset + 0] - x[xOffset + 1] * y[yOffset + 1];
-			im += x[xOffset + 1] * y[yOffset + 0] + x[xOffset + 0] * y[yOffset + 1];
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 2;
-			if (yOffset == y.length) yOffset = 0;
-		}
-		z[0] = re;
-		z[1] = im;
-	}
-
-	public static void cv_dot_cv_w(float z[], int zOffset, float x[], int xOffset, float y[], int count) {
-		float re = 0.0f;
-		float im = 0.0f;
-		xOffset = preWrap(xOffset << 1, x.length);
-		int yOffset = 0;
-		while (count-- > 0) {
-			re += x[xOffset + 0] * y[yOffset + 0] - x[xOffset + 1] * y[yOffset + 1];
-			im += x[xOffset + 1] * y[yOffset + 0] + x[xOffset + 0] * y[yOffset + 1];
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 2;
-		}
-		zOffset <<= 1;
-		z[zOffset + 0] = re;
-		z[zOffset + 1] = im;
-	}
-
-	public static void cv_dot_cv_w(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
-		float re = 0.0f;
-		float im = 0.0f;
-		xOffset = preWrap(xOffset << 1, x.length);
-		yOffset = preWrap(yOffset << 1, y.length);
-		while (count-- > 0) {
-			re += x[xOffset + 0] * y[yOffset + 0] - x[xOffset + 1] * y[yOffset + 1];
-			im += x[xOffset + 1] * y[yOffset + 0] + x[xOffset + 0] * y[yOffset + 1];
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 2;
-			if (yOffset == y.length) yOffset = 0;
-		}
-		zOffset <<= 1;
-		z[zOffset + 0] = re;
-		z[zOffset + 1] = im;
-	}
-
-	public static void rv_cpy(float z[], int zOffset, float x[], int xOffset, int count) {
-		System.arraycopy(x, xOffset, z, zOffset, count);
-	}
-
-	public static void rv_cpy_w(float z[], int zOffset, float x[], int xOffset, int count) {
-		zOffset = preWrap(zOffset, z.length);
-		xOffset = preWrap(xOffset, x.length);
-		while (count > 0) {
-			// How much could we copy?
-			int work = Math.min(count, Math.min(z.length - zOffset, x.length - xOffset));
-			System.arraycopy(x, xOffset, z, zOffset, work);
-			xOffset += work;
-			if (xOffset == x.length) xOffset = 0;
-			zOffset += work;
-			if (zOffset == z.length) zOffset = 0;
-			count -= work;
-		}
-	}
-
-	public static void cv_cpy(float z[], int zOffset, float x[], int xOffset, int count) {
-		System.arraycopy(x, xOffset << 1, z, zOffset << 1, count * 2);
-	}
-
-	public static void cv_cpy_w(float z[], int zOffset, float x[], int xOffset, int count) {
-		rv_cpy_w(z, zOffset << 1, x, xOffset << 1, count << 1);
-	}
-
-	public static void rv_rev_i(float z[], int zOffset, int count) {
-		float t;
-		int bOffset = zOffset + count - 1;
-		while (zOffset < bOffset) {
-			t = z[zOffset];
-			z[zOffset] = z[bOffset];
-			z[bOffset] = t;
-			zOffset++;
-			bOffset--;
-		}
-	}
-
-	public static void rv_rev_iw(float z[], int zOffset, int count) {
-		float t;
-		zOffset = preWrap(zOffset, z.length);
-		int bOffset = preWrap(zOffset + count - 1, z.length);
-		while (zOffset < bOffset) {
-			t = z[zOffset];
-			z[zOffset] = z[bOffset];
-			z[bOffset] = t;
-			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
-			bOffset -= 1;
-			if (bOffset < 0) bOffset += z.length;
-		}
-	}
-
-	public static void cv_rev_i(float z[], int zOffset, int count) {
-		float t;
-		int bOffset = zOffset + count - 1;
-		zOffset <<= 1;
-		bOffset <<= 1;
-		while (zOffset < bOffset) {
-			t = z[zOffset + 0];
-			z[zOffset + 0] = z[bOffset + 0];
-			z[bOffset + 0] = t;
-			t = z[zOffset + 1];
-			z[zOffset + 1] = z[bOffset + 1];
-			z[bOffset + 1] = t;
-			zOffset += 2;
-			bOffset -= 2;
-		}
-	}
-
-	public static void cv_rev_iw(float z[], int zOffset, int count) {
-		float t;
-		zOffset = preWrap(zOffset << 1, z.length);
-		int bOffset = preWrap(zOffset + count * 2 - 2, z.length);
-		while (zOffset < bOffset) {
-			t = z[zOffset + 0];
-			z[zOffset + 0] = z[bOffset + 0];
-			z[bOffset + 0] = t;
-			t = z[zOffset + 1];
-			z[zOffset + 1] = z[bOffset + 1];
-			z[bOffset + 1] = t;
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			bOffset -= 2;
-			if (bOffset < 0) bOffset += z.length;
-		}
-	}
-
-	public static void rv_rev(float z[], int zOffset, float x[], int xOffset, int count) {
-		xOffset = xOffset + count - 1;
-		while (count-- > 0)
-			z[zOffset++] = x[xOffset--];
-	}
-
-	public static void rv_rev_w(float z[], int zOffset, float x[], int xOffset, int count) {
-		zOffset = preWrap(zOffset, z.length);
-		xOffset = preWrap(xOffset + count - 1, x.length);
-		while (count-- > 0) {
-			z[zOffset] = x[xOffset];
-			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset -= 1;
-			if (xOffset < 0) xOffset += x.length;
-		}
-	}
-
-	public static void cv_rev(float z[], int zOffset, float x[], int xOffset, int count) {
-		xOffset = xOffset + count - 1;
-		zOffset <<= 1;
-		xOffset <<= 1;
-		while (count-- > 0) {
-			z[zOffset + 0] = x[xOffset + 0];
-			z[zOffset + 1] = x[xOffset + 1];
-			zOffset += 2;
-			xOffset -= 2;
-		}
-	}
-
-	public static void cv_rev_w(float z[], int zOffset, float x[], int xOffset, int count) {
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap((xOffset + count - 1) << 1, x.length);
-		while (count-- > 0) {
-			z[zOffset + 0] = x[xOffset + 0];
-			z[zOffset + 1] = x[xOffset + 1];
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset -= 2;
-			if (xOffset < 0) xOffset += x.length;
-		}
-	}
-
 	public static float rv_max(float x[], int xOffset, int count) {
 		float max = Float.NEGATIVE_INFINITY;
-		while (count-- > 0) {
-			if (Float.compare(max, x[xOffset]) < 0)
-				max = x[xOffset];
-			xOffset += 1;
-		}
-		return max;
-	}
 
-	public static float rv_max_w(float x[], int xOffset, int count) {
-		float max = Float.NEGATIVE_INFINITY;
-		xOffset = preWrap(xOffset, x.length);
+		while (count >= EPV) {
+			float localMax = FloatVector.fromArray(PFS, x, xOffset).maxAll();
+			if (max < localMax)
+				max = localMax;
+			xOffset += EPV;
+			count -= EPV;
+		}
+
 		while (count-- > 0) {
-			if (Float.compare(max, x[xOffset]) < 0)
+			if (max < x[xOffset])
 				max = x[xOffset];
 			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
 		}
 		return max;
 	}
 
 	public static void rv_max_rv_i(float z[], int zOffset, float x[], int xOffset, int count) {
-		while (count-- > 0) {
-			if (x[xOffset] > z[zOffset])
-				z[zOffset] = x[xOffset];
-			zOffset += 1;
-			xOffset += 1;
+		while (count >= EPV) {
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
+			vz.max(vx).intoArray(z, zOffset);
+			xOffset += EPV;
+			zOffset += EPV;
+			count -= EPV;
 		}
-	}
 
-	public static void rv_max_rv_iw(float z[], int zOffset, float x[], int xOffset, int count) {
-		zOffset = preWrap(zOffset, z.length);
-		xOffset = preWrap(xOffset, x.length);
 		while (count-- > 0) {
 			if (x[xOffset] > z[zOffset])
 				z[zOffset] = x[xOffset];
 			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
 			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
 		}
 	}
 
 	public static void rv_max_rv(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
+		while (count >= EPV) {
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+			vx.max(vy).intoArray(z, zOffset);
+			xOffset += EPV;
+			yOffset += EPV;
+			zOffset += EPV;
+			count -= EPV;
+		}
+
 		while (count-- > 0) {
 			z[zOffset] = x[xOffset] > y[yOffset] ? x[xOffset] : y[yOffset];
 			zOffset += 1;
 			xOffset += 1;
 			yOffset += 1;
-		}
-	}
-
-	public static void rv_max_rv_w(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
-		zOffset = preWrap(zOffset, z.length);
-		xOffset = preWrap(xOffset, x.length);
-		yOffset = preWrap(yOffset, y.length);
-		while (count-- > 0) {
-			z[zOffset] = x[xOffset] > y[yOffset] ? x[xOffset] : y[yOffset];
-			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 1;
-			if (yOffset == y.length) yOffset = 0;
-		}
-	}
-
-	public static void cv_max(float z[], float x[], int xOffset, int count) {
-		float max = Float.NEGATIVE_INFINITY;
-		int i = -1;
-		xOffset <<= 1;
-		while (count-- > 0) {
-			float abs = Math.abs(x[xOffset + 0]) + Math.abs(x[xOffset + 1]);
-			if (Float.compare(max, abs) < 0) {
-				max = abs;
-				i = xOffset;
-			}
-			xOffset += 2;
-		}
-		z[0] = x[i + 0];
-		z[1] = x[i + 1];
-	}
-
-	public static void cv_max(float z[], int zOffset, float x[], int xOffset, int count) {
-		float max = Float.NEGATIVE_INFINITY;
-		int i = -1;
-		xOffset <<= 1;
-		while (count-- > 0) {
-			float abs = Math.abs(x[xOffset + 0]) + Math.abs(x[xOffset + 1]);
-			if (Float.compare(max, abs) < 0) {
-				max = abs;
-				i = xOffset;
-			}
-			xOffset += 2;
-		}
-		z[(zOffset << 1) + 0] = x[i + 0];
-		z[(zOffset << 1) + 1] = x[i + 1];
-	}
-
-	public static void cv_max_w(float z[], float x[], int xOffset, int count) {
-		float max = Float.NEGATIVE_INFINITY;
-		int i = -1;
-		xOffset = preWrap(xOffset << 1, x.length);
-		while (count-- > 0) {
-			float abs = Math.abs(x[xOffset + 0]) + Math.abs(x[xOffset + 1]);
-			if (Float.compare(max, abs) < 0) {
-				max = abs;
-				i = xOffset;
-			}
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-		}
-		z[0] = x[i + 0];
-		z[1] = x[i + 1];
-	}
-
-	public static void cv_max_w(float z[], int zOffset, float x[], int xOffset, int count) {
-		float max = Float.NEGATIVE_INFINITY;
-		int i = -1;
-		xOffset = preWrap(xOffset << 1, x.length);
-		while (count-- > 0) {
-			float abs = Math.abs(x[xOffset + 0]) + Math.abs(x[xOffset + 1]);
-			if (Float.compare(max, abs) < 0) {
-				max = abs;
-				i = xOffset;
-			}
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-		}
-		zOffset <<= 1;
-		z[zOffset + 0] = x[i + 0];
-		z[zOffset + 1] = x[i + 1];
-	}
-
-	public static void cv_max_cv_i(float z[], int zOffset, float x[], int xOffset, int count) {
-		zOffset <<= 1;
-		xOffset <<= 1;
-		while (count-- > 0) {
-			if ((x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]) > (z[zOffset + 0] * z[zOffset + 0] + z[zOffset + 1] * z[zOffset + 1])) {
-				z[zOffset + 0] = x[xOffset + 0];
-				z[zOffset + 1] = x[xOffset + 1];
-			}
-			zOffset += 2;
-			xOffset += 2;
-		}
-	}
-
-	public static void cv_max_cv_iw(float z[], int zOffset, float x[], int xOffset, int count) {
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset << 1, x.length);
-		while (count-- > 0) {
-			if ((x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]) > (z[zOffset + 0] * z[zOffset + 0] + z[zOffset + 1] * z[zOffset + 1])) {
-				z[zOffset + 0] = x[xOffset + 0];
-				z[zOffset + 1] = x[xOffset + 1];
-			}
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-		}
-	}
-
-	public static void cv_max_cv(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
-		zOffset <<= 1;
-		xOffset <<= 1;
-		yOffset <<= 1;
-		while (count-- > 0) {
-			if ((x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]) > (y[yOffset + 0] * y[yOffset + 0] + y[yOffset + 1] * y[yOffset + 1])) {
-				z[zOffset + 0] = x[xOffset + 0];
-				z[zOffset + 1] = x[xOffset + 1];
-			} else {
-				z[zOffset + 0] = y[yOffset + 0];
-				z[zOffset + 1] = y[yOffset + 1];
-			}
-			zOffset += 2;
-			xOffset += 2;
-			yOffset += 2;
-		}
-	}
-
-	public static void cv_max_cv_w(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset << 1, x.length);
-		yOffset = preWrap(yOffset << 1, y.length);
-		while (count-- > 0) {
-			if ((x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]) > (y[yOffset + 0] * y[yOffset + 0] + y[yOffset + 1] * y[yOffset + 1])) {
-				z[zOffset + 0] = x[xOffset + 0];
-				z[zOffset + 1] = x[xOffset + 1];
-			} else {
-				z[zOffset + 0] = y[yOffset + 0];
-				z[zOffset + 1] = y[yOffset + 1];
-			}
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 2;
-			if (yOffset == y.length) yOffset = 0;
-		}
-	}
-
-	public static float rv_min(float x[], int xOffset, int count) {
-		float min = Float.POSITIVE_INFINITY;
-		while (count-- > 0) {
-			if (Float.compare(min, x[xOffset]) > 0)
-				min = x[xOffset];
-			xOffset += 1;
-		}
-		return min;
-	}
-
-	public static float rv_min_w(float x[], int xOffset, int count) {
-		float min = Float.POSITIVE_INFINITY;
-		xOffset = preWrap(xOffset, x.length);
-		while (count-- > 0) {
-			if (Float.compare(min, x[xOffset]) > 0)
-				min = x[xOffset];
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-		}
-		return min;
-	}
-
-	public static void rv_min_rv_i(float z[], int zOffset, float x[], int xOffset, int count) {
-		while (count-- > 0) {
-			if (x[xOffset] < z[zOffset])
-				z[zOffset] = x[xOffset];
-			zOffset += 1;
-			xOffset += 1;
-		}
-	}
-
-	public static void rv_min_rv_iw(float z[], int zOffset, float x[], int xOffset, int count) {
-		zOffset = preWrap(zOffset, z.length);
-		xOffset = preWrap(xOffset, x.length);
-		while (count-- > 0) {
-			if (x[xOffset] < z[zOffset])
-				z[zOffset] = x[xOffset];
-			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-		}
-	}
-
-	public static void rv_min_rv(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
-		while (count-- > 0) {
-			z[zOffset] = x[xOffset] < y[yOffset] ? x[xOffset] : y[yOffset];
-			zOffset += 1;
-			xOffset += 1;
-			yOffset += 1;
-		}
-	}
-
-	public static void rv_min_rv_w(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
-		zOffset = preWrap(zOffset, z.length);
-		xOffset = preWrap(xOffset, x.length);
-		yOffset = preWrap(yOffset, y.length);
-		while (count-- > 0) {
-			z[zOffset] = x[xOffset] < y[yOffset] ? x[xOffset] : y[yOffset];
-			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 1;
-			if (yOffset == y.length) yOffset = 0;
-		}
-	}
-
-	public static void cv_min(float z[], float x[], int xOffset, int count) {
-		float min = Float.POSITIVE_INFINITY;
-		int i = -1;
-		xOffset <<= 1;
-		while (count-- > 0) {
-			float abs = Math.abs(x[xOffset + 0]) + Math.abs(x[xOffset + 1]);
-			if (Float.compare(min, abs) > 0) {
-				min = abs;
-				i = xOffset;
-			}
-			xOffset += 2;
-		}
-		z[0] = x[i + 0];
-		z[1] = x[i + 1];
-	}
-
-	public static void cv_min(float z[], int zOffset, float x[], int xOffset, int count) {
-		float min = Float.POSITIVE_INFINITY;
-		int i = -1;
-		xOffset <<= 1;
-		while (count-- > 0) {
-			float abs = Math.abs(x[xOffset + 0]) + Math.abs(x[xOffset + 1]);
-			if (Float.compare(min, abs) > 0) {
-				min = abs;
-				i = xOffset;
-			}
-			xOffset += 2;
-		}
-		z[(zOffset << 1) + 0] = x[i + 0];
-		z[(zOffset << 1) + 1] = x[i + 1];
-	}
-
-	public static void cv_min_w(float z[], float x[], int xOffset, int count) {
-		float min = Float.POSITIVE_INFINITY;
-		int i = -1;
-		xOffset = preWrap(xOffset << 1, x.length);
-		while (count-- > 0) {
-			float abs = Math.abs(x[xOffset + 0]) + Math.abs(x[xOffset + 1]);
-			if (Float.compare(min, abs) > 0) {
-				min = abs;
-				i = xOffset;
-			}
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-		}
-		z[0] = x[i + 0];
-		z[1] = x[i + 1];
-	}
-
-	public static void cv_min_w(float z[], int zOffset, float x[], int xOffset, int count) {
-		float min = Float.POSITIVE_INFINITY;
-		int i = -1;
-		xOffset = preWrap(xOffset << 1, x.length);
-		while (count-- > 0) {
-			float abs = Math.abs(x[xOffset + 0]) + Math.abs(x[xOffset + 1]);
-			if (Float.compare(min, abs) > 0) {
-				min = abs;
-				i = xOffset;
-			}
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-		}
-		zOffset <<= 1;
-		z[zOffset + 0] = x[i + 0];
-		z[zOffset + 1] = x[i + 1];
-	}
-
-	public static void cv_min_cv_i(float z[], int zOffset, float x[], int xOffset, int count) {
-		zOffset <<= 1;
-		xOffset <<= 1;
-		while (count-- > 0) {
-			if ((x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]) < (z[zOffset + 0] * z[zOffset + 0] + z[zOffset + 1] * z[zOffset + 1])) {
-				z[zOffset + 0] = x[xOffset + 0];
-				z[zOffset + 1] = x[xOffset + 1];
-			}
-			zOffset += 2;
-			xOffset += 2;
-		}
-	}
-
-	public static void cv_min_cv_iw(float z[], int zOffset, float x[], int xOffset, int count) {
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset << 1, x.length);
-		while (count-- > 0) {
-			if ((x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]) < (z[zOffset + 0] * z[zOffset + 0] + z[zOffset + 1] * z[zOffset + 1])) {
-				z[zOffset + 0] = x[xOffset + 0];
-				z[zOffset + 1] = x[xOffset + 1];
-			}
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-		}
-	}
-
-	public static void cv_min_cv(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
-		zOffset <<= 1;
-		xOffset <<= 1;
-		yOffset <<= 1;
-		while (count-- > 0) {
-			if ((x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]) < (y[yOffset + 0] * y[yOffset + 0] + y[yOffset + 1] * y[yOffset + 1])) {
-				z[zOffset + 0] = x[xOffset + 0];
-				z[zOffset + 1] = x[xOffset + 1];
-			} else {
-				z[zOffset + 0] = y[yOffset + 0];
-				z[zOffset + 1] = y[yOffset + 1];
-			}
-			zOffset += 2;
-			xOffset += 2;
-			yOffset += 2;
-		}
-	}
-
-	public static void cv_min_cv_w(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset << 1, x.length);
-		yOffset = preWrap(yOffset << 1, y.length);
-		while (count-- > 0) {
-			if ((x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]) < (y[yOffset + 0] * y[yOffset + 0] + y[yOffset + 1] * y[yOffset + 1])) {
-				z[zOffset + 0] = x[xOffset + 0];
-				z[zOffset + 1] = x[xOffset + 1];
-			} else {
-				z[zOffset + 0] = y[yOffset + 0];
-				z[zOffset + 1] = y[yOffset + 1];
-			}
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 2;
-			if (yOffset == y.length) yOffset = 0;
 		}
 	}
 
 	public static int rv_maxarg(float x[], int xOffset, int count) {
 		float max = Float.NEGATIVE_INFINITY;
 		int i = -1;
+
+		while (count > EPV) {
+			float localMax = FloatVector.fromArray(PFS, x, xOffset).maxAll();
+			if (max < localMax) {
+				max = localMax;
+				i = xOffset;
+			}
+			xOffset += EPV;
+			count -= EPV;
+		}
+
+		// Find max in vector
+		if (i >= 0) {
+			for (int j = i; j < i + EPV; j++) {
+				if (max < x[j]) {
+					max = x[j];
+					i = j;
+				}
+			}
+		}
+
 		while (count-- > 0) {
-			if (Float.compare(max, x[xOffset]) < 0) {
+			if (max < x[xOffset]) {
 				max = x[xOffset];
 				i = xOffset;
 			}
 			xOffset += 1;
 		}
 		return i;
-	}
-
-	public static int rv_maxarg_w(float x[], int xOffset, int count) {
-		float max = Float.NEGATIVE_INFINITY;
-		int i = -1;
-		xOffset = preWrap(xOffset, x.length);
-		while (count-- > 0) {
-			if (Float.compare(max, x[xOffset]) < 0) {
-				max = x[xOffset];
-				i = xOffset;
-			}
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-		}
-		return i;
-	}
-
-	public static int cv_maxarg(float x[], int xOffset, int count) {
-		float max = Float.NEGATIVE_INFINITY;
-		int i = -1;
-		xOffset <<= 1;
-		while (count-- > 0) {
-			float abs = x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1];
-			if (Float.compare(max, abs) < 0) {
-				max = abs;
-				i = xOffset;
-			}
-			xOffset += 2;
-		}
-		return i >> 1;
-	}
-
-	public static int cv_maxarg_w(float x[], int xOffset, int count) {
-		float max = Float.NEGATIVE_INFINITY;
-		int i = -1;
-		xOffset = preWrap(xOffset << 1, x.length);
-		while (count-- > 0) {
-			float abs = x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1];
-			if (Float.compare(max, abs) < 0) {
-				max = abs;
-				i = xOffset;
-			}
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-		}
-		return i >> 1;
-	}
-
-	public static int rv_minarg(float x[], int xOffset, int count) {
-		float min = Float.POSITIVE_INFINITY;
-		int i = -1;
-		while (count-- > 0) {
-			if (Float.compare(min, x[xOffset]) > 0) {
-				min = x[xOffset];
-				i = xOffset;
-			}
-			xOffset += 1;
-		}
-		return i;
-	}
-
-	public static int rv_minarg_w(float x[], int xOffset, int count) {
-		float min = Float.POSITIVE_INFINITY;
-		int i = -1;
-		xOffset = preWrap(xOffset, x.length);
-		while (count-- > 0) {
-			if (Float.compare(min, x[xOffset]) > 0) {
-				min = x[xOffset];
-				i = xOffset;
-			}
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-		}
-		return i;
-	}
-
-	public static int cv_minarg(float x[], int xOffset, int count) {
-		float min = Float.POSITIVE_INFINITY;
-		int i = -1;
-		xOffset <<= 1;
-		while (count-- > 0) {
-			float abs = x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1];
-			if (Float.compare(min, abs) > 0) {
-				min = abs;
-				i = xOffset;
-			}
-			xOffset += 2;
-		}
-		return i >> 1;
-	}
-
-	public static int cv_minarg_w(float x[], int xOffset, int count) {
-		float min = Float.POSITIVE_INFINITY;
-		int i = -1;
-		xOffset = preWrap(xOffset << 1, x.length);
-		while (count-- > 0) {
-			float abs = x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1];
-			if (Float.compare(min, abs) > 0) {
-				min = abs;
-				i = xOffset;
-			}
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-		}
-		return i >> 1;
 	}
 
 	public static void rv_rs_lin_rv_rs_i(float z[], int zOffset, float a1, float x[], int xOffset, float a2, int count) {
-		while (count-- > 0) {
-			z[zOffset] = z[zOffset] * a1 + x[xOffset] * a2;
-			zOffset += 1;
-			xOffset += 1;
+		while (count >= EPV) {
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
+			vz.mul(a1).add(vx.mul(a2)).intoArray(z, zOffset);
+			xOffset += EPV;
+			zOffset += EPV;
+			count -= EPV;
 		}
-	}
 
-	public static void rv_rs_lin_rv_rs_iw(float z[], int zOffset, float a1, float x[], int xOffset, float a2, int count) {
-		zOffset = preWrap(zOffset, z.length);
-		xOffset = preWrap(xOffset, x.length);
 		while (count-- > 0) {
 			z[zOffset] = z[zOffset] * a1 + x[xOffset] * a2;
 			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
 			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
 		}
 	}
 
 	public static void rv_rs_lin_rv_rs(float z[], int zOffset, float x[], int xOffset, float a1, float y[], int yOffset, float a2, int count) {
+		while (count >= EPV) {
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+			vx.mul(a1).add(vy.mul(a2)).intoArray(z, zOffset);
+			xOffset += EPV;
+			yOffset += EPV;
+			zOffset += EPV;
+			count -= EPV;
+		}
+
 		while (count-- > 0)
 			z[zOffset++] = x[xOffset++] * a1 + y[yOffset++] * a2;
 	}
 
-	public static void rv_rs_lin_rv_rs_w(float z[], int zOffset, float x[], int xOffset, float a1, float y[], int yOffset, float a2, int count) {
-		zOffset = preWrap(zOffset, z.length);
-		xOffset = preWrap(xOffset, x.length);
-		yOffset = preWrap(yOffset, y.length);
-		while (count-- > 0) {
-			z[zOffset] = x[xOffset] * a1 + y[yOffset] * a2;
-			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 1;
-			if (yOffset == y.length) yOffset = 0;
-		}
-	}
-
-	public static void rv_rs_lin_rv_cs(float z[], int zOffset, float x[], int xOffset, float a1, float y[], int yOffset, float a2[], int count) {
-		zOffset <<= 1;
-		while (count-- > 0) {
-			z[zOffset + 0] = x[xOffset] * a1 + y[yOffset] * a2[0];
-			z[zOffset + 1] = y[yOffset] * a2[1];
-			zOffset += 2;
-			xOffset += 1;
-			yOffset += 1;
-		}
-	}
-
-	public static void rv_rs_lin_rv_cs_w(float z[], int zOffset, float x[], int xOffset, float a1, float y[], int yOffset, float a2[], int count) {
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset, x.length);
-		yOffset = preWrap(yOffset, y.length);
-		while (count-- > 0) {
-			z[zOffset + 0] = x[xOffset] * a1 + y[yOffset] * a2[0];
-			z[zOffset + 1] = y[yOffset] * a2[1];
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 1;
-			if (yOffset == y.length) yOffset = 0;
-		}
-	}
-
-	public static void rv_cs_lin_rv_cs(float z[], int zOffset, float x[], int xOffset, float a1[], float y[], int yOffset, float a2[], int count) {
-		zOffset <<= 1;
-		while (count-- > 0) {
-			z[zOffset + 0] = x[xOffset] * a1[0] + y[yOffset] * a2[0];
-			z[zOffset + 1] = x[xOffset] * a1[1] + y[yOffset] * a2[1];
-			zOffset += 2;
-			xOffset += 1;
-			yOffset += 1;
-		}
-	}
-
-	public static void rv_cs_lin_rv_cs_w(float z[], int zOffset, float x[], int xOffset, float a1[], float y[], int yOffset, float a2[], int count) {
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset, x.length);
-		yOffset = preWrap(yOffset, y.length);
-		while (count-- > 0) {
-			z[zOffset + 0] = x[xOffset] * a1[0] + y[yOffset] * a2[0];
-			z[zOffset + 1] = x[xOffset] * a1[1] + y[yOffset] * a2[1];
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 1;
-			if (yOffset == y.length) yOffset = 0;
-		}
-	}
-
-	public static void cv_rs_lin_rv_rs_i(float z[], int zOffset, float a1, float x[], int xOffset, float a2, int count) {
-		zOffset <<= 1;
-		while (count-- > 0) {
-			z[zOffset + 0] = z[zOffset + 0] * a1 + x[xOffset] * a2;
-			z[zOffset + 1] = z[zOffset + 1] * a1;
-			zOffset += 2;
-			xOffset += 1;
-		}
-	}
-
-	public static void cv_rs_lin_rv_rs_iw(float z[], int zOffset, float a1, float x[], int xOffset, float a2, int count) {
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset, x.length);
-		while (count-- > 0) {
-			z[zOffset + 0] = z[zOffset + 0] * a1 + x[xOffset] * a2;
-			z[zOffset + 1] = z[zOffset + 1] * a1;
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-		}
-	}
-
-	public static void cv_rs_lin_rv_rs(float z[], int zOffset, float x[], int xOffset, float a1, float y[], int yOffset, float a2, int count) {
-		zOffset <<= 1;
-		xOffset <<= 1;
-		while (count-- > 0) {
-			z[zOffset + 0] = x[xOffset + 0] * a1 + y[yOffset] * a2;
-			z[zOffset + 1] = x[xOffset + 1] * a1;
-			zOffset += 2;
-			xOffset += 2;
-			yOffset += 1;
-		}
-	}
-
-	public static void cv_rs_lin_rv_rs_w(float z[], int zOffset, float x[], int xOffset, float a1, float y[], int yOffset, float a2, int count) {
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset << 1, x.length);
-		yOffset = preWrap(yOffset, y.length);
-		while (count-- > 0) {
-			z[zOffset + 0] = x[xOffset + 0] * a1 + y[yOffset] * a2;
-			z[zOffset + 1] = x[xOffset + 1] * a1;
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 1;
-			if (yOffset == y.length) yOffset = 0;
-		}
-	}
-
-	public static void cv_cs_lin_rv_rs_i(float z[], int zOffset, float a1[], float x[], int xOffset, float a2, int count) {
-		float k0, k1, k2;
-		float a1s = a1[0] + a1[1];
-		zOffset <<= 1;
-		while (count-- > 0) {
-			k0 = z[zOffset + 0] * a1[0];
-			k1 = z[zOffset + 1] * a1[1];
-			k2 = (z[zOffset + 0] + z[zOffset + 1]) * a1s;
-			z[zOffset + 0] = k0 - k1 + x[xOffset] * a2;
-			z[zOffset + 1] = k2 - k0 - k1;
-			zOffset += 2;
-			xOffset += 1;
-		}
-	}
-
-	public static void cv_cs_lin_rv_rs_iw(float z[], int zOffset, float a1[], float x[], int xOffset, float a2, int count) {
-		float k0, k1, k2;
-		float a1s = a1[0] + a1[1];
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset, x.length);
-		while (count-- > 0) {
-			k0 = z[zOffset + 0] * a1[0];
-			k1 = z[zOffset + 1] * a1[1];
-			k2 = (z[zOffset + 0] + z[zOffset + 1]) * a1s;
-			z[zOffset + 0] = k0 - k1 + x[xOffset] * a2;
-			z[zOffset + 1] = k2 - k0 - k1;
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-		}
-	}
-
-	public static void cv_cs_lin_rv_rs(float z[], int zOffset, float x[], int xOffset, float a1[], float y[], int yOffset, float a2, int count) {
-		float k0, k1, k2;
-		float a1s = a1[0] + a1[1];
-		zOffset <<= 1;
-		xOffset <<= 1;
-		while (count-- > 0) {
-			k0 = x[xOffset + 0] * a1[0];
-			k1 = x[xOffset + 1] * a1[1];
-			k2 = (x[xOffset + 0] + x[xOffset + 1]) * a1s;
-			z[zOffset + 0] = k0 - k1 + y[yOffset] * a2;
-			z[zOffset + 1] = k2 - k0 - k1;
-			zOffset += 2;
-			xOffset += 2;
-			yOffset += 1;
-		}
-	}
-
-	public static void cv_cs_lin_rv_rs_w(float z[], int zOffset, float x[], int xOffset, float a1[], float y[], int yOffset, float a2, int count) {
-		float k0, k1, k2;
-		float a1s = a1[0] + a1[1];
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset << 1, x.length);
-		yOffset = preWrap(yOffset, y.length);
-		while (count-- > 0) {
-			k0 = x[xOffset + 0] * a1[0];
-			k1 = x[xOffset + 1] * a1[1];
-			k2 = (x[xOffset + 0] + x[xOffset + 1]) * a1s;
-			z[zOffset + 0] = k0 - k1 + y[yOffset] * a2;
-			z[zOffset + 1] = k2 - k0 - k1;
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 1;
-			if (yOffset == y.length) yOffset = 0;
-		}
-	}
-
-	public static void cv_rs_lin_rv_cs_i(float z[], int zOffset, float a1, float x[], int xOffset, float a2[], int count) {
-		zOffset <<= 1;
-		while (count-- > 0) {
-			z[zOffset + 0] = z[zOffset + 0] * a1 + x[xOffset] * a2[0];
-			z[zOffset + 1] = z[zOffset + 1] * a1 + x[xOffset] * a2[1];
-			zOffset += 2;
-			xOffset += 1;
-		}
-	}
-
-	public static void cv_rs_lin_rv_cs_iw(float z[], int zOffset, float a1, float x[], int xOffset, float a2[], int count) {
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset, x.length);
-		while (count-- > 0) {
-			z[zOffset + 0] = z[zOffset + 0] * a1 + x[xOffset] * a2[0];
-			z[zOffset + 1] = z[zOffset + 1] * a1 + x[xOffset] * a2[1];
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-		}
-	}
-
-	public static void cv_rs_lin_rv_cs(float z[], int zOffset, float x[], int xOffset, float a1, float y[], int yOffset, float a2[], int count) {
-		zOffset <<= 1;
-		xOffset <<= 1;
-		while (count-- > 0) {
-			z[zOffset + 0] = x[xOffset + 0] * a1 + y[yOffset] * a2[0];
-			z[zOffset + 1] = x[xOffset + 1] * a1 + y[yOffset] * a2[1];
-			zOffset += 2;
-			xOffset += 2;
-			yOffset += 1;
-		}
-	}
-
-	public static void cv_rs_lin_rv_cs_w(float z[], int zOffset, float x[], int xOffset, float a1, float y[], int yOffset, float a2[], int count) {
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset << 1, x.length);
-		yOffset = preWrap(yOffset, y.length);
-		while (count-- > 0) {
-			z[zOffset + 0] = x[xOffset + 0] * a1 + y[yOffset] * a2[0];
-			z[zOffset + 1] = x[xOffset + 1] * a1 + y[yOffset] * a2[1];
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 1;
-			if (yOffset == y.length) yOffset = 0;
-		}
-	}
-
-	public static void cv_cs_lin_rv_cs_i(float z[], int zOffset, float a1[], float x[], int xOffset, float a2[], int count) {
-		float k0, k1, k2;
-		float a1s = a1[0] + a1[1];
-		zOffset <<= 1;
-		while (count-- > 0) {
-			k0 = z[zOffset + 0] * a1[0];
-			k1 = z[zOffset + 1] * a1[1];
-			k2 = (z[zOffset + 0] + z[zOffset + 1]) * a1s;
-			z[zOffset + 0] = k0 - k1 + x[xOffset] * a2[0];
-			z[zOffset + 1] = k2 - k0 - k1 + x[xOffset] * a2[1];
-			zOffset += 2;
-			xOffset += 1;
-		}
-	}
-
-	public static void cv_cs_lin_rv_cs_iw(float z[], int zOffset, float a1[], float x[], int xOffset, float a2[], int count) {
-		float k0, k1, k2;
-		float a1s = a1[0] + a1[1];
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset, x.length);
-		while (count-- > 0) {
-			k0 = z[zOffset + 0] * a1[0];
-			k1 = z[zOffset + 1] * a1[1];
-			k2 = (z[zOffset + 0] + z[zOffset + 1]) * a1s;
-			z[zOffset + 0] = k0 - k1 + x[xOffset] * a2[0];
-			z[zOffset + 1] = k2 - k0 - k1 + x[xOffset] * a2[1];
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-		}
-	}
-
-	public static void cv_cs_lin_rv_cs(float z[], int zOffset, float x[], int xOffset, float a1[], float y[], int yOffset, float a2[], int count) {
-		float k0, k1, k2;
-		float a1s = a1[0] + a1[1];
-		zOffset <<= 1;
-		xOffset <<= 1;
-		while (count-- > 0) {
-			k0 = x[xOffset + 0] * a1[0];
-			k1 = x[xOffset + 1] * a1[1];
-			k2 = (x[xOffset + 0] + x[xOffset + 1]) * a1s;
-			z[zOffset + 0] = k0 - k1 + y[yOffset] * a2[0];
-			z[zOffset + 1] = k2 - k0 - k1 + y[yOffset] * a2[1];
-			zOffset += 2;
-			xOffset += 2;
-			yOffset += 1;
-		}
-	}
-
-	public static void cv_cs_lin_rv_cs_w(float z[], int zOffset, float x[], int xOffset, float a1[], float y[], int yOffset, float a2[], int count) {
-		float k0, k1, k2;
-		float a1s = a1[0] + a1[1];
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset << 1, x.length);
-		yOffset = preWrap(yOffset, y.length);
-		while (count-- > 0) {
-			k0 = x[xOffset + 0] * a1[0];
-			k1 = x[xOffset + 1] * a1[1];
-			k2 = (x[xOffset + 0] + x[xOffset + 1]) * a1s;
-			z[zOffset + 0] = k0 - k1 + y[yOffset] * a2[0];
-			z[zOffset + 1] = k2 - k0 - k1 + y[yOffset] * a2[1];
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 1;
-			if (yOffset == y.length) yOffset = 0;
-		}
-	}
-
-	public static void cv_rs_lin_cv_rs_i(float z[], int zOffset, float a1, float x[], int xOffset, float a2, int count) {
-		zOffset <<= 1;
-		xOffset <<= 1;
-		while (count-- > 0) {
-			z[zOffset + 0] = z[zOffset + 0] * a1 + x[xOffset + 0] * a2;
-			z[zOffset + 1] = z[zOffset + 1] * a1 + x[xOffset + 1] * a2;
-			zOffset += 2;
-			xOffset += 2;
-		}
-	}
-
-	public static void cv_rs_lin_cv_rs_iw(float z[], int zOffset, float a1, float x[], int xOffset, float a2, int count) {
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset << 1, x.length);
-		while (count-- > 0) {
-			z[zOffset + 0] = z[zOffset + 0] * a1 + x[xOffset + 0] * a2;
-			z[zOffset + 1] = z[zOffset + 1] * a1 + x[xOffset + 1] * a2;
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-		}
-	}
-
-	public static void cv_rs_lin_cv_rs(float z[], int zOffset, float x[], int xOffset, float a1, float y[], int yOffset, float a2, int count) {
-		zOffset <<= 1;
-		xOffset <<= 1;
-		yOffset <<= 1;
-		while (count-- > 0) {
-			z[zOffset + 0] = x[xOffset + 0] * a1 + y[yOffset + 0] * a2;
-			z[zOffset + 1] = x[xOffset + 1] * a1 + y[yOffset + 1] * a2;
-			zOffset += 2;
-			xOffset += 2;
-			yOffset += 2;
-		}
-	}
-
-	public static void cv_rs_lin_cv_rs_w(float z[], int zOffset, float x[], int xOffset, float a1, float y[], int yOffset, float a2, int count) {
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset << 1, x.length);
-		yOffset = preWrap(yOffset << 1, y.length);
-		while (count-- > 0) {
-			z[zOffset + 0] = x[xOffset + 0] * a1 + y[yOffset + 0] * a2;
-			z[zOffset + 1] = x[xOffset + 1] * a1 + y[yOffset + 1] * a2;
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 2;
-			if (yOffset == y.length) yOffset = 0;
-		}
-	}
-
-	public static void cv_cs_lin_cv_rs_i(float z[], int zOffset, float a1[], float x[], int xOffset, float a2, int count) {
-		float k0, k1, k2;
-		float a1s = a1[0] + a1[1];
-		zOffset <<= 1;
-		xOffset <<= 1;
-		while (count-- > 0) {
-			k0 = z[zOffset + 0] * a1[0];
-			k1 = z[zOffset + 1] * a1[1];
-			k2 = (z[zOffset + 0] + z[zOffset + 1]) * a1s;
-			z[zOffset + 0] = k0 - k1 + x[xOffset + 0] * a2;
-			z[zOffset + 1] = k2 - k0 - k1 + x[xOffset + 1] * a2;
-			zOffset += 2;
-			xOffset += 2;
-		}
-	}
-
-	public static void cv_cs_lin_cv_rs_iw(float z[], int zOffset, float a1[], float x[], int xOffset, float a2, int count) {
-		float k0, k1, k2;
-		float a1s = a1[0] + a1[1];
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset << 1, x.length);
-		while (count-- > 0) {
-			k0 = z[zOffset + 0] * a1[0];
-			k1 = z[zOffset + 1] * a1[1];
-			k2 = (z[zOffset + 0] + z[zOffset + 1]) * a1s;
-			z[zOffset + 0] = k0 - k1 + x[xOffset + 0] * a2;
-			z[zOffset + 1] = k2 - k0 - k1 + x[xOffset + 1] * a2;
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-		}
-	}
-
-	public static void cv_cs_lin_cv_rs(float z[], int zOffset, float x[], int xOffset, float a1[], float y[], int yOffset, float a2, int count) {
-		float k0, k1, k2;
-		float a1s = a1[0] + a1[1];
-		zOffset <<= 1;
-		xOffset <<= 1;
-		yOffset <<= 1;
-		while (count-- > 0) {
-			k0 = x[xOffset + 0] * a1[0];
-			k1 = x[xOffset + 1] * a1[1];
-			k2 = (x[xOffset + 0] + x[xOffset + 1]) * a1s;
-			z[zOffset + 0] = k0 - k1 + y[yOffset + 0] * a2;
-			z[zOffset + 1] = k2 - k0 - k1 + y[yOffset + 1] * a2;
-			zOffset += 2;
-			xOffset += 2;
-			yOffset += 2;
-		}
-	}
-
-	public static void cv_cs_lin_cv_rs_w(float z[], int zOffset, float x[], int xOffset, float a1[], float y[], int yOffset, float a2, int count) {
-		float k0, k1, k2;
-		float a1s = a1[0] + a1[1];
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset << 1, x.length);
-		yOffset = preWrap(yOffset << 1, y.length);
-		while (count-- > 0) {
-			k0 = x[xOffset + 0] * a1[0];
-			k1 = x[xOffset + 1] * a1[1];
-			k2 = (x[xOffset + 0] + x[xOffset + 1]) * a1s;
-			z[zOffset + 0] = k0 - k1 + y[yOffset + 0] * a2;
-			z[zOffset + 1] = k2 - k0 - k1 + y[yOffset + 1] * a2;
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 2;
-			if (yOffset == y.length) yOffset = 0;
-		}
-	}
-
-	public static void cv_cs_lin_cv_cs_i(float z[], int zOffset, float a1[], float x[], int xOffset, float a2[], int count) {
-		float k0_1, k1_1, k2_1;
-		float a1s = a1[0] + a1[1];
-		float k0_2, k1_2, k2_2;
-		float a2s = a2[0] + a2[1];
-		zOffset <<= 1;
-		xOffset <<= 1;
-		while (count-- > 0) {
-			k0_1 = z[zOffset + 0] * a1[0];
-			k1_1 = z[zOffset + 1] * a1[1];
-			k2_1 = (z[zOffset + 0] + z[zOffset + 1]) * a1s;
-			k0_2 = x[xOffset + 0] * a2[0];
-			k1_2 = x[xOffset + 1] * a2[1];
-			k2_2 = (x[xOffset + 0] + x[xOffset + 1]) * a2s;
-			z[zOffset + 0] = k0_1 - k1_1 + k0_2 - k1_2;
-			z[zOffset + 1] = k2_1 - k0_1 - k1_1 + k2_2 - k0_2 - k1_2;
-			zOffset += 2;
-			xOffset += 2;
-		}
-	}
-
-	public static void cv_cs_lin_cv_cs_iw(float z[], int zOffset, float a1[], float x[], int xOffset, float a2[], int count) {
-		float k0_1, k1_1, k2_1;
-		float a1s = a1[0] + a1[1];
-		float k0_2, k1_2, k2_2;
-		float a2s = a2[0] + a2[1];
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset << 1, x.length);
-		while (count-- > 0) {
-			k0_1 = z[zOffset + 0] * a1[0];
-			k1_1 = z[zOffset + 1] * a1[1];
-			k2_1 = (z[zOffset + 0] + z[zOffset + 1]) * a1s;
-			k0_2 = x[xOffset + 0] * a2[0];
-			k1_2 = x[xOffset + 1] * a2[1];
-			k2_2 = (x[xOffset + 0] + x[xOffset + 1]) * a2s;
-			z[zOffset + 0] = k0_1 - k1_1 + k0_2 - k1_2;
-			z[zOffset + 1] = k2_1 - k0_1 - k1_1 + k2_2 - k0_2 - k1_2;
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-		}
-	}
-
-	public static void cv_cs_lin_cv_cs(float z[], int zOffset, float x[], int xOffset, float a1[], float y[], int yOffset, float a2[], int count) {
-		float k0_1, k1_1, k2_1;
-		float a1s = a1[0] + a1[1];
-		float k0_2, k1_2, k2_2;
-		float a2s = a2[0] + a2[1];
-		zOffset <<= 1;
-		xOffset <<= 1;
-		yOffset <<= 1;
-		while (count-- > 0) {
-			k0_1 = x[xOffset + 0] * a1[0];
-			k1_1 = x[xOffset + 1] * a1[1];
-			k2_1 = (x[xOffset + 0] + x[xOffset + 1]) * a1s;
-			k0_2 = y[yOffset + 0] * a2[0];
-			k1_2 = y[yOffset + 1] * a2[1];
-			k2_2 = (y[yOffset + 0] + y[yOffset + 1]) * a2s;
-			z[zOffset + 0] = k0_1 - k1_1 + k0_2 - k1_2;
-			z[zOffset + 1] = k2_1 - k0_1 - k1_1 + k2_2 - k0_2 - k1_2;
-			zOffset += 2;
-			xOffset += 2;
-			yOffset += 2;
-		}
-	}
-
-	public static void cv_cs_lin_cv_cs_w(float z[], int zOffset, float x[], int xOffset, float a1[], float y[], int yOffset, float a2[], int count) {
-		float k0_1, k1_1, k2_1;
-		float a1s = a1[0] + a1[1];
-		float k0_2, k1_2, k2_2;
-		float a2s = a2[0] + a2[1];
-		zOffset = preWrap(zOffset << 1, z.length);
-		xOffset = preWrap(xOffset << 1, x.length);
-		yOffset = preWrap(yOffset << 1, y.length);
-		while (count-- > 0) {
-			k0_1 = x[xOffset + 0] * a1[0];
-			k1_1 = x[xOffset + 1] * a1[1];
-			k2_1 = (x[xOffset + 0] + x[xOffset + 1]) * a1s;
-			k0_2 = y[yOffset + 0] * a2[0];
-			k1_2 = y[yOffset + 1] * a2[1];
-			k2_2 = (y[yOffset + 0] + y[yOffset + 1]) * a2s;
-			z[zOffset + 0] = k0_1 - k1_1 + k0_2 - k1_2;
-			z[zOffset + 1] = k2_1 - k0_1 - k1_1 + k2_2 - k0_2 - k1_2;
-			zOffset += 2;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-			yOffset += 2;
-			if (yOffset == y.length) yOffset = 0;
-		}
-	}
-
 	public static void rv_10log10_i(float z[], int zOffset, int count) {
-		while (count-- > 0) {
-			z[zOffset] = 10 * (float)Math.log10(Math.abs(z[zOffset]) + Float.MIN_NORMAL);
-			zOffset += 1;
+		while (count >= EPV) {
+			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
+			vz.abs().add(Float.MIN_NORMAL).log10().mul(10.0f).intoArray(z, zOffset);
+			zOffset += EPV;
+			count -= EPV;
 		}
-	}
 
-	public static void rv_10log10_iw(float z[], int zOffset, int count) {
-		zOffset = preWrap(zOffset, z.length);
 		while (count-- > 0) {
 			z[zOffset] = 10 * (float)Math.log10(Math.abs(z[zOffset]) + Float.MIN_NORMAL);
 			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
 		}
 	}
 
 	public static void rv_10log10(float z[], int zOffset, float x[], int xOffset, int count) {
+		while (count >= EPV) {
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			vx.abs().add(Float.MIN_NORMAL).log10().mul(10.0f).intoArray(z, zOffset);
+			xOffset += EPV;
+			zOffset += EPV;
+			count -= EPV;
+		}
+
 		while (count-- > 0)
 			z[zOffset++] = 10 * (float)Math.log10(Math.abs(x[xOffset++]) + Float.MIN_NORMAL);
 	}
 
-	public static void rv_10log10_w(float z[], int zOffset, float x[], int xOffset, int count) {
-		zOffset = preWrap(zOffset, z.length);
-		xOffset = preWrap(xOffset, x.length);
-		while (count-- > 0) {
-			z[zOffset] = 10 * (float)Math.log10(Math.abs(x[xOffset]) + Float.MIN_NORMAL);
-			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-		}
-	}
-
 	public static void rv_10log10_rs_i(float z[], int zOffset, float base, int count) {
 		base = 10 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
-		while (count-- > 0) {
-			z[zOffset] = 10 * (float)Math.log10(Math.abs(z[zOffset]) + Float.MIN_NORMAL) - base;
-			zOffset += 1;
-		}
-	}
 
-	public static void rv_10log10_rs_iw(float z[], int zOffset, float base, int count) {
-		base = 10 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
-		zOffset = preWrap(zOffset, z.length);
+		while (count >= EPV) {
+			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
+			vz.abs().add(Float.MIN_NORMAL).log10().mul(10.0f).sub(base).intoArray(z, zOffset);
+			zOffset += EPV;
+			count -= EPV;
+		}
+
 		while (count-- > 0) {
 			z[zOffset] = 10 * (float)Math.log10(Math.abs(z[zOffset]) + Float.MIN_NORMAL) - base;
 			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
 		}
 	}
 
 	public static void rv_10log10_rs(float z[], int zOffset, float x[], int xOffset, float base, int count) {
 		base = 10 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
+
+		while (count >= EPV) {
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			vx.abs().add(Float.MIN_NORMAL).log10().mul(10.0f).sub(base).intoArray(z, zOffset);
+			xOffset += EPV;
+			zOffset += EPV;
+			count -= EPV;
+		}
+
 		while (count-- > 0)
 			z[zOffset++] = 10 * (float)Math.log10(Math.abs(x[xOffset++]) + Float.MIN_NORMAL) - base;
-	}
-
-	public static void rv_10log10_rs_w(float z[], int zOffset, float x[], int xOffset, float base, int count) {
-		base = 10 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
-		zOffset = preWrap(zOffset, z.length);
-		xOffset = preWrap(xOffset, x.length);
-		while (count-- > 0) {
-			z[zOffset] = 10 * (float)Math.log10(Math.abs(x[xOffset]) + Float.MIN_NORMAL) - base;
-			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-		}
-	}
-
-	public static void cv_10log10(float z[], int zOffset, float x[], int xOffset, int count) {
-		xOffset <<= 1;
-		while (count-- > 0) {
-			z[zOffset] = 5 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL);
-			zOffset += 1;
-			xOffset += 2;
-		}
-	}
-
-	public static void cv_10log10_w(float z[], int zOffset, float x[], int xOffset, int count) {
-		zOffset = preWrap(zOffset, z.length);
-		xOffset = preWrap(xOffset << 1, x.length);
-		while (count-- > 0) {
-			z[zOffset] = 5 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL);
-			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-		}
-	}
-
-	public static void cv_10log10_rs(float z[], int zOffset, float x[], int xOffset, float base, int count) {
-		base = 10 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
-		xOffset <<= 1;
-		while (count-- > 0) {
-			z[zOffset] = 5 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL) - base;
-			zOffset += 1;
-			xOffset += 2;
-		}
-	}
-
-	public static void cv_10log10_rs_w(float z[], int zOffset, float x[], int xOffset, float base, int count) {
-		base = 10 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
-		zOffset = preWrap(zOffset, z.length);
-		xOffset = preWrap(xOffset << 1, x.length);
-		while (count-- > 0) {
-			z[zOffset] = 5 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL) - base;
-			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-		}
-	}
-
-	public static void rv_20log10_i(float z[], int zOffset, int count) {
-		while (count-- > 0) {
-			z[zOffset] = 20 * (float)Math.log10(Math.abs(z[zOffset]) + Float.MIN_NORMAL);
-			zOffset += 1;
-		}
-	}
-
-	public static void rv_20log10_iw(float z[], int zOffset, int count) {
-		zOffset = preWrap(zOffset, z.length);
-		while (count-- > 0) {
-			z[zOffset] = 20 * (float)Math.log10(Math.abs(z[zOffset]) + Float.MIN_NORMAL);
-			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
-		}
-	}
-
-	public static void rv_20log10(float z[], int zOffset, float x[], int xOffset, int count) {
-		while (count-- > 0)
-			z[zOffset++] = 20 * (float)Math.log10(Math.abs(x[xOffset++]) + Float.MIN_NORMAL);
-	}
-
-	public static void rv_20log10_w(float z[], int zOffset, float x[], int xOffset, int count) {
-		zOffset = preWrap(zOffset, z.length);
-		xOffset = preWrap(xOffset, x.length);
-		while (count-- > 0) {
-			z[zOffset] = 20 * (float)Math.log10(Math.abs(x[xOffset]) + Float.MIN_NORMAL);
-			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-		}
-	}
-
-	public static void rv_20log10_rs_i(float z[], int zOffset, float base, int count) {
-		base = 20 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
-		while (count-- > 0) {
-			z[zOffset] = 20 * (float)Math.log10(Math.abs(z[zOffset]) + Float.MIN_NORMAL) - base;
-			zOffset += 1;
-		}
-	}
-
-	public static void rv_20log10_rs_iw(float z[], int zOffset, float base, int count) {
-		base = 20 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
-		zOffset = preWrap(zOffset, z.length);
-		while (count-- > 0) {
-			z[zOffset] = 20 * (float)Math.log10(Math.abs(z[zOffset]) + Float.MIN_NORMAL) - base;
-			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
-		}
-	}
-
-	public static void rv_20log10_rs(float z[], int zOffset, float x[], int xOffset, float base, int count) {
-		base = 20 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
-		while (count-- > 0)
-			z[zOffset++] = 20 * (float)Math.log10(Math.abs(x[xOffset++]) + Float.MIN_NORMAL) - base;
-	}
-
-	public static void rv_20log10_rs_w(float z[], int zOffset, float x[], int xOffset, float base, int count) {
-		base = 20 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
-		zOffset = preWrap(zOffset, z.length);
-		xOffset = preWrap(xOffset, x.length);
-		while (count-- > 0) {
-			z[zOffset] = 20 * (float)Math.log10(Math.abs(x[xOffset]) + Float.MIN_NORMAL) - base;
-			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 1;
-			if (xOffset == x.length) xOffset = 0;
-		}
-	}
-
-	public static void cv_20log10(float z[], int zOffset, float x[], int xOffset, int count) {
-		xOffset <<= 1;
-		while (count-- > 0) {
-			z[zOffset] = 10 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL);
-			zOffset += 1;
-			xOffset += 2;
-		}
-	}
-
-	public static void cv_20log10_w(float z[], int zOffset, float x[], int xOffset, int count) {
-		zOffset = preWrap(zOffset, z.length);
-		xOffset = preWrap(xOffset << 1, x.length);
-		while (count-- > 0) {
-			z[zOffset] = 10 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL);
-			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-		}
-	}
-
-	public static void cv_20log10_rs(float z[], int zOffset, float x[], int xOffset, float base, int count) {
-		base = 20 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
-		xOffset <<= 1;
-		while (count-- > 0) {
-			z[zOffset] = 10 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL) - base;
-			zOffset += 1;
-			xOffset += 2;
-		}
-	}
-
-	public static void cv_20log10_rs_w(float z[], int zOffset, float x[], int xOffset, float base, int count) {
-		base = 20 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
-		zOffset = preWrap(zOffset, z.length);
-		xOffset = preWrap(xOffset << 1, x.length);
-		while (count-- > 0) {
-			z[zOffset] = 10 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL) - base;
-			zOffset += 1;
-			if (zOffset == z.length) zOffset = 0;
-			xOffset += 2;
-			if (xOffset == x.length) xOffset = 0;
-		}
-	}
-
-	private static int preWrap(int i, int length) {
-		return (i < 0) ?
-				(i % length + length) :
-				((i >= length) ?
-						(i % length) :
-						(i));
 	}
 }
