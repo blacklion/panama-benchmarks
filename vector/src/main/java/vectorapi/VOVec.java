@@ -351,8 +351,8 @@ public final class VOVec {
 			count -= EPV2;
 		}
 		while (count-- > 0) {
-			z[zOffset + 0] += x[xOffset + 0] + y[0];
-			z[zOffset + 1] += x[xOffset + 1] + y[1];
+			z[zOffset + 0] = x[xOffset + 0] + y[0];
+			z[zOffset + 1] = x[xOffset + 1] + y[1];
 			xOffset += 2;
 			zOffset += 2;
 		}
@@ -372,8 +372,203 @@ public final class VOVec {
 			count -= EPV2;
 		}
 		while (count-- > 0) {
-			z[zOffset + 0] += x[xOffset + 0] + y[yOffset + 0];
-			z[zOffset + 1] += x[xOffset + 1] + y[yOffset + 1];
+			z[zOffset + 0] = x[xOffset + 0] + y[yOffset + 0];
+			z[zOffset + 1] = x[xOffset + 1] + y[yOffset + 1];
+			xOffset += 2;
+			yOffset += 2;
+			zOffset += 2;
+		}
+	}
+
+	public static void rv_sub_rs_i(float z[], int zOffset, float x, int count) {
+		while (count >= EPV) {
+			final FloatVector fz = FloatVector.fromArray(PFS, z, zOffset);
+			fz.sub(x).intoArray(z, zOffset);
+			count -= EPV;
+			zOffset += EPV;
+		}
+		while (count-- > 0)
+			z[zOffset++] -= x;
+	}
+
+	public static void rv_sub_rv_i(float z[], int zOffset, float x[], int xOffset, int count) {
+		while (count >= EPV) {
+			final FloatVector fz = FloatVector.fromArray(PFS, z, zOffset);
+			final FloatVector fx = FloatVector.fromArray(PFS, x, xOffset);
+			fz.sub(fx).intoArray(z, zOffset);
+			count -= EPV;
+			xOffset += EPV;
+			zOffset += EPV;
+		}
+		while (count-- > 0)
+			z[zOffset++] -= x[xOffset++];
+	}
+
+	public static void cv_sub_rs_i(float z[], int zOffset, float x, int count) {
+		zOffset <<= 1;
+		while (count >= EPV2) {
+			final FloatVector fz = FloatVector.fromArray(PFS, z, zOffset);
+			fz.sub(x, MASK_C_RE).intoArray(z, zOffset);
+			count -= EPV2;
+			zOffset += EPV;
+		}
+		while (count-- > 0) {
+			z[zOffset + 0] -= x;
+			zOffset += 2;
+		}
+	}
+
+	public static void cv_sub_rv_i(float z[], int zOffset, float x[], int xOffset, int count) {
+		zOffset <<= 1;
+		while (count >= EPV2) {
+			final FloatVector fz = FloatVector.fromArray(PFS, z, zOffset);
+			final FloatVector fx = FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
+			fz.sub(fx, MASK_C_RE).intoArray(z, zOffset);
+			count -= EPV2;
+			xOffset += EPV2;
+			zOffset += EPV;
+		}
+		while (count-- > 0) {
+			z[zOffset + 0] -= x[xOffset++];
+			zOffset += 2;
+		}
+	}
+
+	public static void cv_sub_cs_i(float z[], int zOffset, float x[], int count) {
+		final FloatVector fx = FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0);
+		zOffset <<= 1;
+		while (count >= EPV2) {
+			final FloatVector fz = FloatVector.fromArray(PFS, z, zOffset);
+			fz.sub(fx).intoArray(z, zOffset);
+			zOffset += EPV;
+			count -= EPV2;
+		}
+		while (count-- > 0) {
+			z[zOffset + 0] -= x[0];
+			z[zOffset + 1] -= x[1];
+			zOffset += 2;
+		}
+	}
+
+	public static void cv_sub_cv_i(float z[], int zOffset, float x[], int xOffset, int count) {
+		zOffset <<= 1;
+		xOffset <<= 1;
+		while (count >= EPV2) {
+			final FloatVector fz = FloatVector.fromArray(PFS, z, zOffset);
+			final FloatVector fx = FloatVector.fromArray(PFS, x, xOffset);
+			fz.sub(fx).intoArray(z, zOffset);
+			count -= EPV2;
+			xOffset += EPV;
+			zOffset += EPV;
+		}
+		while (count-- > 0) {
+			z[zOffset + 0] -= x[xOffset + 0];
+			z[zOffset + 1] -= x[xOffset + 1];
+			zOffset += 2;
+			xOffset += 2;
+		}
+	}
+
+	public static void rv_sub_rs(float z[], int zOffset, float x[], int xOffset, float y, int count) {
+		while (count >= EPV) {
+			final FloatVector fx = FloatVector.fromArray(PFS, x, xOffset);
+			fx.sub(y).intoArray(z, zOffset);
+			count -= EPV;
+			xOffset += EPV;
+			zOffset += EPV;
+		}
+		while (count-- > 0)
+			z[zOffset++] = x[xOffset++] - y;
+	}
+
+	public static void rv_sub_rv(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
+		while (count >= EPV) {
+			final FloatVector fx = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector fy = FloatVector.fromArray(PFS, y, yOffset);
+			fx.sub(fy).intoArray(z, zOffset);
+			count -= EPV;
+			xOffset += EPV;
+			yOffset += EPV;
+			zOffset += EPV;
+		}
+		while (count-- > 0)
+			z[zOffset++] = x[xOffset++] - y[yOffset++];
+	}
+
+	public static void cv_sub_rs(float z[], int zOffset, float x[], int xOffset, float y, int count) {
+		zOffset <<= 1;
+		xOffset <<= 1;
+		while (count >= EPV2) {
+			final FloatVector fx = FloatVector.fromArray(PFS, x, xOffset);
+			fx.sub(y, MASK_C_RE).intoArray(z, zOffset);
+			count -= EPV2;
+			xOffset += EPV;
+			zOffset += EPV;
+		}
+		while (count-- > 0) {
+			z[zOffset + 0] = x[xOffset + 0] - y;
+			z[zOffset + 1] = x[xOffset + 1];
+			zOffset += 2;
+			xOffset += 2;
+		}
+	}
+
+	public static void cv_sub_rv(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
+		zOffset <<= 1;
+		xOffset <<= 1;
+		while (count >= EPV2) {
+			final FloatVector fx = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector fy = FloatVector.fromArray(PFS, y, yOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
+			fx.sub(fy, MASK_C_RE).intoArray(z, zOffset);
+			count -= EPV2;
+			xOffset += EPV;
+			yOffset += EPV2;
+			zOffset += EPV;
+		}
+		while (count-- > 0) {
+			z[zOffset + 0] = x[xOffset + 0] - y[yOffset++];
+			z[zOffset + 1] = x[xOffset + 1];
+			zOffset += 2;
+			xOffset += 2;
+		}
+
+	}
+
+	public static void cv_sub_cs(float z[], int zOffset, float x[], int xOffset, float y[], int count) {
+		final FloatVector fy = FloatVector.fromArray(PFS, y, 0, LOAD_CS_TO_CV_SPREAD, 0);
+		zOffset <<= 1;
+		xOffset <<= 1;
+		while (count >= EPV2) {
+			final FloatVector fx = FloatVector.fromArray(PFS, x, xOffset);
+			fx.sub(fy).intoArray(z, zOffset);
+			xOffset += EPV;
+			zOffset += EPV;
+			count -= EPV2;
+		}
+		while (count-- > 0) {
+			z[zOffset + 0] = x[xOffset + 0] - y[0];
+			z[zOffset + 1] = x[xOffset + 1] - y[1];
+			xOffset += 2;
+			zOffset += 2;
+		}
+	}
+
+	public static void cv_sub_cv(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
+		zOffset <<= 1;
+		xOffset <<= 1;
+		yOffset <<= 1;
+		while (count >= EPV2) {
+			final FloatVector fx = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector fy = FloatVector.fromArray(PFS, y, yOffset);
+			fx.sub(fy).intoArray(z, zOffset);
+			xOffset += EPV;
+			yOffset += EPV;
+			zOffset += EPV;
+			count -= EPV2;
+		}
+		while (count-- > 0) {
+			z[zOffset + 0] = x[xOffset + 0] - y[yOffset + 0];
+			z[zOffset + 1] = x[xOffset + 1] - y[yOffset + 1];
 			xOffset += 2;
 			yOffset += 2;
 			zOffset += 2;

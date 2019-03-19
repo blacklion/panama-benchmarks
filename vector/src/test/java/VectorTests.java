@@ -25,7 +25,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ****************************************************************************/
 
-import jdk.incubator.vector.FloatVector;
 import vectorapi.VO;
 import vectorapi.VOVec;
 
@@ -37,6 +36,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Stream;
+import jdk.incubator.vector.FloatVector;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -415,6 +415,90 @@ public class VectorTests {
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
+    @ParameterizedTest(name = "cv_sub_cs({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_sub_cs(int size, int offset) {
+        float cvz1[] = new float[cvz.length];
+        float cvz2[] = new float[cvz.length];
+        VO.cv_sub_cs(cvz1, 0, cvx, offset, csy, size);
+        VOVec.cv_sub_cs(cvz2, 0, cvx, offset, csy, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "cv_sub_cs_i({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_sub_cs_i(int size, int offset) {
+        float cvz1[] = Arrays.copyOf(cvz, cvz.length);
+        float cvz2[] = Arrays.copyOf(cvz, cvz.length);
+
+        VO.cv_sub_cs_i(cvz1, offset, csx, size);
+        VOVec.cv_sub_cs_i(cvz2, offset, csx, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "cv_sub_cv({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_sub_cv(int size, int offset) {
+        float cvz1[] = new float[cvz.length];
+        float cvz2[] = new float[cvz.length];
+        VO.cv_sub_cv(cvz1, 0, cvx, offset, cvy, offset, size);
+        VOVec.cv_sub_cv(cvz2, 0, cvx, offset, cvy, offset, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "cv_sub_cv_i({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_sub_cv_i(int size, int offset) {
+        float cvz1[] = Arrays.copyOf(cvz, cvz.length);
+        float cvz2[] = Arrays.copyOf(cvz, cvz.length);
+
+        VO.cv_sub_cv_i(cvz1, offset, cvx, offset, size);
+        VOVec.cv_sub_cv_i(cvz2, offset, cvx, offset, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "cv_sub_rs({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_sub_rs(int size, int offset) {
+        float cvz1[] = new float[cvz.length];
+        float cvz2[] = new float[cvz.length];
+        VO.cv_sub_rs(cvz1, 0, cvx, offset, rsy, size);
+        VOVec.cv_sub_rs(cvz2, 0, cvx, offset, rsy, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "cv_sub_rs_i({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_sub_rs_i(int size, int offset) {
+        float cvz1[] = Arrays.copyOf(cvz, cvz.length);
+        float cvz2[] = Arrays.copyOf(cvz, cvz.length);
+
+        VO.cv_sub_rs_i(cvz1, offset, rsx, size);
+        VOVec.cv_sub_rs_i(cvz2, offset, rsx, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "cv_sub_rv({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_sub_rv(int size, int offset) {
+        float cvz1[] = new float[cvz.length];
+        float cvz2[] = new float[cvz.length];
+        VO.cv_sub_rv(cvz1, 0, cvx, offset, rvy, offset, size);
+        VOVec.cv_sub_rv(cvz2, 0, cvx, offset, rvy, offset, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "cv_sub_rv_i({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_sub_rv_i(int size, int offset) {
+        float cvz1[] = Arrays.copyOf(cvz, cvz.length);
+        float cvz2[] = Arrays.copyOf(cvz, cvz.length);
+
+        VO.cv_sub_rv_i(cvz1, offset, rvx, offset, size);
+        VOVec.cv_sub_rv_i(cvz2, offset, rvx, offset, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
     @ParameterizedTest(name = "cv_sum({0}, {1})")
     @MethodSource("params")
     public void Test_cv_sum(int size, int offset) {
@@ -725,6 +809,48 @@ public class VectorTests {
         VO.rv_rs_lin_rv_rs_i(rvz1, offset, rsz, rvx, offset, rsx, size);
         VOVec.rv_rs_lin_rv_rs_i(rvz2, offset, rsz, rvx, offset, rsx, size);
         assertArrayEquals(rvz2, rvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "rv_sub_rs({0}, {1})")
+    @MethodSource("params")
+    public void Test_rv_sub_rs(int size, int offset) {
+        float rvz1[] = new float[rvz.length];
+        float rvz2[] = new float[rvz.length];
+        VO.rv_sub_rs(rvz1, 0, rvx, offset, rsy, size);
+        VOVec.rv_sub_rs(rvz2, 0, rvx, offset, rsy, size);
+        assertArrayEquals(rvz1, rvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "rv_sub_rs_i({0}, {1})")
+    @MethodSource("params")
+    public void Test_rv_sub_rs_i(int size, int offset) {
+        float rvz1[] = Arrays.copyOf(rvz, rvz.length);
+        float rvz2[] = Arrays.copyOf(rvz, rvz.length);
+
+        VO.rv_sub_rs_i(rvz1, offset, rsx, size);
+        VOVec.rv_sub_rs_i(rvz2, offset, rsx, size);
+        assertArrayEquals(rvz1, rvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "rv_sub_rv({0}, {1})")
+    @MethodSource("params")
+    public void Test_rv_sub_rv(int size, int offset) {
+        float rvz1[] = new float[rvz.length];
+        float rvz2[] = new float[rvz.length];
+        VO.rv_sub_rv(rvz1, 0, rvx, offset, rvy, offset, size);
+        VOVec.rv_sub_rv(rvz2, 0, rvx, offset, rvy, offset, size);
+        assertArrayEquals(rvz1, rvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "rv_sub_rv_i({0}, {1})")
+    @MethodSource("params")
+    public void Test_rv_sub_rv_i(int size, int offset) {
+        float rvz1[] = Arrays.copyOf(rvz, rvz.length);
+        float rvz2[] = Arrays.copyOf(rvz, rvz.length);
+
+        VO.rv_sub_rv_i(rvz1, offset, rvx, offset, size);
+        VOVec.rv_sub_rv_i(rvz2, offset, rvx, offset, size);
+        assertArrayEquals(rvz1, rvz2, EPSILON);
     }
 
     @ParameterizedTest(name = "rv_sum({0}, {1})")
