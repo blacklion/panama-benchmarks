@@ -171,7 +171,7 @@ for my $name (sort keys %{$VEC}) {
 
 	# Parse name
 	my $inplace = $name =~ /_i$/;
-	if      ($name =~ /^(rs|rv|cs|cv)_([a-z0-9]{3,})_(rs|rv|cs|cv)(_i)?$/) {
+	if      ($name =~ /^(rs|rv|cs|cv)_([a-z0-9]{2,})_(rs|rv|cs|cv)(_i)?$/) {
 		my $l  = $1;
 		my $op = $2;
 		my $r  = $3;
@@ -181,7 +181,7 @@ for my $name (sort keys %{$VEC}) {
 		} else {
 			&generateTest2o($name, $VEC->{$name}, $l, $op, $r);
 		}
-	} elsif ($name =~ /^(rs|rv|cs|cv)_([a-z0-9]{3,})(_i)?$/) {
+	} elsif ($name =~ /^(rs|rv|cs|cv)_([a-z0-9]{2,})(_i)?$/) {
 		my $l  = $1;
 		my $op = $2;
 

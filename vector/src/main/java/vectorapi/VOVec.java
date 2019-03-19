@@ -62,7 +62,6 @@ public final class VOVec {
 		cv_dot_cv
 		cv_exp
 		cv_exp_i
-		cv_im
 		cv_cs_lin_cv_cs
 		cv_cs_lin_cv_cs_i
 		cv_cs_lin_cv_rs
@@ -87,7 +86,6 @@ public final class VOVec {
 		cv_min_cv
 		cv_min_cv_i
 		cv_minarg
-		cv_re
 		cv_rev
 		cv_rev_i
 		rv_rev
@@ -1115,6 +1113,41 @@ public final class VOVec {
 		}
 		while (count-- > 0)
 			z[zOffset++] = (float)Math.exp(x[xOffset++]);
+	}
+
+	public static void cv_im(float z[], int zOffset, float x[], int xOffset, int count) {
+		xOffset <<= 1;
+
+		while (count >= EPV) {
+			FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0).intoArray(z, zOffset);
+
+			zOffset += EPV;
+			xOffset += EPV * 2;
+			count -= EPV;
+		}
+
+		xOffset += 1;
+		while (count-- > 0) {
+			z[zOffset++] = x[xOffset]; // + 1
+			xOffset += 2;
+		}
+	}
+
+	public static void cv_re(float z[], int zOffset, float x[], int xOffset, int count) {
+		xOffset <<= 1;
+
+		while (count >= EPV) {
+			FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0).intoArray(z, zOffset);
+
+			zOffset += EPV;
+			xOffset += EPV * 2;
+			count -= EPV;
+		}
+
+		while (count-- > 0) {
+			z[zOffset++] = x[xOffset];
+			xOffset += 2;
+		}
 	}
 
 	public static void cv_abs(float z[], int zOffset, float x[], int xOffset, int count) {

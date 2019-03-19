@@ -291,6 +291,16 @@ public class VectorTests {
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
+    @ParameterizedTest(name = "cv_im({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_im(int size, int offset) {
+        float cvz1[] = new float[cvz.length];
+        float cvz2[] = new float[cvz.length];
+        VO.cv_im(cvz1, 0, cvx, offset, size);
+        VOVec.cv_im(cvz2, 0, cvx, offset, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
     @ParameterizedTest(name = "cv_mul_cs({0}, {1})")
     @MethodSource("params")
     public void Test_cv_mul_cs(int size, int offset) {
@@ -412,6 +422,16 @@ public class VectorTests {
         float cvz2[] = Arrays.copyOf(cvz, cvz.length);
         VO.cv_r2p_i(cvz1, offset, size);
         VOVec.cv_r2p_i(cvz2, offset, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "cv_re({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_re(int size, int offset) {
+        float cvz1[] = new float[cvz.length];
+        float cvz2[] = new float[cvz.length];
+        VO.cv_re(cvz1, 0, cvx, offset, size);
+        VOVec.cv_re(cvz2, 0, cvx, offset, size);
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
