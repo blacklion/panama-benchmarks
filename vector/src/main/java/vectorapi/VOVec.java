@@ -37,30 +37,45 @@ import jdk.incubator.vector.Vector;
 @SuppressWarnings({ "PointlessArithmeticExpression", "UnusedDeclaration" })
 public final class VOVec {
 	/* Missing methods which make sense:
-		cs_div_cv
-		cs_sub_cv
 		cv_10log10
 		cv_10log10_rs
 		cv_20log10
 		cv_20log10_rs
+		rv_20log10
+		rv_20log10_i
+		rv_20log10_rs
+		rv_20log10_rs_i
 		cv_conjmul_cv
 		cv_conjmul_cv_i
-		cv_cs_lin_cv_cs
-		cv_cs_lin_cv_cs_i
-		cv_cs_lin_cv_rs
-		cv_cs_lin_cv_rs_i
-		cv_cs_lin_rv_cs
-		cv_cs_lin_rv_cs_i
-		cv_cs_lin_rv_rs
-		cv_cs_lin_rv_rs_i
+		rv_conjmul_cv
+		rv_cvt
+		cs_div_cv
 		cv_div_cs
 		cv_div_cs_i
 		cv_div_cv
 		cv_div_cv_i
+		rs_div_cv
+		rv_div_cv
 		cv_dot_cv
 		cv_exp
 		cv_exp_i
 		cv_im
+		cs_lin_cs
+		cs_lin_cs
+		cs_lin_cs
+		cs_lin_cs_i
+		cs_lin_cs_i
+		cs_lin_rs
+		cs_lin_rs
+		cs_lin_rs_i
+		cs_lin_rs_i
+		rs_lin_cs
+		rs_lin_cs
+		rs_lin_cs_i
+		rs_lin_rs
+		rs_lin_rs
+		rs_lin_rs_i
+		rs_lin_rs_i
 		cv_max
 		cv_max_cv
 		cv_max_cv_i
@@ -68,47 +83,16 @@ public final class VOVec {
 		cv_min
 		cv_min_cv
 		cv_min_cv_i
-		cv_minarg
-		cv_re
-		cv_rev
-		cv_rev_i
-		cv_rs_lin_cv_rs
-		cv_rs_lin_cv_rs_i
-		cv_rs_lin_rv_cs
-		cv_rs_lin_rv_cs_i
-		cv_rs_lin_rv_rs
-		cv_rs_lin_rv_rs_i
-		cv_sub_cs
-		cv_sub_cs_i
-		cv_sub_cv
-		cv_sub_cv_i
-		cv_sub_rs
-		cv_sub_rs_i
-		cv_sub_rv
-		cv_sub_rv_i
-		rs_div_cv
-		rs_sub_cv
-		rs_sub_rv
-		rv_20log10
-		rv_20log10_i
-		rv_20log10_rs
-		rv_20log10_rs_i
-		rv_conjmul_cv
-		rv_cs_lin_rv_cs
-		rv_cvt
-		rv_div_cv
 		rv_min
 		rv_min_rv
 		rv_min_rv_i
+		cv_minarg
 		rv_minarg
+		cv_re
+		cv_rev
+		cv_rev_i
 		rv_rev
 		rv_rev_i
-		rv_rs_lin_rv_cs
-		rv_sub_cv
-		rv_sub_rs
-		rv_sub_rs_i
-		rv_sub_rv
-		rv_sub_rv_i
 	 */
 	private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
 	private final static int EPV = PFS.length();
