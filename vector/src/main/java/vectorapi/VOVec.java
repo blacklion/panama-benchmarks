@@ -366,8 +366,11 @@ public final class VOVec {
 	}
 
 	public static void cv_mul_cs_i(float z[], int zOffset, float x[], int count) {
-		final FloatVector vxre = PFS.broadcast(x[0]);
-		final FloatVector vxim = PFS.broadcast(x[1]);
+		FloatVector vxre = null, vxim = null;
+		if (count >= EPV2) {
+			vxre = PFS.broadcast(x[0]);
+			vxim = PFS.broadcast(x[1]);
+		}
 
 		float k0, k1, k2;
 
@@ -529,8 +532,11 @@ public final class VOVec {
 	}
 
 	public static void cv_mul_cs(float z[], int zOffset, float x[], int xOffset, float y[], int count) {
-		final FloatVector vyre = PFS.broadcast(y[0]);
-		final FloatVector vyim = PFS.broadcast(y[1]);
+		FloatVector vyre = null, vyim = null;
+		if (count >= EPV2) {
+			vyre = PFS.broadcast(y[0]);
+			vyim = PFS.broadcast(y[1]);
+		}
 
 		zOffset <<= 1;
 		xOffset <<= 1;
