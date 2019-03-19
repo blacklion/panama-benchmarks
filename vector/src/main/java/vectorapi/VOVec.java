@@ -50,6 +50,8 @@ public final class VOVec {
 		cv_conjmul_cv
 		cv_conjmul_cv_i
 		rv_conjmul_cv
+		cv_cpy
+		rv_cpy
 		cs_div_cv
 		cv_div_cs
 		cv_div_cs_i
@@ -61,22 +63,22 @@ public final class VOVec {
 		cv_exp
 		cv_exp_i
 		cv_im
-		cs_lin_cs
-		cs_lin_cs
-		cs_lin_cs
-		cs_lin_cs_i
-		cs_lin_cs_i
-		cs_lin_rs
-		cs_lin_rs
-		cs_lin_rs_i
-		cs_lin_rs_i
-		rs_lin_cs
-		rs_lin_cs
-		rs_lin_cs_i
-		rs_lin_rs
-		rs_lin_rs
-		rs_lin_rs_i
-		rs_lin_rs_i
+		cv_cs_lin_cv_cs
+		cv_cs_lin_cv_cs_i
+		cv_cs_lin_cv_rs
+		cv_cs_lin_cv_rs_i
+		cv_cs_lin_rv_cs
+		cv_cs_lin_rv_cs_i
+		cv_cs_lin_rv_rs
+		cv_cs_lin_rv_rs_i
+		cv_rs_lin_cv_rs
+		cv_rs_lin_cv_rs_i
+		cv_rs_lin_rv_cs
+		cv_rs_lin_rv_cs_i
+		cv_rs_lin_rv_rs
+		cv_rs_lin_rv_rs_i
+		rv_cs_lin_rv_cs
+		rv_rs_lin_rv_cs
 		cv_max
 		cv_max_cv
 		cv_max_cv_i
@@ -90,6 +92,10 @@ public final class VOVec {
 		cv_rev_i
 		rv_rev
 		rv_rev_i
+		cs_sub_cv
+		rs_sub_cv
+		rs_sub_rv
+		rv_sub_cv
 	 */
 	private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
 	private final static int EPV = PFS.length();
