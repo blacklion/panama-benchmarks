@@ -30,6 +30,8 @@ package vectorapi;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.Vector;
 
+import javax.lang.model.element.ElementVisitor;
+
 /**
  * @author Lev Serebryakov
  * @noinspection CStyleArrayDeclaration
@@ -48,7 +50,6 @@ public final class VOVec {
 		cv_conjmul_cv
 		cv_conjmul_cv_i
 		rv_conjmul_cv
-		rv_cvt
 		cs_div_cv
 		cv_div_cs
 		cv_div_cs_i
@@ -1198,6 +1199,23 @@ public final class VOVec {
 
 		while (count-- > 0)
 			z[zOffset++] = Math.abs(x[xOffset++]);
+	}
+
+	public static void rv_cvt(float z[], int zOffset, float x[], int xOffset, int count) {
+		zOffset <<= 1;
+		while (count >= EPV2) {
+			FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0).intoArray(z, zOffset);
+			xOffset += EPV2;
+			zOffset += EPV;
+			count -= EPV2;
+		}
+
+		while (count-- > 0) {
+			z[zOffset + 0] = x[xOffset];
+			z[zOffset + 1] = 0.0f;
+			zOffset += 2;
+			xOffset += 1;
+		}
 	}
 
 	public static void cv_r2p_i(float z[], int zOffset, int count) {
