@@ -6,7 +6,6 @@ package vectorapi;
 
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.Vector;
-import org.openjdk.jmh.annotations.*;
 
 import java.util.Arrays;
 import java.util.Random;
