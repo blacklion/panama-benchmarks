@@ -25,6 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ****************************************************************************/
 
+import jdk.incubator.vector.FloatVector;
 import vectorapi.VO;
 import vectorapi.VOVec;
 
@@ -45,22 +46,28 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * @noinspection CStyleArrayDeclaration, WeakerAccess
  */
 public class VectorTests {
-    private static final float EPSILON = 0.0000000001f;
+    // We can not have 1E-7 EPSILON on horizontal operations (!)
+    private static final float EPSILON = 0.000001f;
 
     private static final int DATA_SIZE = 65536;
     private static final int MAX_OFFSET = 63;
 
-    private static final int[][] SIZE_BOUNDARIES = new int[][] { {1, 64 + 63 }, { 1024, 1024 },  { 65536, 65536 } };
-    private static final int[] OFFSET_BOUNDARIES = new int[] { 1, 63 };
+    private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
 
     static Stream<Arguments> params() {
         ArrayList<Arguments> rv = new ArrayList<>();
-        for (int[] sizeBoundary : SIZE_BOUNDARIES) {
-            for (int size = sizeBoundary[0]; size <= sizeBoundary[1]; size++) {
-                for (int offset = OFFSET_BOUNDARIES[0]; offset <= OFFSET_BOUNDARIES[1]; offset++)
-                    rv.add(Arguments.of(size, offset));
-            }
-        }
+        rv.add(Arguments.of(1, 0));
+        rv.add(Arguments.of(1, 1));
+        rv.add(Arguments.of(PFS.length() - 1, 0));
+        rv.add(Arguments.of(PFS.length() - 1, 1));
+        rv.add(Arguments.of(PFS.length(), 0));
+        rv.add(Arguments.of(PFS.length(), 1));
+        rv.add(Arguments.of(PFS.length() + 1, 0));
+        rv.add(Arguments.of(PFS.length() + 1, 1));
+        rv.add(Arguments.of(PFS.length() * 2, 0));
+        rv.add(Arguments.of(PFS.length() * 2, 1));
+        rv.add(Arguments.of(PFS.length() * 2 + 1, 0));
+        rv.add(Arguments.of(PFS.length() * 2 + 1, 1));
         return rv.stream();
     }
 
@@ -135,7 +142,7 @@ public class VectorTests {
         float cvz2[] = Arrays.copyOf(cvz, cvz.length);
 
         VO.cv_add_cs_i(cvz1, offset, csx, size);
-        VOVec.cv_add_cs_i(cvz1, offset, csx, size);
+        VOVec.cv_add_cs_i(cvz2, offset, csx, size);
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
@@ -156,7 +163,7 @@ public class VectorTests {
         float cvz2[] = Arrays.copyOf(cvz, cvz.length);
 
         VO.cv_add_cv_i(cvz1, offset, cvx, offset, size);
-        VOVec.cv_add_cv_i(cvz1, offset, cvx, offset, size);
+        VOVec.cv_add_cv_i(cvz2, offset, cvx, offset, size);
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
@@ -177,7 +184,7 @@ public class VectorTests {
         float cvz2[] = Arrays.copyOf(cvz, cvz.length);
 
         VO.cv_add_rs_i(cvz1, offset, rsx, size);
-        VOVec.cv_add_rs_i(cvz1, offset, rsx, size);
+        VOVec.cv_add_rs_i(cvz2, offset, rsx, size);
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
@@ -198,7 +205,7 @@ public class VectorTests {
         float cvz2[] = Arrays.copyOf(cvz, cvz.length);
 
         VO.cv_add_rv_i(cvz1, offset, rvx, offset, size);
-        VOVec.cv_add_rv_i(cvz1, offset, rvx, offset, size);
+        VOVec.cv_add_rv_i(cvz2, offset, rvx, offset, size);
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
@@ -238,7 +245,7 @@ public class VectorTests {
         float cvz1[] = Arrays.copyOf(cvz, cvz.length);
         float cvz2[] = Arrays.copyOf(cvz, cvz.length);
         VO.cv_conj_i(cvz1, offset, size);
-        VOVec.cv_conj_i(cvz1, offset, size);
+        VOVec.cv_conj_i(cvz2, offset, size);
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
@@ -259,7 +266,7 @@ public class VectorTests {
         float cvz2[] = Arrays.copyOf(cvz, cvz.length);
 
         VO.cv_div_rs_i(cvz1, offset, rsx, size);
-        VOVec.cv_div_rs_i(cvz1, offset, rsx, size);
+        VOVec.cv_div_rs_i(cvz2, offset, rsx, size);
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
@@ -280,7 +287,7 @@ public class VectorTests {
         float cvz2[] = Arrays.copyOf(cvz, cvz.length);
 
         VO.cv_div_rv_i(cvz1, offset, rvx, offset, size);
-        VOVec.cv_div_rv_i(cvz1, offset, rvx, offset, size);
+        VOVec.cv_div_rv_i(cvz2, offset, rvx, offset, size);
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
@@ -301,7 +308,7 @@ public class VectorTests {
         float cvz2[] = Arrays.copyOf(cvz, cvz.length);
 
         VO.cv_mul_cs_i(cvz1, offset, csx, size);
-        VOVec.cv_mul_cs_i(cvz1, offset, csx, size);
+        VOVec.cv_mul_cs_i(cvz2, offset, csx, size);
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
@@ -322,7 +329,7 @@ public class VectorTests {
         float cvz2[] = Arrays.copyOf(cvz, cvz.length);
 
         VO.cv_mul_cv_i(cvz1, offset, cvx, offset, size);
-        VOVec.cv_mul_cv_i(cvz1, offset, cvx, offset, size);
+        VOVec.cv_mul_cv_i(cvz2, offset, cvx, offset, size);
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
@@ -343,7 +350,7 @@ public class VectorTests {
         float cvz2[] = Arrays.copyOf(cvz, cvz.length);
 
         VO.cv_mul_rs_i(cvz1, offset, rsx, size);
-        VOVec.cv_mul_rs_i(cvz1, offset, rsx, size);
+        VOVec.cv_mul_rs_i(cvz2, offset, rsx, size);
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
@@ -364,7 +371,7 @@ public class VectorTests {
         float cvz2[] = Arrays.copyOf(cvz, cvz.length);
 
         VO.cv_mul_rv_i(cvz1, offset, rvx, offset, size);
-        VOVec.cv_mul_rv_i(cvz1, offset, rvx, offset, size);
+        VOVec.cv_mul_rv_i(cvz2, offset, rvx, offset, size);
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
@@ -384,7 +391,7 @@ public class VectorTests {
         float cvz1[] = Arrays.copyOf(cvz, cvz.length);
         float cvz2[] = Arrays.copyOf(cvz, cvz.length);
         VO.cv_p2r_i(cvz1, offset, size);
-        VOVec.cv_p2r_i(cvz1, offset, size);
+        VOVec.cv_p2r_i(cvz2, offset, size);
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
@@ -404,7 +411,7 @@ public class VectorTests {
         float cvz1[] = Arrays.copyOf(cvz, cvz.length);
         float cvz2[] = Arrays.copyOf(cvz, cvz.length);
         VO.cv_r2p_i(cvz1, offset, size);
-        VOVec.cv_r2p_i(cvz1, offset, size);
+        VOVec.cv_r2p_i(cvz2, offset, size);
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
@@ -444,7 +451,7 @@ public class VectorTests {
         float rvz1[] = Arrays.copyOf(rvz, rvz.length);
         float rvz2[] = Arrays.copyOf(rvz, rvz.length);
         VO.rv_10log10_i(rvz1, offset, size);
-        VOVec.rv_10log10_i(rvz1, offset, size);
+        VOVec.rv_10log10_i(rvz2, offset, size);
         assertArrayEquals(rvz1, rvz2, EPSILON);
     }
 
@@ -465,7 +472,7 @@ public class VectorTests {
         float rvz2[] = Arrays.copyOf(rvz, rvz.length);
 
         VO.rv_10log10_rs_i(rvz1, offset, rsx, size);
-        VOVec.rv_10log10_rs_i(rvz1, offset, rsx, size);
+        VOVec.rv_10log10_rs_i(rvz2, offset, rsx, size);
         assertArrayEquals(rvz1, rvz2, EPSILON);
     }
 
@@ -485,7 +492,7 @@ public class VectorTests {
         float rvz1[] = Arrays.copyOf(rvz, rvz.length);
         float rvz2[] = Arrays.copyOf(rvz, rvz.length);
         VO.rv_abs_i(rvz1, offset, size);
-        VOVec.rv_abs_i(rvz1, offset, size);
+        VOVec.rv_abs_i(rvz2, offset, size);
         assertArrayEquals(rvz1, rvz2, EPSILON);
     }
 
@@ -506,7 +513,7 @@ public class VectorTests {
         float rvz2[] = Arrays.copyOf(rvz, rvz.length);
 
         VO.rv_add_rs_i(rvz1, offset, rsx, size);
-        VOVec.rv_add_rs_i(rvz1, offset, rsx, size);
+        VOVec.rv_add_rs_i(rvz2, offset, rsx, size);
         assertArrayEquals(rvz1, rvz2, EPSILON);
     }
 
@@ -527,7 +534,7 @@ public class VectorTests {
         float rvz2[] = Arrays.copyOf(rvz, rvz.length);
 
         VO.rv_add_rv_i(rvz1, offset, rvx, offset, size);
-        VOVec.rv_add_rv_i(rvz1, offset, rvx, offset, size);
+        VOVec.rv_add_rv_i(rvz2, offset, rvx, offset, size);
         assertArrayEquals(rvz1, rvz2, EPSILON);
     }
 
@@ -548,7 +555,7 @@ public class VectorTests {
         float rvz2[] = Arrays.copyOf(rvz, rvz.length);
 
         VO.rv_div_rs_i(rvz1, offset, rsx, size);
-        VOVec.rv_div_rs_i(rvz1, offset, rsx, size);
+        VOVec.rv_div_rs_i(rvz2, offset, rsx, size);
         assertArrayEquals(rvz1, rvz2, EPSILON);
     }
 
@@ -569,7 +576,7 @@ public class VectorTests {
         float rvz2[] = Arrays.copyOf(rvz, rvz.length);
 
         VO.rv_div_rv_i(rvz1, offset, rvx, offset, size);
-        VOVec.rv_div_rv_i(rvz1, offset, rvx, offset, size);
+        VOVec.rv_div_rv_i(rvz2, offset, rvx, offset, size);
         assertArrayEquals(rvz1, rvz2, EPSILON);
     }
 
@@ -607,7 +614,7 @@ public class VectorTests {
         float rvz1[] = Arrays.copyOf(rvz, rvz.length);
         float rvz2[] = Arrays.copyOf(rvz, rvz.length);
         VO.rv_exp_i(rvz1, offset, size);
-        VOVec.rv_exp_i(rvz1, offset, size);
+        VOVec.rv_exp_i(rvz2, offset, size);
         assertArrayEquals(rvz1, rvz2, EPSILON);
     }
 
@@ -646,7 +653,7 @@ public class VectorTests {
         float rvz2[] = Arrays.copyOf(rvz, rvz.length);
 
         VO.rv_max_rv_i(rvz1, offset, rvx, offset, size);
-        VOVec.rv_max_rv_i(rvz1, offset, rvx, offset, size);
+        VOVec.rv_max_rv_i(rvz2, offset, rvx, offset, size);
         assertArrayEquals(rvz1, rvz2, EPSILON);
     }
 
@@ -675,7 +682,7 @@ public class VectorTests {
         float rvz2[] = Arrays.copyOf(rvz, rvz.length);
 
         VO.rv_mul_rs_i(rvz1, offset, rsx, size);
-        VOVec.rv_mul_rs_i(rvz1, offset, rsx, size);
+        VOVec.rv_mul_rs_i(rvz2, offset, rsx, size);
         assertArrayEquals(rvz1, rvz2, EPSILON);
     }
 
@@ -696,7 +703,7 @@ public class VectorTests {
         float rvz2[] = Arrays.copyOf(rvz, rvz.length);
 
         VO.rv_mul_rv_i(rvz1, offset, rvx, offset, size);
-        VOVec.rv_mul_rv_i(rvz1, offset, rvx, offset, size);
+        VOVec.rv_mul_rv_i(rvz2, offset, rvx, offset, size);
         assertArrayEquals(rvz1, rvz2, EPSILON);
     }
 
@@ -716,7 +723,7 @@ public class VectorTests {
         float rvz1[] = Arrays.copyOf(rvz, rvz.length);
         float rvz2[] = Arrays.copyOf(rvz, rvz.length);
         VO.rv_rs_lin_rv_rs_i(rvz1, offset, rsz, rvx, offset, rsx, size);
-        VOVec.rv_rs_lin_rv_rs_i(rvz1, offset, rsz, rvx, offset, rsx, size);
+        VOVec.rv_rs_lin_rv_rs_i(rvz2, offset, rsz, rvx, offset, rsx, size);
         assertArrayEquals(rvz2, rvz2, EPSILON);
     }
 

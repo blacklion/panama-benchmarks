@@ -85,6 +85,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Stream;
+import jdk.incubator.vector.FloatVector;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -94,22 +95,28 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * \@noinspection CStyleArrayDeclaration, WeakerAccess
  */
 public class VectorTests {
-    private static final float EPSILON = 0.0000000001f;
+    // We can not have 1E-7 EPSILON on horizontal operations (!)
+    private static final float EPSILON = 0.000001f;
 
     private static final int DATA_SIZE = 65536;
     private static final int MAX_OFFSET = 63;
 
-    private static final int[][] SIZE_BOUNDARIES = new int[][] { {1, 64 + 63 }, { 1024, 1024 },  { 65536, 65536 } };
-    private static final int[] OFFSET_BOUNDARIES = new int[] { 1, 63 };
+    private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
 
     static Stream<Arguments> params() {
         ArrayList<Arguments> rv = new ArrayList<>();
-        for (int[] sizeBoundary : SIZE_BOUNDARIES) {
-            for (int size = sizeBoundary[0]; size <= sizeBoundary[1]; size++) {
-                for (int offset = OFFSET_BOUNDARIES[0]; offset <= OFFSET_BOUNDARIES[1]; offset++)
-                    rv.add(Arguments.of(size, offset));
-            }
-        }
+        rv.add(Arguments.of(1, 0));
+        rv.add(Arguments.of(1, 1));
+        rv.add(Arguments.of(PFS.length() - 1, 0));
+        rv.add(Arguments.of(PFS.length() - 1, 1));
+        rv.add(Arguments.of(PFS.length(), 0));
+        rv.add(Arguments.of(PFS.length(), 1));
+        rv.add(Arguments.of(PFS.length() + 1, 0));
+        rv.add(Arguments.of(PFS.length() + 1, 1));
+        rv.add(Arguments.of(PFS.length() * 2, 0));
+        rv.add(Arguments.of(PFS.length() * 2, 1));
+        rv.add(Arguments.of(PFS.length() * 2 + 1, 0));
+        rv.add(Arguments.of(PFS.length() * 2 + 1, 1));
         return rv.stream();
     }
 
@@ -231,7 +238,7 @@ sub generateTest2i {
 	print $CODE_INDENT, "float ${out}z2[] = Arrays.copyOf(${out}z, ${out}z.length);\n";
 	print "\n";
 	print $CODE_INDENT, "VO.$name(",    join(', ', ($out.'z1', 'offset', @args)), ");\n";
-	print $CODE_INDENT, "VOVec.$name(", join(', ', ($out.'z1', 'offset', @args)), ");\n";
+	print $CODE_INDENT, "VOVec.$name(", join(', ', ($out.'z2', 'offset', @args)), ");\n";
 	print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, EPSILON);\n";
 	&generateTestFooter();
 }
@@ -303,13 +310,13 @@ sub generateTest2o {
 	} elsif ($out eq 'cs') {
 		print $CODE_INDENT, "float ${out}z1[] = new float[2];\n";
 		print $CODE_INDENT, "float ${out}z2[] = new float[2];\n";
-		print $CODE_INDENT, "VO.$name(", join(', ', ("${out}z1", @args)), ");\n";
+		print $CODE_INDENT, "VO.$name(",    join(', ', ("${out}z1", @args)), ");\n";
 		print $CODE_INDENT, "VOVec.$name(", join(', ', ("${out}z2", @args)), ");\n";
 		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, EPSILON);\n";
 	} elsif ($out eq 'rv' || $out eq 'cv') {
 		print $CODE_INDENT, "float ${out}z1[] = new float[${out}z.length];\n";
 		print $CODE_INDENT, "float ${out}z2[] = new float[${out}z.length];\n";
-		print $CODE_INDENT, "VO.$name(", join(', ', ("${out}z1", "0", @args)), ");\n";
+		print $CODE_INDENT, "VO.$name(",    join(', ', ("${out}z1", "0", @args)), ");\n";
 		print $CODE_INDENT, "VOVec.$name(", join(', ', ("${out}z2", "0", @args)), ");\n";
 		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, EPSILON);\n";
 	} else {
@@ -336,7 +343,7 @@ sub generateTest1i {
 	print $CODE_INDENT, "float ${l}z1[] = Arrays.copyOf(${l}z, ${l}z.length);\n";
 	print $CODE_INDENT, "float ${l}z2[] = Arrays.copyOf(${l}z, ${l}z.length);\n";
 	print $CODE_INDENT, "VO.$name(${l}z1, offset, size);\n";
-	print $CODE_INDENT, "VOVec.$name(${l}z1, offset, size);\n";
+	print $CODE_INDENT, "VOVec.$name(${l}z2, offset, size);\n";
 	print $CODE_INDENT, "assertArrayEquals(${l}z1, ${l}z2, EPSILON);\n";
 	&generateTestFooter();
 }
@@ -394,13 +401,13 @@ sub generateTest1o {
 	} elsif ($out eq 'cs') {
 		print $CODE_INDENT, "float ${out}z1[] = new float[2];\n";
 		print $CODE_INDENT, "float ${out}z2[] = new float[2];\n";
-		print $CODE_INDENT, "VO.$name(", join(', ', ("${out}z1", @args)), ");\n";
+		print $CODE_INDENT, "VO.$name(",    join(', ', ("${out}z1", @args)), ");\n";
 		print $CODE_INDENT, "VOVec.$name(", join(', ', ("${out}z2", @args)), ");\n";
 		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, EPSILON);\n";
 	} elsif ($out eq 'rv' || $out eq 'cv') {
 		print $CODE_INDENT, "float ${out}z1[] = new float[${out}z.length];\n";
 		print $CODE_INDENT, "float ${out}z2[] = new float[${out}z.length];\n";
-		print $CODE_INDENT, "VO.$name(", join(', ', ("${out}z1", "0", @args)), ");\n";
+		print $CODE_INDENT, "VO.$name(",    join(', ', ("${out}z1", "0", @args)), ");\n";
 		print $CODE_INDENT, "VOVec.$name(", join(', ', ("${out}z2", "0", @args)), ");\n";
 		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, EPSILON);\n";
 	} else {
@@ -420,7 +427,7 @@ sub generateTestRVRSLinRVRS {
 		print $CODE_INDENT, "float ${out}z1[] = Arrays.copyOf(${out}z, ${out}z.length);\n";
 		print $CODE_INDENT, "float ${out}z2[] = Arrays.copyOf(${out}z, ${out}z.length);\n";
 		print $CODE_INDENT, "VO.$name(${out}z1, offset, rsz, rvx, offset, rsx, size);\n";
-		print $CODE_INDENT, "VOVec.$name(${out}z1, offset, rsz, rvx, offset, rsx, size);\n";
+		print $CODE_INDENT, "VOVec.$name(${out}z2, offset, rsz, rvx, offset, rsx, size);\n";
 		print $CODE_INDENT, "assertArrayEquals(${out}z2, ${out}z2, EPSILON);\n";
 	} else {
 		print $CODE_INDENT, "float ${out}z1[] = new float[${out}z.length];\n";
