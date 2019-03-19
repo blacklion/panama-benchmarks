@@ -45,10 +45,8 @@ public final class VOVec {
 	private final static int[] LOAD_RV_TO_CV_RE;
 	private final static int[] LOAD_RV_TO_CV_BOTH;
 	private final static int[] LOAD_CS_TO_CV_SPREAD;
-	private final static int[] LOAD_CS_TO_CV_SPREAD_RE;
-	private final static int[] LOAD_CS_TO_CV_SPREAD_IM;
 	private final static int[] LOAD_CV_TO_CV_SPREAD_RE;
-	private final static int[] LOAD_CV_SPREAD_IM;
+	private final static int[] LOAD_CV_TO_CV_SPREAD_IM;
 	private final static int[] LOAD_CV_TO_CV_PACK_RE;
 	private final static int[] LOAD_CV_TO_CV_PACK_IM;
 	private final static Vector.Shuffle<Float> SHUFFLE_CV_SWAP_RE_IM;
@@ -64,17 +62,17 @@ public final class VOVec {
 		LOAD_RV_TO_CV_RE = new int[EPV];
 		LOAD_RV_TO_CV_BOTH = new int[EPV];
 		LOAD_CS_TO_CV_SPREAD = new int[EPV];
-		LOAD_CS_TO_CV_SPREAD_RE = new int[EPV];
-		LOAD_CS_TO_CV_SPREAD_IM = new int[EPV];
 		LOAD_CV_TO_CV_SPREAD_RE = new int[EPV];
-		LOAD_CV_SPREAD_IM = new int[EPV];
+		LOAD_CV_TO_CV_SPREAD_IM = new int[EPV];
 		LOAD_CV_TO_CV_PACK_RE = new int[EPV];
 		LOAD_CV_TO_CV_PACK_IM = new int[EPV];
-		for (int i = 0; i < EPV; i += 2) {
+		for (int i = 0; i < EPV; i++) {
 			// Load real vector to complex vector's RE part
 			// [r1, r2, ...] -> [(r1, 0), (r2, 0), ...]
 			if (i % 2 == 0)
 				LOAD_RV_TO_CV_RE[i] = i / 2;
+			else
+				LOAD_RV_TO_CV_RE[i] = 0;
 
 			// Load real vector to complex vector's IM part
 			// [r1, r2, ...] -> [(r1, r1), (r2, r2), ...]
@@ -82,34 +80,26 @@ public final class VOVec {
 
 			// Complex scalar complex to complex vector with spread to each element
 			// [re, im] -> [re, im, re, im, re, im, ...]
-			LOAD_CS_TO_CV_SPREAD[i + 0] = 0;
-			LOAD_CS_TO_CV_SPREAD[i + 1] = 1;
-
-			// Complex scalar to complex vector of real parts:
-			// [re, im] -> [re, re, re, re, ...]
-			LOAD_CS_TO_CV_SPREAD_RE[i + 0] = LOAD_CS_TO_CV_SPREAD_RE[i + 1] = 0;
-
-			// Complex scalar to complex vector of imaginary parts:
-			// [re, im] -> [im, im, im, im, ...]
-			LOAD_CS_TO_CV_SPREAD_IM[i + 0] = LOAD_CS_TO_CV_SPREAD_IM[i + 1] = 1;
+			if (i % 2 == 0)
+				LOAD_CS_TO_CV_SPREAD[i] = 0;
+			else
+				LOAD_CS_TO_CV_SPREAD[i] = 1;
 
 			// Complex vector to complex vector of duplicated real parts:
 			// [(re1, im1), (re2, im2), ...] -> [re1, re1, re2, re2, ...]
-			LOAD_CV_TO_CV_SPREAD_RE[i + 0] = LOAD_CV_TO_CV_SPREAD_RE[i + 1] = (i / 2) * 2;
+			LOAD_CV_TO_CV_SPREAD_RE[i] = (i / 2) * 2;
 
 			// Complex vector to complex vector of duplicated image parts:
 			// [(re1, im1), (re2, im2), ...] -> [im1, im1, im2, im2, ...]
-			LOAD_CV_SPREAD_IM[i + 0] = LOAD_CV_SPREAD_IM[i + 1] = (i / 2) * 2 + 1;
+			LOAD_CV_TO_CV_SPREAD_IM[i] = (i / 2) * 2 + 1;
 
 			// Vector complex to vector of twice as much real parts
 			// [(re1, im1), (re2, im2), ...] -> [re1, re2, ...]
-			LOAD_CV_TO_CV_PACK_RE[i + 0] = i * 2;
-			LOAD_CV_TO_CV_PACK_RE[i + 1] = i * 2 + 2;
+			LOAD_CV_TO_CV_PACK_RE[i] = i * 2;
 
 			// Vector complex to vector of twice as much imaginary parts
 			// [(re1, im1), (re2, im2), ...] -> [im1, im2, ...]
-			LOAD_CV_TO_CV_PACK_IM[i + 0] = i * 2 + 1;
-			LOAD_CV_TO_CV_PACK_IM[i + 1] = i * 2 + 3;
+			LOAD_CV_TO_CV_PACK_IM[i] = i * 2 + 1;
 		}
 
 		int[] shuffle_c_swap_re_im = new int[EPV];
@@ -138,6 +128,7 @@ public final class VOVec {
 			final FloatVector fx = FloatVector.fromArray(PFS, x, xOffset);
 			fz.add(fx).intoArray(z, zOffset);
 			count -= EPV;
+			xOffset += EPV;
 			zOffset += EPV;
 		}
 		while (count-- > 0)
@@ -239,7 +230,7 @@ public final class VOVec {
 		zOffset <<= 1;
 		xOffset <<= 1;
 		while (count >= EPV2) {
-			final FloatVector fx = FloatVector.fromArray(PFS, x, zOffset);
+			final FloatVector fx = FloatVector.fromArray(PFS, x, xOffset);
 			fx.add(y, MASK_C_RE).intoArray(z, zOffset);
 			count -= EPV2;
 			xOffset += EPV;
@@ -375,11 +366,8 @@ public final class VOVec {
 	}
 
 	public static void cv_mul_cs_i(float z[], int zOffset, float x[], int count) {
-		// Load x twice (or better load once and shuffle twice?)
-		// vxre is [(x.re, x.re), (x.re, x.re), ...]
-		final FloatVector vxre = FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD_RE, 0);
-		// vxim is [(x.im, x.im), (x.im, x.im), ...]
-		final FloatVector vxim = FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD_IM, 0);
+		final FloatVector vxre = PFS.broadcast(x[0]);
+		final FloatVector vxim = PFS.broadcast(x[1]);
 
 		float k0, k1, k2;
 
@@ -408,7 +396,7 @@ public final class VOVec {
 			final FloatVector vrim = vmulxre.add(vmulximswap, MASK_C_IM);
 
 			// Blend together & save
-			vrre.blend(vrim, MASK_C_RE).intoArray(z, zOffset);
+			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
 
 			zOffset += EPV;
 			count -= EPV2;
@@ -433,7 +421,7 @@ public final class VOVec {
 			// vxre is [(x[0].re, x[0].re), (x[1].re, x[1].re), ...]
 			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_RE, 0);
 			// vxim is [(x[0].im, x[0].im), (x[1].im, x[1].im), ...]
-			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_SPREAD_IM, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_IM, 0);
 
 			// Load z
 			// vz is [(z[0].re, z[0].im), (z[1].re, z[1].im), ...]
@@ -458,7 +446,7 @@ public final class VOVec {
 			final FloatVector vrim = vmulxre.add(vmulximswap, MASK_C_IM);
 
 			// Blend together & save
-			vrre.blend(vrim, MASK_C_RE).intoArray(z, zOffset);
+			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
@@ -489,7 +477,7 @@ public final class VOVec {
 
 	public static void rv_mul_rv(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
 		while (count >= EPV) {
-			final FloatVector vx = FloatVector.fromArray(PFS, x, zOffset);
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
 			vx.mul(vy).intoArray(z, zOffset);
 			xOffset += EPV;
@@ -541,13 +529,11 @@ public final class VOVec {
 	}
 
 	public static void cv_mul_cs(float z[], int zOffset, float x[], int xOffset, float y[], int count) {
-		// Load y twice (or better load once and shuffle twice?)
-		// vyre is [(y.re, y.re), (y.re, y.re), ...]
-		final FloatVector vyre = FloatVector.fromArray(PFS, y, 0, LOAD_CS_TO_CV_SPREAD_RE, 0);
-		// vyim is [(y.im, y.im), (y.im, y.im), ...]
-		final FloatVector vyim = FloatVector.fromArray(PFS, y, 0, LOAD_CS_TO_CV_SPREAD_IM, 0);
+		final FloatVector vyre = PFS.broadcast(y[0]);
+		final FloatVector vyim = PFS.broadcast(y[1]);
 
 		zOffset <<= 1;
+		xOffset <<= 1;
 		while (count >= EPV2) {
 			// Load x
 			// vx is [(x[0].re, x[0].im), (x[1].re, x[1].im), ...]
@@ -572,7 +558,7 @@ public final class VOVec {
 			final FloatVector vrim = vmulyre.add(vmulximswap, MASK_C_IM);
 
 			// Blend together & save
-			vrre.blend(vrim, MASK_C_RE).intoArray(z, zOffset);
+			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
@@ -599,10 +585,10 @@ public final class VOVec {
 		while (count >= EPV2) {
 			// @@TODO: Check
 			// Load y twice (or better load once and shuffle twice?)
-			// vyre is [(y.re, y.re), (y.re, y.re), ...]
-			final FloatVector vyre = FloatVector.fromArray(PFS, y, yOffset, LOAD_CS_TO_CV_SPREAD_RE, 0);
-			// vyim is [(y.im, y.im), (y.im, y.im), ...]
-			final FloatVector vyim = FloatVector.fromArray(PFS, y, yOffset, LOAD_CS_TO_CV_SPREAD_IM, 0);
+			// vyre is [(y[0].re, y[0].re), (y[1].re, y[1].re), ...]
+			final FloatVector vyre = FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_SPREAD_RE, 0);
+			// vyim is [(y[0].im, y[0].im), (y[1].im, y[1].im), ...]
+			final FloatVector vyim = FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_SPREAD_IM, 0);
 
 			// Load x
 			// vx is [(x[0].re, x[0].im), (x[1].re, x[1].im), ...]
@@ -627,7 +613,7 @@ public final class VOVec {
 			final FloatVector vrim = vmulyre.add(vmulximswap, MASK_C_IM);
 
 			// Blend together & save
-			vrre.blend(vrim, MASK_C_RE).intoArray(z, zOffset);
+			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -751,7 +737,7 @@ public final class VOVec {
 
 		while (count >= EPV2) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			vx.mul(y).intoArray(z, zOffset);
+			vx.div(y).intoArray(z, zOffset);
 			xOffset += EPV;
 			zOffset += EPV;
 			count -= EPV2;
@@ -771,7 +757,7 @@ public final class VOVec {
 
 		while (count >= EPV2) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			final FloatVector vy = FloatVector.fromArray(PFS, x, xOffset, LOAD_RV_TO_CV_BOTH, 0);
+			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset, LOAD_RV_TO_CV_BOTH, 0);
 			vx.div(vy).intoArray(z, zOffset);
 			yOffset += EPV2;
 			xOffset += EPV;
@@ -965,8 +951,8 @@ public final class VOVec {
 		while (count >= EPV2) {
 			//@@TODO: Check
 			// Or load and reshuffle?
-			final FloatVector vzre = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_TO_CV_PACK_RE, 0);
-			final FloatVector vzim = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			final FloatVector vzre = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_TO_CV_SPREAD_RE, 0);
+			final FloatVector vzim = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_TO_CV_SPREAD_IM, 0);
 
 			//@@TODO: Check
 			// Or better with masks?
@@ -996,8 +982,8 @@ public final class VOVec {
 		while (count >= EPV2) {
 			//@@TODO: Check
 			// Or load and reshuffle?
-			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
-			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_RE, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_IM, 0);
 
 			//@@TODO: Check
 			// Or better with masks?
@@ -1025,8 +1011,9 @@ public final class VOVec {
 		while (count >= EPV2) {
 			//@@TODO: Check
 			// Or load and reshuffle?
-			final FloatVector vzre = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_TO_CV_PACK_RE, 0);
-			final FloatVector vzim = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			// Or load with pack and process 2x elements?
+			final FloatVector vzre = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_TO_CV_SPREAD_RE, 0);
+			final FloatVector vzim = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_TO_CV_SPREAD_IM, 0);
 
 			//@@TODO: Check
 			// Or better with masks?
@@ -1056,8 +1043,8 @@ public final class VOVec {
 		while (count >= EPV2) {
 			//@@TODO: Check
 			// Or load and reshuffle?
-			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
-			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_RE, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_IM, 0);
 
 			//@@TODO: Check
 			// Or better with masks?
@@ -1122,8 +1109,9 @@ public final class VOVec {
 
 		while (count >= EPV2) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			re += vx.addAll(MASK_C_RE);
-			im += vx.addAll(MASK_C_IM);
+			//@WARNING@ MASKS ARE SWAPPED! IS IT JDK PROBLEM?
+			re += vx.addAll(MASK_C_IM);
+			im += vx.addAll(MASK_C_RE);
 			xOffset += EPV;
 			count -= EPV2;
 		}
@@ -1145,6 +1133,8 @@ public final class VOVec {
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
 			sum += vx.mul(vy).addAll();
 			count -= EPV;
+			xOffset += EPV;
+			yOffset += EPV;
 		}
 
 		while (count-- > 0)
@@ -1166,6 +1156,8 @@ public final class VOVec {
 			final FloatVector vyim = FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_PACK_IM, 0);
 			re += vx.mul(vyre).addAll();
 			im += vx.mul(vyim).addAll();
+			xOffset += EPV;
+			yOffset += EPV * 2; // We load twice as much complex numbers
 			count -= EPV;
 		}
 
@@ -1239,7 +1231,7 @@ public final class VOVec {
 		float max = Float.NEGATIVE_INFINITY;
 		int i = -1;
 
-		while (count > EPV) {
+		while (count >= EPV) {
 			float localMax = FloatVector.fromArray(PFS, x, xOffset).maxAll();
 			if (max < localMax) {
 				max = localMax;
@@ -1251,12 +1243,15 @@ public final class VOVec {
 
 		// Find max in vector
 		if (i >= 0) {
+			int i2 = i;
 			for (int j = i; j < i + EPV; j++) {
-				if (max < x[j]) {
-					max = x[j];
-					i = j;
+				// We could compare here, as max got from here
+				if (max == x[j]) {
+					i2 = j;
+					break;
 				}
 			}
+			i = i2;
 		}
 
 		while (count-- > 0) {
