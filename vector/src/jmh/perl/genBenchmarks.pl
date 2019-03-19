@@ -1,4 +1,30 @@
 #! /usr/bin/perl -w
+#***************************************************************************
+# Copyright (c) 2014, Lev Serebryakov <lev@serebryakov.spb.ru>
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+# OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+# OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+# IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#***************************************************************************
 use warnings;
 use strict;
 
@@ -47,6 +73,9 @@ print<<__HEADER;
  ****************************************************************************/
 
 package vector;
+
+import vectorapi.VO;
+import vectorapi.VOVec;
 
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
@@ -143,6 +172,8 @@ for my $name (sort keys %{$VEC}) {
 			&generateBenchmark1o($name, $VEC->{$name}, $l, $op, 'VOVec');
 		}
 	} elsif ($name =~ /^rv_rs_lin_rv_rs(_i)?$/) {
+		&generateBenchmarkRVRSLinRVRS($name, $VEC->{$name}, $inplace, 'VO');
+		&generateBenchmarkRVRSLinRVRS($name, $VEC->{$name}, $inplace, 'VOVec');
 	} else {
 		print STDERR "Unknown name: \"$name\"\n";
 	}
@@ -324,6 +355,19 @@ sub generateBenchmark1o {
 	&generateBenchmarkFooter();
 }
 
+sub generateBenchmarkRVRSLinRVRS {
+	my ($name, $rtype, $inplace, $imp) = @_;
+
+	&generateBenchmarkHeader($name, $imp);
+	print "            ";
+	if ($inplace) {
+		print "$imp.$name(rvz, i, rsz, rvx, i, rsx, callSize);\n";
+	} else {
+		print "$imp.$name(rvz, i, rvx, i, rsx, rvy, i, rsy, callSize);\n";
+	}
+	&generateBenchmarkFooter();
+}
+
 sub generateBenchmarkHeader {
 	my ($name, $imp) = @_;
 	print "\n";
@@ -400,7 +444,7 @@ sub loadFile {
 		my $name = $2;
 		# Check if $name is or _w or _iw or _f or _fw
 		$total++;
-		if ($name =~ /_[a-z]?w$/) {
+		if ($name =~ /_[fi]*w$/) {
 			print STDERR "Vectorized version implements strange method: \"$name\"\n" unless $base;
 			next;
 		}

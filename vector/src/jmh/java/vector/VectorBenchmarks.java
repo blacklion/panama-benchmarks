@@ -27,6 +27,9 @@
 
 package vector;
 
+import vectorapi.VO;
+import vectorapi.VOVec;
+
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -901,6 +904,34 @@ public class VectorBenchmarks {
     public void VOVec_rv_mul_rv_i() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
             VOVec.rv_mul_rv_i(rvz, i, rvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_rv_rs_lin_rv_rs() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.rv_rs_lin_rv_rs(rvz, i, rvx, i, rsx, rvy, i, rsy, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_rv_rs_lin_rv_rs() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.rv_rs_lin_rv_rs(rvz, i, rvx, i, rsx, rvy, i, rsy, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_rv_rs_lin_rv_rs_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.rv_rs_lin_rv_rs_i(rvz, i, rsz, rvx, i, rsx, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_rv_rs_lin_rv_rs_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.rv_rs_lin_rv_rs_i(rvz, i, rsz, rvx, i, rsx, callSize);
         }
     }
 

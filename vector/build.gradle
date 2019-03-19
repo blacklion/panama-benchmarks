@@ -34,6 +34,17 @@ repositories {
   mavenCentral()
 }
 
+dependencies {
+	testImplementation('org.junit.jupiter:junit-jupiter:5.4.1')
+}
+
+test {
+	useJUnitPlatform()
+	testLogging {
+		events "passed", "skipped", "failed"
+	}
+}
+
 task benchmarkJar(type: Jar, dependsOn: jmhJar) {
   manifest {
     attributes 'Main-Class': 'org.openjdk.jmh.Main'
