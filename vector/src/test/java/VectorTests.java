@@ -749,6 +749,43 @@ public class VectorTests {
         assertEquals(rsz1, rsz2);
     }
 
+    @ParameterizedTest(name = "rv_min({0}, {1})")
+    @MethodSource("params")
+    public void Test_rv_min(int size, int offset) {
+        float rsz1 = VO.rv_min(rvx, offset, size);
+        float rsz2 = VOVec.rv_min(rvx, offset, size);
+        assertEquals(rsz1, rsz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "rv_min_rv({0}, {1})")
+    @MethodSource("params")
+    public void Test_rv_min_rv(int size, int offset) {
+        float rvz1[] = new float[rvz.length];
+        float rvz2[] = new float[rvz.length];
+        VO.rv_min_rv(rvz1, 0, rvx, offset, rvy, offset, size);
+        VOVec.rv_min_rv(rvz2, 0, rvx, offset, rvy, offset, size);
+        assertArrayEquals(rvz1, rvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "rv_min_rv_i({0}, {1})")
+    @MethodSource("params")
+    public void Test_rv_min_rv_i(int size, int offset) {
+        float rvz1[] = Arrays.copyOf(rvz, rvz.length);
+        float rvz2[] = Arrays.copyOf(rvz, rvz.length);
+
+        VO.rv_min_rv_i(rvz1, offset, rvx, offset, size);
+        VOVec.rv_min_rv_i(rvz2, offset, rvx, offset, size);
+        assertArrayEquals(rvz1, rvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "rv_minarg({0}, {1})")
+    @MethodSource("params")
+    public void Test_rv_minarg(int size, int offset) {
+        int rsz1 = VO.rv_minarg(rvx, offset, size);
+        int rsz2 = VOVec.rv_minarg(rvx, offset, size);
+        assertEquals(rsz1, rsz2);
+    }
+
     @ParameterizedTest(name = "rv_mul_rs({0}, {1})")
     @MethodSource("params")
     public void Test_rv_mul_rs(int size, int offset) {

@@ -83,11 +83,7 @@ public final class VOVec {
 		cv_min
 		cv_min_cv
 		cv_min_cv_i
-		rv_min
-		rv_min_rv
-		rv_min_rv_i
 		cv_minarg
-		rv_minarg
 		cv_re
 		cv_rev
 		cv_rev_i
@@ -1486,6 +1482,62 @@ public final class VOVec {
 		}
 	}
 
+	public static float rv_min(float x[], int xOffset, int count) {
+		float min = Float.POSITIVE_INFINITY;
+
+		while (count >= EPV) {
+			float localMin = FloatVector.fromArray(PFS, x, xOffset).minAll();
+			if (min > localMin)
+				min = localMin;
+			xOffset += EPV;
+			count -= EPV;
+		}
+
+		while (count-- > 0) {
+			if (min > x[xOffset])
+				min = x[xOffset];
+			xOffset += 1;
+		}
+		return min;
+	}
+
+	public static void rv_min_rv_i(float z[], int zOffset, float x[], int xOffset, int count) {
+		while (count >= EPV) {
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
+			vz.min(vx).intoArray(z, zOffset);
+			xOffset += EPV;
+			zOffset += EPV;
+			count -= EPV;
+		}
+
+		while (count-- > 0) {
+			if (x[xOffset] < z[zOffset])
+				z[zOffset] = x[xOffset];
+			zOffset += 1;
+			xOffset += 1;
+		}
+	}
+
+	public static void rv_min_rv(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
+		while (count >= EPV) {
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+			vx.min(vy).intoArray(z, zOffset);
+			xOffset += EPV;
+			yOffset += EPV;
+			zOffset += EPV;
+			count -= EPV;
+		}
+
+		while (count-- > 0) {
+			z[zOffset] = x[xOffset] < y[yOffset] ? x[xOffset] : y[yOffset];
+			zOffset += 1;
+			xOffset += 1;
+			yOffset += 1;
+		}
+	}
+
 	public static int rv_maxarg(float x[], int xOffset, int count) {
 		float max = Float.NEGATIVE_INFINITY;
 		int i = -1;
@@ -1516,6 +1568,43 @@ public final class VOVec {
 		while (count-- > 0) {
 			if (max < x[xOffset]) {
 				max = x[xOffset];
+				i = xOffset;
+			}
+			xOffset += 1;
+		}
+		return i;
+	}
+
+	public static int rv_minarg(float x[], int xOffset, int count) {
+		float min = Float.POSITIVE_INFINITY;
+		int i = -1;
+
+		while (count >= EPV) {
+			float localMin = FloatVector.fromArray(PFS, x, xOffset).minAll();
+			if (min > localMin) {
+				min = localMin;
+				i = xOffset;
+			}
+			xOffset += EPV;
+			count -= EPV;
+		}
+
+		// Find min in vector
+		if (i >= 0) {
+			int i2 = i;
+			for (int j = i; j < i + EPV; j++) {
+				// We could compare here, as min got from here
+				if (min == x[j]) {
+					i2 = j;
+					break;
+				}
+			}
+			i = i2;
+		}
+
+		while (count-- > 0) {
+			if (min > x[xOffset]) {
+				min = x[xOffset];
 				i = xOffset;
 			}
 			xOffset += 1;
