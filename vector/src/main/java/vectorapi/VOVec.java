@@ -39,14 +39,6 @@ import javax.lang.model.element.ElementVisitor;
 @SuppressWarnings({ "PointlessArithmeticExpression", "UnusedDeclaration" })
 public final class VOVec {
 	/* Missing methods which make sense:
-		cv_10log10
-		cv_10log10_rs
-		cv_20log10
-		cv_20log10_rs
-		rv_20log10
-		rv_20log10_i
-		rv_20log10_rs
-		rv_20log10_rs_i
 		cv_conjmul_cv
 		cv_conjmul_cv_i
 		rv_conjmul_cv
@@ -1944,5 +1936,165 @@ public final class VOVec {
 
 		while (count-- > 0)
 			z[zOffset++] = 10 * (float)Math.log10(Math.abs(x[xOffset++]) + Float.MIN_NORMAL) - base;
+	}
+	
+	public static void cv_10log10(float z[], int zOffset, float x[], int xOffset, int count) {
+		xOffset <<= 1;
+
+		while(count >= EPV) {
+			//@@TODO: CHECK
+			// Or load and reshuffle?
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+
+			vxabs.add(Float.MIN_NORMAL).log10().mul(5.0f).intoArray(z, zOffset);
+
+			// We load twice as much complex numbers
+			xOffset += EPV * 2;
+			zOffset += EPV;
+			count -= EPV;
+		}
+
+		while (count-- > 0) {
+			z[zOffset] = 5 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL);
+			zOffset += 1;
+			xOffset += 2;
+		}
+	}
+
+	public static void cv_10log10_rs(float z[], int zOffset, float x[], int xOffset, float base, int count) {
+		base = 10 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
+		xOffset <<= 1;
+
+		while(count >= EPV) {
+			//@@TODO: CHECK
+			// Or load and reshuffle?
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+
+			vxabs.add(Float.MIN_NORMAL).log10().mul(5.0f).sub(base).intoArray(z, zOffset);
+
+			// We load twice as much complex numbers
+			xOffset += EPV * 2;
+			zOffset += EPV;
+			count -= EPV;
+		}
+
+		while (count-- > 0) {
+			z[zOffset] = 5 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL) - base;
+			zOffset += 1;
+			xOffset += 2;
+		}
+	}
+
+	public static void rv_20log10_i(float z[], int zOffset, int count) {
+		while (count >= EPV) {
+			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
+			vz.abs().add(Float.MIN_NORMAL).log10().mul(20.0f).intoArray(z, zOffset);
+			zOffset += EPV;
+			count -= EPV;
+		}
+
+		while (count-- > 0) {
+			z[zOffset] = 20 * (float)Math.log10(Math.abs(z[zOffset]) + Float.MIN_NORMAL);
+			zOffset += 1;
+		}
+	}
+
+	public static void rv_20log10(float z[], int zOffset, float x[], int xOffset, int count) {
+		while (count >= EPV) {
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			vx.abs().add(Float.MIN_NORMAL).log10().mul(20.0f).intoArray(z, zOffset);
+			xOffset += EPV;
+			zOffset += EPV;
+			count -= EPV;
+		}
+
+		while (count-- > 0)
+			z[zOffset++] = 20 * (float)Math.log10(Math.abs(x[xOffset++]) + Float.MIN_NORMAL);
+	}
+
+	public static void rv_20log10_rs_i(float z[], int zOffset, float base, int count) {
+		base = 20 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
+
+		while (count >= EPV) {
+			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
+			vz.abs().add(Float.MIN_NORMAL).log10().mul(20.0f).sub(base).intoArray(z, zOffset);
+			zOffset += EPV;
+			count -= EPV;
+		}
+
+		while (count-- > 0) {
+			z[zOffset] = 20 * (float)Math.log10(Math.abs(z[zOffset]) + Float.MIN_NORMAL) - base;
+			zOffset += 1;
+		}
+	}
+
+	public static void rv_20log10_rs(float z[], int zOffset, float x[], int xOffset, float base, int count) {
+		base = 20 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
+
+		while (count >= EPV) {
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			vx.abs().add(Float.MIN_NORMAL).log10().mul(20.0f).sub(base).intoArray(z, zOffset);
+			xOffset += EPV;
+			zOffset += EPV;
+			count -= EPV;
+		}
+
+		while (count-- > 0)
+			z[zOffset++] = 20 * (float)Math.log10(Math.abs(x[xOffset++]) + Float.MIN_NORMAL) - base;
+	}
+
+	public static void cv_20log10(float z[], int zOffset, float x[], int xOffset, int count) {
+		xOffset <<= 1;
+
+		while(count >= EPV) {
+			//@@TODO: CHECK
+			// Or load and reshuffle?
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+
+			vxabs.add(Float.MIN_NORMAL).log10().mul(10.0f).intoArray(z, zOffset);
+
+			// We load twice as much complex numbers
+			xOffset += EPV * 2;
+			zOffset += EPV;
+			count -= EPV;
+		}
+
+		while (count-- > 0) {
+			z[zOffset] = 10 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL);
+			zOffset += 1;
+			xOffset += 2;
+		}
+	}
+
+	public static void cv_20log10_rs(float z[], int zOffset, float x[], int xOffset, float base, int count) {
+		base = 20 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
+		xOffset <<= 1;
+
+		while(count >= EPV) {
+			//@@TODO: CHECK
+			// Or load and reshuffle?
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+
+			vxabs.add(Float.MIN_NORMAL).log10().mul(10.0f).sub(base).intoArray(z, zOffset);
+
+			// We load twice as much complex numbers
+			xOffset += EPV * 2;
+			zOffset += EPV;
+			count -= EPV;
+		}
+
+		while (count-- > 0) {
+			z[zOffset] = 10 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL) - base;
+			zOffset += 1;
+			xOffset += 2;
+		}
 	}
 }

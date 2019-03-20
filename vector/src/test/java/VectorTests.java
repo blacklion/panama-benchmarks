@@ -125,6 +125,46 @@ public class VectorTests {
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
+    @ParameterizedTest(name = "cv_10log10({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_10log10(int size, int offset) {
+        float cvz1[] = new float[cvz.length];
+        float cvz2[] = new float[cvz.length];
+        VO.cv_10log10(cvz1, 0, cvx, offset, size);
+        VOVec.cv_10log10(cvz2, 0, cvx, offset, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "cv_10log10_rs({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_10log10_rs(int size, int offset) {
+        float cvz1[] = new float[cvz.length];
+        float cvz2[] = new float[cvz.length];
+        VO.cv_10log10_rs(cvz1, 0, cvx, offset, rsy, size);
+        VOVec.cv_10log10_rs(cvz2, 0, cvx, offset, rsy, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "cv_20log10({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_20log10(int size, int offset) {
+        float cvz1[] = new float[cvz.length];
+        float cvz2[] = new float[cvz.length];
+        VO.cv_20log10(cvz1, 0, cvx, offset, size);
+        VOVec.cv_20log10(cvz2, 0, cvx, offset, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "cv_20log10_rs({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_20log10_rs(int size, int offset) {
+        float cvz1[] = new float[cvz.length];
+        float cvz2[] = new float[cvz.length];
+        VO.cv_20log10_rs(cvz1, 0, cvx, offset, rsy, size);
+        VOVec.cv_20log10_rs(cvz2, 0, cvx, offset, rsy, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
     @ParameterizedTest(name = "cv_abs({0}, {1})")
     @MethodSource("params")
     public void Test_cv_abs(int size, int offset) {
@@ -637,6 +677,47 @@ public class VectorTests {
 
         VO.rv_10log10_rs_i(rvz1, offset, rsx, size);
         VOVec.rv_10log10_rs_i(rvz2, offset, rsx, size);
+        assertArrayEquals(rvz1, rvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "rv_20log10({0}, {1})")
+    @MethodSource("params")
+    public void Test_rv_20log10(int size, int offset) {
+        float rvz1[] = new float[rvz.length];
+        float rvz2[] = new float[rvz.length];
+        VO.rv_20log10(rvz1, 0, rvx, offset, size);
+        VOVec.rv_20log10(rvz2, 0, rvx, offset, size);
+        assertArrayEquals(rvz1, rvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "rv_20log10_i({0}, {1})")
+    @MethodSource("params")
+    public void Test_rv_20log10_i(int size, int offset) {
+        float rvz1[] = Arrays.copyOf(rvz, rvz.length);
+        float rvz2[] = Arrays.copyOf(rvz, rvz.length);
+        VO.rv_20log10_i(rvz1, offset, size);
+        VOVec.rv_20log10_i(rvz2, offset, size);
+        assertArrayEquals(rvz1, rvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "rv_20log10_rs({0}, {1})")
+    @MethodSource("params")
+    public void Test_rv_20log10_rs(int size, int offset) {
+        float rvz1[] = new float[rvz.length];
+        float rvz2[] = new float[rvz.length];
+        VO.rv_20log10_rs(rvz1, 0, rvx, offset, rsy, size);
+        VOVec.rv_20log10_rs(rvz2, 0, rvx, offset, rsy, size);
+        assertArrayEquals(rvz1, rvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "rv_20log10_rs_i({0}, {1})")
+    @MethodSource("params")
+    public void Test_rv_20log10_rs_i(int size, int offset) {
+        float rvz1[] = Arrays.copyOf(rvz, rvz.length);
+        float rvz2[] = Arrays.copyOf(rvz, rvz.length);
+
+        VO.rv_20log10_rs_i(rvz1, offset, rsx, size);
+        VOVec.rv_20log10_rs_i(rvz2, offset, rsx, size);
         assertArrayEquals(rvz1, rvz2, EPSILON);
     }
 
