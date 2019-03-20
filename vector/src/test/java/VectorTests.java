@@ -291,6 +291,16 @@ public class VectorTests {
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
+    @ParameterizedTest(name = "cv_dot_cv({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_dot_cv(int size, int offset) {
+        float csz1[] = new float[2];
+        float csz2[] = new float[2];
+        VO.cv_dot_cv(csz1, cvx, offset, cvy, offset, size);
+        VOVec.cv_dot_cv(csz2, cvx, offset, cvy, offset, size);
+        assertArrayEquals(csz1, csz2, EPSILON);
+    }
+
     @ParameterizedTest(name = "cv_exp({0}, {1})")
     @MethodSource("params")
     public void Test_cv_exp(int size, int offset) {

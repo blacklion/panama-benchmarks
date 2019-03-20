@@ -250,7 +250,7 @@ sub generateTest2o {
 	my @args = ();
 	my $out;
 
-	if ($l eq 'rv' && $r eq 'cv' && $op eq 'dot') {
+	if (($l eq 'cv' || $r eq 'cv') && $op eq 'dot') {
 		# Special case: not a vector
 		$out = 'cs';
 	} else {

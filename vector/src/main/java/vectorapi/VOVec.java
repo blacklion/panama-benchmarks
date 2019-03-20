@@ -57,7 +57,6 @@ public final class VOVec {
 		cv_div_cv_i
 		rs_div_cv
 		rv_div_cv
-		cv_dot_cv
 		cv_cs_lin_cv_cs
 		cv_cs_lin_cv_cs_i
 		cv_cs_lin_cv_rs
@@ -691,6 +690,7 @@ public final class VOVec {
 			final FloatVector vmulximswap = vmulxim.rearrange(SHUFFLE_CV_SWAP_RE_IM);
 
 			// Get real parts of result
+			// Do we need mask here and later?
 			// it is ([z[0].re * x.re - z[0].im * x.im, ?], ...)
 			final FloatVector vrre = vmulxre.sub(vmulximswap, MASK_C_RE);
 
@@ -851,13 +851,13 @@ public final class VOVec {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 
 			// Multiply x with re from y
-			// It is [(x[0].re * y.re, x[0].im * y.re), (x[1].re * y.re, x[1].im * y.re), ...]
+			// It is [(x[0].re * y[0].re, x[0].im * y.re), (x[1].re * y[1].re, x[1].im * y[1].re), ...]
 			final FloatVector vmulyre = vx.mul(vyre);
 			// Multiply z with vx2
-			// It is [(x[0].re * y.im, x[0].im * y.im), (x[1].re * y.im, x[1].im * y.im), ...]
+			// It is [(x[0].re * y.im, x[0].im * y.im), (x[1].re * y.im, x[1].im * y[1].im), ...]
 			final FloatVector vmulyim = vx.mul(vyim);
 			// Reshuffle second ne in pairs
-			// It is [(x[0].im * y.im, x[0].re y x.im), (x[1].im * y.im, x[1].re * y.im), ...]
+			// It is [(x[0].im * y[0].im, x[0].re * x[0].im), (x[1].im * y[1].im, x[1].re * y[1].im), ...]
 			final FloatVector vmulximswap = vmulyim.rearrange(SHUFFLE_CV_SWAP_RE_IM);
 
 			// Get real parts of result
@@ -1526,6 +1526,64 @@ public final class VOVec {
 			re += x[xOffset] * y[yOffset + 0];
 			im += x[xOffset] * y[yOffset + 1];
 			xOffset += 1;
+			yOffset += 2;
+		}
+		z[0] = re;
+		z[1] = im;
+	}
+
+	public static void cv_dot_cv(float z[], float x[], int xOffset, float y[], int yOffset, int count) {
+		float re = 0.0f;
+		float im = 0.0f;
+		xOffset <<= 1;
+		yOffset <<= 1;
+
+		while (count >= EPV2) {
+			// @@TODO: Check
+			// Load y twice (or better load once and shuffle twice?)
+			// vyre is [(y[0].re, y[0].re), (y[1].re, y[1].re), ...]
+			final FloatVector vyre = FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_SPREAD_RE, 0);
+			// vyim is [(y[0].im, y[0].im), (y[1].im, y[1].im), ...]
+			final FloatVector vyim = FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_SPREAD_IM, 0);
+
+			// Load x
+			// vx is [(x[0].re, x[0].im), (x[1].re, x[1].im), ...]
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+
+			// Multiply x with re from y
+			// It is [(x[0].re * y[0].re, x[0].im * y[0].re), (x[1].re * y[1].re, x[1].im * y[1].re), ...]
+			final FloatVector vmulyre = vx.mul(vyre);
+			// Multiply z with vx2
+			// It is [(x[0].re * y[0].im, x[0].im * y[0].im), (x[1].re * y[1].im, x[1].im * y[1].im), ...]
+			final FloatVector vmulyim = vx.mul(vyim);
+			// Reshuffle second ne in pairs
+			// It is [(x[0].im * y[0].im, x[0].re * y[0].im), (x[1].im * y[1].im, x[1].re * y[1].im), ...]
+			final FloatVector vmulximswap = vmulyim.rearrange(SHUFFLE_CV_SWAP_RE_IM);
+
+			// Get real parts of result
+			// it is ([x[0].re * y[0].re - x[0].im * y[0].im, ?], ...)
+			// Do we need mask?
+			final FloatVector vrre = vmulyre.sub(vmulximswap, MASK_C_RE);
+
+			// Get imaginary parts of result
+			// it is ([?, x[0].im * y[0].re + x[0].re * y[0].im], ...)
+			final FloatVector vrim = vmulyre.add(vmulximswap, MASK_C_IM);
+
+			re += vrre.addAll(MASK_C_IM);
+			im += vrim.addAll(MASK_C_RE);
+
+			xOffset += EPV;
+			yOffset += EPV;
+			count -= EPV2;
+		}
+
+		float k0, k1;
+		while (count-- > 0) {
+			k0 = x[xOffset + 0] * y[yOffset + 0];
+			k1 = x[xOffset + 1] * y[yOffset + 1];
+			re += k0 - k1;
+			im += (x[xOffset + 0] + x[xOffset + 1]) * (y[yOffset + 0] + y[yOffset + 1]) - k0 - k1;
+			xOffset += 2;
 			yOffset += 2;
 		}
 		z[0] = re;
