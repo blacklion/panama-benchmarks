@@ -50,8 +50,6 @@ public final class VOVec {
 		cv_conjmul_cv
 		cv_conjmul_cv_i
 		rv_conjmul_cv
-		cv_cpy
-		rv_cpy
 		cs_div_cv
 		cv_div_cs
 		cv_div_cs_i
@@ -60,8 +58,6 @@ public final class VOVec {
 		rs_div_cv
 		rv_div_cv
 		cv_dot_cv
-		cv_exp
-		cv_exp_i
 		cv_cs_lin_cv_cs
 		cv_cs_lin_cv_cs_i
 		cv_cs_lin_cv_rs
@@ -1103,6 +1099,31 @@ public final class VOVec {
 		}
 	}
 
+	public static void cv_exp_i(float z[], int zOffset, int count) {
+		zOffset <<= 1;
+
+		while (count >= EPV2) {
+			final FloatVector vzreexp = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_TO_CV_SPREAD_RE, 0).exp();
+			final FloatVector vzim = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_TO_CV_SPREAD_IM, 0);
+			// @@TODO: Check
+			// Add masks, as we need only half of it?
+			final FloatVector vrre = vzreexp.mul(vzim.cos());
+			final FloatVector vrim = vzreexp.mul(vzim.sin());
+
+			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
+
+			zOffset += EPV;
+			count -= EPV2;
+		}
+
+		while (count-- > 0) {
+			float g = (float)Math.exp(z[zOffset + 0]);
+			z[zOffset + 0] = g * (float)Math.cos(z[zOffset + 1]);
+			z[zOffset + 1] = g * (float)Math.sin(z[zOffset + 1]);
+			zOffset += 2;
+		}
+	}
+
 	public static void rv_exp(float z[], int zOffset, float x[], int xOffset, int count) {
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
@@ -1113,6 +1134,34 @@ public final class VOVec {
 		}
 		while (count-- > 0)
 			z[zOffset++] = (float)Math.exp(x[xOffset++]);
+	}
+
+	public static void cv_exp(float z[], int zOffset, float x[], int xOffset, int count) {
+		zOffset <<= 1;
+		xOffset <<= 1;
+
+		while (count >= EPV2) {
+			final FloatVector vxreexp = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_RE, 0).exp();
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_IM, 0);
+			// @@TODO: Check
+			// Add masks, as we need only half of it?
+			final FloatVector vrre = vxreexp.mul(vxim.cos());
+			final FloatVector vrim = vxreexp.mul(vxim.sin());
+
+			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
+
+			xOffset += EPV;
+			zOffset += EPV;
+			count -= EPV2;
+		}
+
+		while (count-- > 0) {
+			float g = (float)Math.exp(x[xOffset + 0]);
+			z[zOffset + 0] = g * (float)Math.cos(x[xOffset + 1]);
+			z[zOffset + 1] = g * (float)Math.sin(x[xOffset + 1]);
+			zOffset += 2;
+			xOffset += 2;
+		}
 	}
 
 	public static void cv_im(float z[], int zOffset, float x[], int xOffset, int count) {
