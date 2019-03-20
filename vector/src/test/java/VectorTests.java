@@ -299,6 +299,27 @@ public class VectorTests {
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
+    @ParameterizedTest(name = "cv_conjmul_cv({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_conjmul_cv(int size, int offset) {
+        float cvz1[] = new float[cvz.length];
+        float cvz2[] = new float[cvz.length];
+        VO.cv_conjmul_cv(cvz1, 0, cvx, offset, cvy, offset, size);
+        VOVec.cv_conjmul_cv(cvz2, 0, cvx, offset, cvy, offset, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "cv_conjmul_cv_i({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_conjmul_cv_i(int size, int offset) {
+        float cvz1[] = Arrays.copyOf(cvz, cvz.length);
+        float cvz2[] = Arrays.copyOf(cvz, cvz.length);
+
+        VO.cv_conjmul_cv_i(cvz1, offset, cvx, offset, size);
+        VOVec.cv_conjmul_cv_i(cvz2, offset, cvx, offset, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
     @ParameterizedTest(name = "cv_div_rs({0}, {1})")
     @MethodSource("params")
     public void Test_cv_div_rs(int size, int offset) {
@@ -859,6 +880,16 @@ public class VectorTests {
         VO.rv_add_rv_i(rvz1, offset, rvx, offset, size);
         VOVec.rv_add_rv_i(rvz2, offset, rvx, offset, size);
         assertArrayEquals(rvz1, rvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "rv_conjmul_cv({0}, {1})")
+    @MethodSource("params")
+    public void Test_rv_conjmul_cv(int size, int offset) {
+        float cvz1[] = new float[cvz.length];
+        float cvz2[] = new float[cvz.length];
+        VO.rv_conjmul_cv(cvz1, 0, rvx, offset, cvy, offset, size);
+        VOVec.rv_conjmul_cv(cvz2, 0, rvx, offset, cvy, offset, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
     @ParameterizedTest(name = "rv_cvt({0}, {1})")
