@@ -381,6 +381,84 @@ public class VectorTests {
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
+    @ParameterizedTest(name = "cv_max({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_max(int size, int offset) {
+        float csz1[] = new float[2];
+        float csz2[] = new float[2];
+        VO.cv_max(csz1, cvx, offset, size);
+        VOVec.cv_max(csz2, cvx, offset, size);
+        assertArrayEquals(csz1, csz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "cv_max_cv({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_max_cv(int size, int offset) {
+        float cvz1[] = new float[cvz.length];
+        float cvz2[] = new float[cvz.length];
+        VO.cv_max_cv(cvz1, 0, cvx, offset, cvy, offset, size);
+        VOVec.cv_max_cv(cvz2, 0, cvx, offset, cvy, offset, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "cv_max_cv_i({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_max_cv_i(int size, int offset) {
+        float cvz1[] = Arrays.copyOf(cvz, cvz.length);
+        float cvz2[] = Arrays.copyOf(cvz, cvz.length);
+
+        VO.cv_max_cv_i(cvz1, offset, cvx, offset, size);
+        VOVec.cv_max_cv_i(cvz2, offset, cvx, offset, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "cv_maxarg({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_maxarg(int size, int offset) {
+        int rsz1 = VO.cv_maxarg(cvx, offset, size);
+        int rsz2 = VOVec.cv_maxarg(cvx, offset, size);
+        assertEquals(rsz1, rsz2);
+    }
+
+    @ParameterizedTest(name = "cv_min({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_min(int size, int offset) {
+        float csz1[] = new float[2];
+        float csz2[] = new float[2];
+        VO.cv_min(csz1, cvx, offset, size);
+        VOVec.cv_min(csz2, cvx, offset, size);
+        assertArrayEquals(csz1, csz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "cv_min_cv({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_min_cv(int size, int offset) {
+        float cvz1[] = new float[cvz.length];
+        float cvz2[] = new float[cvz.length];
+        VO.cv_min_cv(cvz1, 0, cvx, offset, cvy, offset, size);
+        VOVec.cv_min_cv(cvz2, 0, cvx, offset, cvy, offset, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "cv_min_cv_i({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_min_cv_i(int size, int offset) {
+        float cvz1[] = Arrays.copyOf(cvz, cvz.length);
+        float cvz2[] = Arrays.copyOf(cvz, cvz.length);
+
+        VO.cv_min_cv_i(cvz1, offset, cvx, offset, size);
+        VOVec.cv_min_cv_i(cvz2, offset, cvx, offset, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "cv_minarg({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_minarg(int size, int offset) {
+        int rsz1 = VO.cv_minarg(cvx, offset, size);
+        int rsz2 = VOVec.cv_minarg(cvx, offset, size);
+        assertEquals(rsz1, rsz2);
+    }
+
     @ParameterizedTest(name = "cv_mul_cs({0}, {1})")
     @MethodSource("params")
     public void Test_cv_mul_cs(int size, int offset) {

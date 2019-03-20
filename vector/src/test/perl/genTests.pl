@@ -358,7 +358,7 @@ sub generateTest1o {
 
 	my $c = $l =~ /^c/;
 	my $v = $l =~ /v$/;
-	if ($c && $rtype ne 'void') {
+	if ($c && ($rtype ne 'void' && $rtype ne 'int')) {
 		print STDERR "Function \"$name\" has wrong combination of ($l) -> $rtype\n";
 		return;
 	}
@@ -366,8 +366,10 @@ sub generateTest1o {
 		print STDERR "Function \"$name\" has wrong combination of ($l) -> $rtype\n";
 		return;
 	}
-	if ($rtype ne 'void') {
+	if      ($rtype ne 'void') {
 		$out = 'rs';
+	} elsif ($l eq 'cv' && ($op eq 'max' || $op eq 'min')) {
+		$out = 'cs';
 	} else {
 		$out = ($c ? 'c' : 'r') . ($v ? 'v' : 's');
 	}

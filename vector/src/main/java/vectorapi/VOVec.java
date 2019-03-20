@@ -65,14 +65,6 @@ public final class VOVec {
 		cv_rs_lin_rv_rs_i
 		rv_cs_lin_rv_cs
 		rv_rs_lin_rv_cs
-		cv_max
-		cv_max_cv
-		cv_max_cv_i
-		cv_maxarg
-		cv_min
-		cv_min_cv
-		cv_min_cv_i
-		cv_minarg
 	 */
 	private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
 	private final static int EPV = PFS.length();
@@ -1718,6 +1710,118 @@ public final class VOVec {
 		}
 	}
 
+	public static void cv_max(float z[], float x[], int xOffset, int count) {
+		float max = Float.NEGATIVE_INFINITY;
+		int i = -1;
+		xOffset <<= 1;
+
+		while (count >= EPV) {
+			//@@TODO Check other load politics
+			// We need to load RE and IM
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			float localMax = vxabs.maxAll();
+
+			if (max < localMax) {
+				// Find it now
+				for (int j = 0; j < EPV; j++) {
+					if (vxabs.get(j) == localMax) {
+						i = xOffset + j * 2;
+						break;
+					}
+				}
+				max = localMax;
+			}
+			xOffset += EPV * 2;
+			count -= EPV;
+		}
+
+		while (count-- > 0) {
+			float abs = x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1];
+			if (max < abs) {
+				max = abs;
+				i = xOffset;
+			}
+			xOffset += 2;
+		}
+		z[0] = x[i + 0];
+		z[1] = x[i + 1];
+	}
+
+	public static void cv_max_cv_i(float z[], int zOffset, float x[], int xOffset, int count) {
+		zOffset <<= 1;
+		xOffset <<= 1;
+
+		while (count >= EPV2) {
+			//@@TODO Check other load politics?!
+			// We need to load RE and IM
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vzre = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_TO_CV_SPREAD_RE, 0);
+			final FloatVector vzim = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_TO_CV_SPREAD_IM, 0);
+			final FloatVector vzabs = vzre.mul(vzre).add(vzim.mul(vzim));
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_RE, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_IM, 0);
+			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+
+			FloatVector.Mask<Float> xGz = vxabs.greaterThan(vzabs);
+			vx.intoArray(z, zOffset, xGz);
+
+			xOffset += EPV;
+			zOffset += EPV;
+			count -= EPV2;
+		}
+
+		while (count-- > 0) {
+			if ((x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]) > (z[zOffset + 0] * z[zOffset + 0] + z[zOffset + 1] * z[zOffset + 1])) {
+				z[zOffset + 0] = x[xOffset + 0];
+				z[zOffset + 1] = x[xOffset + 1];
+			}
+			zOffset += 2;
+			xOffset += 2;
+		}
+	}
+
+	public static void cv_max_cv(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
+		xOffset <<= 1;
+		yOffset <<= 1;
+		zOffset <<= 1;
+
+		while (count >= EPV2) {
+			//@@TODO Check other load politics?!
+			// We need to load RE and IM
+			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_RE, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_IM, 0);
+			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vyre = FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_SPREAD_RE, 0);
+			final FloatVector vyim = FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_SPREAD_IM, 0);
+			final FloatVector vyabs = vyre.mul(vyre).add(vyim.mul(vyim));
+
+			FloatVector.Mask<Float> xGy = vxabs.greaterThan(vyabs);
+			vy.blend(vx, xGy).intoArray(z, zOffset);
+
+			xOffset += EPV;
+			yOffset += EPV;
+			zOffset += EPV;
+			count -= EPV2;
+		}
+
+		while (count-- > 0) {
+			if ((x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]) > (y[yOffset + 0] * y[yOffset + 0] + y[yOffset + 1] * y[yOffset + 1])) {
+				z[zOffset + 0] = x[xOffset + 0];
+				z[zOffset + 1] = x[xOffset + 1];
+			} else {
+				z[zOffset + 0] = y[yOffset + 0];
+				z[zOffset + 1] = y[yOffset + 1];
+			}
+			zOffset += 2;
+			xOffset += 2;
+			yOffset += 2;
+		}
+	}
+
 	public static float rv_min(float x[], int xOffset, int count) {
 		float min = Float.POSITIVE_INFINITY;
 
@@ -1774,6 +1878,118 @@ public final class VOVec {
 		}
 	}
 
+	public static void cv_min(float z[], float x[], int xOffset, int count) {
+		float min = Float.POSITIVE_INFINITY;
+		int i = -1;
+		xOffset <<= 1;
+
+		while (count >= EPV) {
+			//@@TODO Check other load politics
+			// We need to load RE and IM
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			float localMin = vxabs.minAll();
+
+			if (min > localMin) {
+				// Find it/ now
+				for (int j = 0; j < EPV; j++) {
+					if (vxabs.get(j) == localMin) {
+						i = xOffset + j * 2;
+						break;
+					}
+				}
+				min = localMin;
+			}
+			xOffset += EPV * 2;
+			count -= EPV;
+		}
+
+		while (count-- > 0) {
+			float abs = x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1];
+			if (min > abs) {
+				min = abs;
+				i = xOffset;
+			}
+			xOffset += 2;
+		}
+		z[0] = x[i + 0];
+		z[1] = x[i + 1];
+	}
+
+	public static void cv_min_cv_i(float z[], int zOffset, float x[], int xOffset, int count) {
+		zOffset <<= 1;
+		xOffset <<= 1;
+
+		while (count >= EPV2) {
+			//@@TODO Check other load politics?!
+			// We need to load RE and IM
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vzre = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_TO_CV_SPREAD_RE, 0);
+			final FloatVector vzim = FloatVector.fromArray(PFS, z, zOffset, LOAD_CV_TO_CV_SPREAD_IM, 0);
+			final FloatVector vzabs = vzre.mul(vzre).add(vzim.mul(vzim));
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_RE, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_IM, 0);
+			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+
+			FloatVector.Mask<Float> xLz = vxabs.lessThan(vzabs);
+			vx.intoArray(z, zOffset, xLz);
+
+			xOffset += EPV;
+			zOffset += EPV;
+			count -= EPV2;
+		}
+
+		while (count-- > 0) {
+			if ((x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]) < (z[zOffset + 0] * z[zOffset + 0] + z[zOffset + 1] * z[zOffset + 1])) {
+				z[zOffset + 0] = x[xOffset + 0];
+				z[zOffset + 1] = x[xOffset + 1];
+			}
+			zOffset += 2;
+			xOffset += 2;
+		}
+	}
+
+	public static void cv_min_cv(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
+		xOffset <<= 1;
+		yOffset <<= 1;
+		zOffset <<= 1;
+
+		while (count >= EPV2) {
+			//@@TODO Check other load politics?!
+			// We need to load RE and IM
+			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_RE, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_IM, 0);
+			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vyre = FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_SPREAD_RE, 0);
+			final FloatVector vyim = FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_SPREAD_IM, 0);
+			final FloatVector vyabs = vyre.mul(vyre).add(vyim.mul(vyim));
+
+			FloatVector.Mask<Float> xLy = vxabs.lessThan(vyabs);
+			vy.blend(vx, xLy).intoArray(z, zOffset);
+
+			xOffset += EPV;
+			yOffset += EPV;
+			zOffset += EPV;
+			count -= EPV2;
+		}
+
+		while (count-- > 0) {
+			if ((x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]) < (y[yOffset + 0] * y[yOffset + 0] + y[yOffset + 1] * y[yOffset + 1])) {
+				z[zOffset + 0] = x[xOffset + 0];
+				z[zOffset + 1] = x[xOffset + 1];
+			} else {
+				z[zOffset + 0] = y[yOffset + 0];
+				z[zOffset + 1] = y[yOffset + 1];
+			}
+			zOffset += 2;
+			xOffset += 2;
+			yOffset += 2;
+		}
+	}
+
 	public static int rv_maxarg(float x[], int xOffset, int count) {
 		float max = Float.NEGATIVE_INFINITY;
 		int i = -1;
@@ -1811,6 +2027,45 @@ public final class VOVec {
 		return i;
 	}
 
+	public static int cv_maxarg(float x[], int xOffset, int count) {
+		float max = Float.NEGATIVE_INFINITY;
+		int i = -1;
+		xOffset <<= 1;
+
+		while (count >= EPV) {
+			//@@TODO Check other load politics
+			// We need to load RE and IM
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			float localMax = vxabs.maxAll();
+
+			if (max < localMax) {
+				// Find it now
+				for (int j = 0; j < EPV; j++) {
+					if (vxabs.get(j) == localMax) {
+						i = xOffset + j * 2;
+						break;
+					}
+				}
+				max = localMax;
+			}
+			xOffset += EPV * 2;
+			count -= EPV;
+		}
+
+		while (count-- > 0) {
+			float abs = x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1];
+			if (max < abs) {
+				max = abs;
+				i = xOffset;
+			}
+			xOffset += 2;
+		}
+
+		return i >> 1;
+	}
+
 	public static int rv_minarg(float x[], int xOffset, int count) {
 		float min = Float.POSITIVE_INFINITY;
 		int i = -1;
@@ -1846,6 +2101,45 @@ public final class VOVec {
 			xOffset += 1;
 		}
 		return i;
+	}
+
+	public static int cv_minarg(float x[], int xOffset, int count) {
+		float min = Float.POSITIVE_INFINITY;
+		int i = -1;
+		xOffset <<= 1;
+
+		while (count >= EPV) {
+			//@@TODO Check other load politics
+			// We need to load RE and IM
+			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			float localMin = vxabs.minAll();
+
+			if (min > localMin) {
+				// Find it now
+				for (int j = 0; j < EPV; j++) {
+					if (vxabs.get(j) == localMin) {
+						i = xOffset + j * 2;
+						break;
+					}
+				}
+				min = localMin;
+			}
+			xOffset += EPV * 2;
+			count -= EPV;
+		}
+
+		while (count-- > 0) {
+			float abs = x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1];
+			if (min > abs) {
+				min = abs;
+				i = xOffset;
+			}
+			xOffset += 2;
+		}
+
+		return i >> 1;
 	}
 
 	public static void rv_rs_lin_rv_rs_i(float z[], int zOffset, float a1, float x[], int xOffset, float a2, int count) {
