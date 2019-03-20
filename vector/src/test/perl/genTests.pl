@@ -107,6 +107,10 @@ public class VectorTests {
         ArrayList<Arguments> rv = new ArrayList<>();
         rv.add(Arguments.of(1, 0));
         rv.add(Arguments.of(1, 1));
+        rv.add(Arguments.of(PFS.length() / 2 - 1, 0));
+        rv.add(Arguments.of(PFS.length() / 2 - 1, 1));
+        rv.add(Arguments.of(PFS.length() / 2, 0));
+        rv.add(Arguments.of(PFS.length() / 2, 1));
         rv.add(Arguments.of(PFS.length() - 1, 0));
         rv.add(Arguments.of(PFS.length() - 1, 1));
         rv.add(Arguments.of(PFS.length(), 0));

@@ -91,9 +91,65 @@ public class VectorBenchmarks {
         
         csx = new float[] { (float)(Math.random() * 2.0 - 1.0), (float)(Math.random() * 2.0 - 1.0) };
         csy = new float[] { (float)(Math.random() * 2.0 - 1.0), (float)(Math.random() * 2.0 - 1.0) };
-        csy = new float[] { (float)(Math.random() * 2.0 - 1.0), (float)(Math.random() * 2.0 - 1.0) };
+        csz = new float[] { (float)(Math.random() * 2.0 - 1.0), (float)(Math.random() * 2.0 - 1.0) };
     }
 
+
+    @Benchmark
+    public void VO_cs_div_cv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cs_div_cv(cvz, i, csx, cvy, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cs_div_cv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cs_div_cv(cvz, i, csx, cvy, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_10log10() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_10log10(cvz, i, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_10log10() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_10log10(cvz, i, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_10log10_rs() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_10log10_rs(cvz, i, cvx, i, rsy, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_10log10_rs() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_10log10_rs(cvz, i, cvx, i, rsy, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_20log10_rs() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_20log10_rs(cvz, i, cvx, i, rsy, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_20log10_rs() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_20log10_rs(cvz, i, cvx, i, rsy, callSize);
+        }
+    }
 
     @Benchmark
     public void VO_cv_abs() {
@@ -278,6 +334,90 @@ public class VectorBenchmarks {
     }
 
     @Benchmark
+    public void VO_cv_conjmul_cv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_conjmul_cv(cvz, i, cvx, i, cvy, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_conjmul_cv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_conjmul_cv(cvz, i, cvx, i, cvy, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_conjmul_cv_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_conjmul_cv_i(cvz, i, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_conjmul_cv_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_conjmul_cv_i(cvz, i, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_div_cs() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_div_cs(cvz, i, cvx, i, csy, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_div_cs() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_div_cs(cvz, i, cvx, i, csy, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_div_cs_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_div_cs_i(cvz, i, csx, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_div_cs_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_div_cs_i(cvz, i, csx, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_div_cv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_div_cv(cvz, i, cvx, i, cvy, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_div_cv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_div_cv(cvz, i, cvx, i, cvy, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_div_cv_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_div_cv_i(cvz, i, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_div_cv_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_div_cv_i(cvz, i, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
     public void VO_cv_div_rs() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
             VO.cv_div_rs(cvz, i, cvx, i, rsy, callSize);
@@ -330,6 +470,174 @@ public class VectorBenchmarks {
     public void VOVec_cv_div_rv_i() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
             VOVec.cv_div_rv_i(cvz, i, rvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_dot_cv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_dot_cv(csz, cvx, i, cvy, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_dot_cv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_dot_cv(csz, cvx, i, cvy, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_exp() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_exp(cvz, i, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_exp() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_exp(cvz, i, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_exp_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_exp_i(cvz, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_exp_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_exp_i(cvz, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_im() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_im(cvz, i, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_im() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_im(cvz, i, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_max() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_max(csz, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_max() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_max(csz, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_max_cv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_max_cv(cvz, i, cvx, i, cvy, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_max_cv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_max_cv(cvz, i, cvx, i, cvy, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_max_cv_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_max_cv_i(cvz, i, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_max_cv_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_max_cv_i(cvz, i, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_maxarg(Blackhole bh) {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            bh.consume(VO.cv_maxarg(cvx, i, callSize));
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_maxarg(Blackhole bh) {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            bh.consume(VOVec.cv_maxarg(cvx, i, callSize));
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_min() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_min(csz, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_min() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_min(csz, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_min_cv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_min_cv(cvz, i, cvx, i, cvy, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_min_cv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_min_cv(cvz, i, cvx, i, cvy, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_min_cv_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_min_cv_i(cvz, i, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_min_cv_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_min_cv_i(cvz, i, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_cv_minarg(Blackhole bh) {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            bh.consume(VO.cv_minarg(cvx, i, callSize));
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_minarg(Blackhole bh) {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            bh.consume(VOVec.cv_minarg(cvx, i, callSize));
         }
     }
 
@@ -502,6 +810,20 @@ public class VectorBenchmarks {
     }
 
     @Benchmark
+    public void VO_cv_re() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_re(cvz, i, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_re() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_re(cvz, i, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
     public void VO_cv_sum() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
             VO.cv_sum(cvz, i, cvx, i, callSize);
@@ -512,6 +834,20 @@ public class VectorBenchmarks {
     public void VOVec_cv_sum() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
             VOVec.cv_sum(cvz, i, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_rs_div_cv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.rs_div_cv(cvz, i, rsx, cvy, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_rs_div_cv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.rs_div_cv(cvz, i, rsx, cvy, i, callSize);
         }
     }
 
@@ -582,6 +918,34 @@ public class VectorBenchmarks {
     public void VOVec_rv_10log10_rs_i() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
             VOVec.rv_10log10_rs_i(rvz, i, rsx, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_rv_20log10_rs() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.rv_20log10_rs(rvz, i, rvx, i, rsy, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_rv_20log10_rs() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.rv_20log10_rs(rvz, i, rvx, i, rsy, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_rv_20log10_rs_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.rv_20log10_rs_i(rvz, i, rsx, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_rv_20log10_rs_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.rv_20log10_rs_i(rvz, i, rsx, callSize);
         }
     }
 
@@ -666,6 +1030,48 @@ public class VectorBenchmarks {
     public void VOVec_rv_add_rv_i() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
             VOVec.rv_add_rv_i(rvz, i, rvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_rv_conjmul_cv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.rv_conjmul_cv(cvz, i, rvx, i, cvy, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_rv_conjmul_cv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.rv_conjmul_cv(cvz, i, rvx, i, cvy, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_rv_cvt() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.rv_cvt(rvz, i, rvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_rv_cvt() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.rv_cvt(rvz, i, rvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_rv_div_cv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.rv_div_cv(cvz, i, rvx, i, cvy, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_rv_div_cv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.rv_div_cv(cvz, i, rvx, i, cvy, i, callSize);
         }
     }
 
@@ -848,6 +1254,62 @@ public class VectorBenchmarks {
     public void VOVec_rv_maxarg(Blackhole bh) {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
             bh.consume(VOVec.rv_maxarg(rvx, i, callSize));
+        }
+    }
+
+    @Benchmark
+    public void VO_rv_min(Blackhole bh) {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            bh.consume(VO.rv_min(rvx, i, callSize));
+        }
+    }
+
+    @Benchmark
+    public void VOVec_rv_min(Blackhole bh) {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            bh.consume(VOVec.rv_min(rvx, i, callSize));
+        }
+    }
+
+    @Benchmark
+    public void VO_rv_min_rv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.rv_min_rv(rvz, i, rvx, i, rvy, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_rv_min_rv() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.rv_min_rv(rvz, i, rvx, i, rvy, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_rv_min_rv_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.rv_min_rv_i(rvz, i, rvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_rv_min_rv_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.rv_min_rv_i(rvz, i, rvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_rv_minarg(Blackhole bh) {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            bh.consume(VO.rv_minarg(rvx, i, callSize));
+        }
+    }
+
+    @Benchmark
+    public void VOVec_rv_minarg(Blackhole bh) {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            bh.consume(VOVec.rv_minarg(rvx, i, callSize));
         }
     }
 

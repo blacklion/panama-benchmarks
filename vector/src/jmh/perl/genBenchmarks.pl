@@ -43,6 +43,8 @@ for my $name (sort keys %{$VEC}) {
 	print STDERR "Can not find base $name\n" unless exists $BASE->{$name};
 }
 
+my $CODE_INDENT = "            ";
+
 # Generate benchmark
 print<<__HEADER;
 /*****************************************************************************
@@ -138,7 +140,7 @@ public class VectorBenchmarks {
         
         csx = new float[] { (float)(Math.random() * 2.0 - 1.0), (float)(Math.random() * 2.0 - 1.0) };
         csy = new float[] { (float)(Math.random() * 2.0 - 1.0), (float)(Math.random() * 2.0 - 1.0) };
-        csy = new float[] { (float)(Math.random() * 2.0 - 1.0), (float)(Math.random() * 2.0 - 1.0) };
+        csz = new float[] { (float)(Math.random() * 2.0 - 1.0), (float)(Math.random() * 2.0 - 1.0) };
     }
 
 __HEADER
@@ -152,6 +154,11 @@ for my $name (sort keys %{$VEC}) {
 		my $l  = $1;
 		my $op = $2;
 		my $r  = $3;
+		
+		if ($op eq 'sub') {
+			print STDERR "Skip \"$name\" as it is not interesting\n";
+			next;
+		}
 
 		if ($inplace) {
 			&generateBenchmark2i($name, $VEC->{$name}, $l, $op, $r, 'VO');
@@ -160,9 +167,14 @@ for my $name (sort keys %{$VEC}) {
 			&generateBenchmark2o($name, $VEC->{$name}, $l, $op, $r, 'VO');
 			&generateBenchmark2o($name, $VEC->{$name}, $l, $op, $r, 'VOVec');
 		}
-	} elsif ($name =~ /^(rs|rv|cs|cv)_([a-z0-9]{3,})(_i)?$/) {
+	} elsif ($name =~ /^(rs|rv|cs|cv)_([a-z0-9]{2,})(_i)?$/) {
 		my $l  = $1;
 		my $op = $2;
+
+		if ($op eq '20log10') {
+			print STDERR "Skip \"$name\" as it is not interesting\n";
+			next;
+		}
 
 		if ($inplace) {
 			&generateBenchmark1i($name, $VEC->{$name}, $l, $op, 'VO');
@@ -194,23 +206,17 @@ sub generateBenchmark2i {
 	
 	# Make args
 	my @args = ();
-	if      ($l eq 'rv') {
-		push @args, 'rvz', 'i';
-	} elsif ($l eq 'cv') {
-		push @args, 'cvz', 'i';
+	if      ($l eq 'rv' || $l eq 'cv') {
+		push @args, $l.'z', 'i';
 	} else {
 		print STDERR "Function \"$name\" has wrong first argument\n";
 		return;
 	}
 
-	if      ($r eq 'rs') {
-		push @args, 'rsx';
-	} elsif ($r eq 'cs') {
-		push @args, 'csx';
-	} elsif ($r eq 'rv') {
-		push @args, 'rvx', 'i';
-	} elsif ($r eq 'cv') {
-		push @args, 'cvx', 'i';
+	if      ($r eq 'rs' || $r eq 'cs') {
+		push @args, $r.'x';
+	} elsif ($r eq 'rv' || $r eq 'cv') {
+		push @args, $r.'x', 'i';
 	} else {
 		print STDERR "Function \"$name\" has wrong second argument\n";
 		return;
@@ -218,8 +224,7 @@ sub generateBenchmark2i {
 	push @args, 'callSize';
 
 	&generateBenchmarkHeader($name, $imp);
-	print "            ";
-	print "$imp.$name(", join(', ', @args), ");\n";
+	print $CODE_INDENT, "$imp.$name(", join(', ', @args), ");\n";
 	&generateBenchmarkFooter();
 }
 
@@ -228,34 +233,50 @@ sub generateBenchmark2o {
 
 	# Make args
 	my @args = ();
-	
-	eval { push @args, &calcReturnType($name, $l, $r, $rtype, $op); };
-	if ($@) {
-		print STDERR $@;
-		return;
+
+	my $out;
+	if (($l eq 'cv' || $r eq 'cv') && $op eq 'dot') {
+		# Special case: not a vector
+		$out = 'cs';
+	} else {
+		my $c = $l =~ /^c/ || $r =~ /^c/;
+		my $v = $l =~ /v$/ || $r =~ /v$/;
+
+		if ($c && $rtype ne 'void') {
+			print STDERR "Function \"$name\" has wrong combination of ($l, $r) -> $rtype\n";
+			return;
+		}
+		if (!$v && !$c && $rtype eq 'void') {
+			print STDERR "Function \"$name\" has wrong combination of ($l, $r) -> $rtype\n";
+			return;
+		}
+
+		if ($rtype ne 'void') {
+			$out = 'rs';
+		} else {
+			$out = ($c ? 'c' : 'r') . ($v ? 'v' : 's');
+		}
+	}
+	if      ($out eq 'rs') {
+		# Do nothing, need BH
+	} elsif ($out eq 'cs') {
+		push @args, 'csz';
+	} else {
+		push @args, $out.'z', 'i';
 	}
 
-	if      ($l eq 'rs') {
-		push @args, 'rsx';
-	} elsif ($l eq 'rv') {
-		push @args, 'rvx', 'i';
-	} elsif ($l eq 'cs') {
-		push @args, 'csx';
-	} elsif ($l eq 'cv') {
-		push @args, 'cvx', 'i';
+	if      ($l eq 'rs' || $l eq 'cs') {
+		push @args, $l.'x';
+	} elsif ($l eq 'rv' || $l eq 'cv') {
+		push @args, $l.'x', 'i';
 	} else {
 		print STDERR "Function \"$name\" has wrong first argument\n";
 		return;
 	}
-
-	if      ($r eq 'rs') {
-		push @args, 'rsy';
-	} elsif ($r eq 'rv') {
-		push @args, 'rvy', 'i';
-	} elsif ($r eq 'cs') {
-		push @args, 'csy';
-	} elsif ($r eq 'cv') {
-		push @args, 'cvy', 'i';
+	if      ($r eq 'rs' || $r eq 'cs') {
+		push @args, $r.'y';
+	} elsif ($r eq 'rv' || $r eq 'cv') {
+		push @args, $r.'y', 'i';
 	} else {
 		print STDERR "Function \"$name\" has wrong second argument\n";
 		return;
@@ -263,7 +284,11 @@ sub generateBenchmark2o {
 	push @args, 'callSize';
 
 	# Return type for this could be only void
-	if      ($rtype eq 'float') {
+	if      ($rtype eq 'float' || $rtype eq 'int') {
+		if ($out ne 'rs') {
+			print STDERR "Function \"$name\": Internal error ($l, $r) -> ($out, $rtype)\n";
+			return;
+		}
 		&generateBenchmarkHeaderTyped($name, $imp, $rtype);
 	} elsif ($rtype eq 'void') {
 		&generateBenchmarkHeader($name, $imp);
@@ -272,11 +297,10 @@ sub generateBenchmark2o {
 		return;
 	}
 
-	print "            ";
 	if ($rtype eq 'void') {
-		print "$imp.$name(", join(', ', @args), ");\n";
+		print $CODE_INDENT, "$imp.$name(", join(', ', @args), ");\n";
 	} else {
-		print "bh.consume($imp.$name(", join(', ', @args), "));\n";
+		print $CODE_INDENT, "bh.consume($imp.$name(", join(', ', @args), "));\n";
 	}
 	&generateBenchmarkFooter();
 }
@@ -289,54 +313,54 @@ sub generateBenchmark1i {
 		print STDERR "Bad return type \"$rtype\" for \"$name\"\n";
 		return;
 	}
-	
-	my @args = ();
-	if      ($l eq 'rv') {
-		push @args, 'rvz', 'i';
-	} elsif ($l eq 'cv') {
-		push @args, 'cvz', 'i';
-	} else {
+	if ($l ne 'rv' && $l ne 'cv') {
 		print STDERR "Function \"$name\" has wrong first argument\n";
 		return;
 	}
-	push @args, 'callSize';
 		
 	&generateBenchmarkHeader($name, $imp);
-	print "            ";
-	print "$imp.$name(", join(', ', @args), ");\n";
+	print $CODE_INDENT, "$imp.$name(${l}z, i, callSize);\n";
 	&generateBenchmarkFooter();
 }
 
 sub generateBenchmark1o {
 	my ($name, $rtype, $l, $op, $imp) = (@_);
 	
+	my @args;
 	
-	my @args = ();
-	if      ($l eq 'rv') {
-		if ($rtype eq 'void') {
-			push @args, 'rvz', 'i';
-		}
-	} elsif ($l eq 'cv') {
-		if ($rtype eq 'void') {
-			push @args, 'cvz', 'i';
-		}
-	} else {
-		print STDERR "Function \"$name\" has wrong first argument for return type\n";
+	my $c = $l =~ /^c/;
+	my $v = $l =~ /v$/;
+	if ($c && ($rtype ne 'void' && $rtype ne 'int')) {
+		print STDERR "Function \"$name\" has wrong combination of ($l) -> $rtype\n";
 		return;
 	}
-
-	if      ($l eq 'rv') {
-		push @args, 'rvx', 'i';
-	} elsif ($l eq 'cv') {
-		push @args, 'cvx', 'i';
+	if (!$v && !$c && $rtype eq 'void') {
+		print STDERR "Function \"$name\" has wrong combination of ($l) -> $rtype\n";
+		return;
+	}
+	if      ($rtype ne 'void') {
+		# Don't add to @args anything
+	} elsif ($l eq 'cv' && ($op eq 'max' || $op eq 'min')) {
+		push @args, 'csz';
+	} elsif ($v) {
+		push @args, ($c?'cv':'rv').'z', 'i';
 	} else {
-		print STDERR "Function \"$name\" has wrong first argument for data\n";
+		# Not vector, not real
+		push @args, 'csz';
+	}
+
+	if      ($l eq 'rs' || $l eq 'cs') {
+		push @args, $l.'x';
+	} elsif ($l eq 'rv' || $l eq 'cv') {
+		push @args, $l.'x', 'i';
+	} else {
+		print STDERR "Function \"$name\" has wrong first argument\n";
 		return;
 	}
 	push @args, 'callSize';
 
 	# Return type for this could be only void, int or float
-	if      ($rtype =~ /^(int|float)$/) {
+	if      ($rtype eq 'int' || $rtype eq 'float') {
 		&generateBenchmarkHeaderTyped($name, $imp, $rtype);
 	} elsif ($rtype eq 'void') {
 		&generateBenchmarkHeader($name, $imp);
@@ -345,11 +369,10 @@ sub generateBenchmark1o {
 		return;
 	}
 
-	print "            ";
 	if ($rtype eq 'void') {
-		print "$imp.$name(", join(', ', @args), ");\n";
+		print $CODE_INDENT, "$imp.$name(", join(', ', @args), ");\n";
 	} else {
-		print "bh.consume($imp.$name(", join(', ', @args), "));\n";
+		print $CODE_INDENT, "bh.consume($imp.$name(", join(', ', @args), "));\n";
 	}
 
 	&generateBenchmarkFooter();
@@ -359,11 +382,10 @@ sub generateBenchmarkRVRSLinRVRS {
 	my ($name, $rtype, $inplace, $imp) = @_;
 
 	&generateBenchmarkHeader($name, $imp);
-	print "            ";
 	if ($inplace) {
-		print "$imp.$name(rvz, i, rsz, rvx, i, rsx, callSize);\n";
+		print $CODE_INDENT, "$imp.$name(rvz, i, rsz, rvx, i, rsx, callSize);\n";
 	} else {
-		print "$imp.$name(rvz, i, rvx, i, rsx, rvy, i, rsy, callSize);\n";
+		print $CODE_INDENT, "$imp.$name(rvz, i, rvx, i, rsx, rvy, i, rsy, callSize);\n";
 	}
 	&generateBenchmarkFooter();
 }
