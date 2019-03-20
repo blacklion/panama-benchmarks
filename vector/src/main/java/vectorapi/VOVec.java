@@ -81,14 +81,6 @@ public final class VOVec {
 		cv_min_cv
 		cv_min_cv_i
 		cv_minarg
-		cv_rev
-		cv_rev_i
-		rv_rev
-		rv_rev_i
-		cs_sub_cv
-		rs_sub_cv
-		rs_sub_rv
-		rv_sub_cv
 	 */
 	private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
 	private final static int EPV = PFS.length();
@@ -461,6 +453,22 @@ public final class VOVec {
 			z[zOffset++] = x[xOffset++] - y;
 	}
 
+	public static void rs_sub_rv(float z[], int zOffset, float x, float y[], int yOffset, int count) {
+		FloatVector vx = null;
+		if (count >= EPV)
+			vx = PFS.broadcast(x);
+			
+		while (count >= EPV) {
+			final FloatVector fy = FloatVector.fromArray(PFS, y, yOffset);
+			vx.sub(fy).intoArray(z, zOffset);
+			count -= EPV;
+			yOffset += EPV;
+			zOffset += EPV;
+		}
+		while (count-- > 0)
+			z[zOffset++] = x - y[yOffset++];
+	}
+
 	public static void rv_sub_rv(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
 		while (count >= EPV) {
 			final FloatVector fx = FloatVector.fromArray(PFS, x, xOffset);
@@ -479,6 +487,8 @@ public final class VOVec {
 		zOffset <<= 1;
 		xOffset <<= 1;
 		while (count >= EPV2) {
+			//@@TODO: Check
+			// Or load y with mask once?
 			final FloatVector fx = FloatVector.fromArray(PFS, x, xOffset);
 			fx.sub(y, MASK_C_RE).intoArray(z, zOffset);
 			count -= EPV2;
@@ -490,6 +500,30 @@ public final class VOVec {
 			z[zOffset + 1] = x[xOffset + 1];
 			zOffset += 2;
 			xOffset += 2;
+		}
+	}
+
+	public static void rs_sub_cv(float z[], int zOffset, float x, float y[], int yOffset, int count) {
+		FloatVector vx = null;
+		if (count >= EPV2)
+			vx = PFS.broadcast(x).blend(PFS.zero(), MASK_C_IM);
+		zOffset <<= 1;
+		yOffset <<= 1;
+
+		while (count >= EPV2) {
+			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+			vx.sub(vy).intoArray(z, zOffset);
+			count -= EPV2;
+			yOffset += EPV;
+			zOffset += EPV;
+		}
+
+
+		while (count-- > 0) {
+			z[zOffset + 0] = x - y[yOffset + 0];
+			z[zOffset + 1] = -y[yOffset + 1];
+			zOffset += 2;
+			yOffset += 2;
 		}
 	}
 
@@ -514,6 +548,29 @@ public final class VOVec {
 
 	}
 
+	public static void rv_sub_cv(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
+		zOffset <<= 1;
+		yOffset <<= 1;
+
+		while (count >= EPV2) {
+			final FloatVector fx = FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
+			final FloatVector fy = FloatVector.fromArray(PFS, y, yOffset);
+			fx.sub(fy).intoArray(z, zOffset);
+			count -= EPV2;
+			xOffset += EPV2;
+			yOffset += EPV;
+			zOffset += EPV;
+		}
+
+		while (count-- > 0) {
+			z[zOffset + 0] = x[xOffset] - y[yOffset + 0];
+			z[zOffset + 1] = -y[yOffset + 1];
+			zOffset += 2;
+			xOffset += 1;
+			yOffset += 2;
+		}
+	}
+
 	public static void cv_sub_cs(float z[], int zOffset, float x[], int xOffset, float y[], int count) {
 		final FloatVector fy = FloatVector.fromArray(PFS, y, 0, LOAD_CS_TO_CV_SPREAD, 0);
 		zOffset <<= 1;
@@ -530,6 +587,29 @@ public final class VOVec {
 			z[zOffset + 1] = x[xOffset + 1] - y[1];
 			xOffset += 2;
 			zOffset += 2;
+		}
+	}
+
+	public static void cs_sub_cv(float z[], int zOffset, float x[], float y[], int yOffset, int count) {
+		FloatVector vx = null;
+		if (count >= EPV2)
+			vx = FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0);
+		zOffset <<= 1;
+		yOffset <<= 1;
+
+		while (count >= EPV2) {
+			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+			vx.sub(vy).intoArray(z, zOffset);
+			yOffset += EPV;
+			zOffset += EPV;
+			count -= EPV2;
+		}
+
+		while (count-- > 0) {
+			z[zOffset + 0] = x[0] - y[yOffset + 0];
+			z[zOffset + 1] = x[1] - y[yOffset + 1];
+			zOffset += 2;
+			yOffset += 2;
 		}
 	}
 
