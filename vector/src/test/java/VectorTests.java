@@ -58,6 +58,10 @@ public class VectorTests {
         ArrayList<Arguments> rv = new ArrayList<>();
         rv.add(Arguments.of(1, 0));
         rv.add(Arguments.of(1, 1));
+        rv.add(Arguments.of(PFS.length() / 2 - 1, 0));
+        rv.add(Arguments.of(PFS.length() / 2 - 1, 1));
+        rv.add(Arguments.of(PFS.length() / 2, 0));
+        rv.add(Arguments.of(PFS.length() / 2, 1));
         rv.add(Arguments.of(PFS.length() - 1, 0));
         rv.add(Arguments.of(PFS.length() - 1, 1));
         rv.add(Arguments.of(PFS.length(), 0));
@@ -753,11 +757,11 @@ public class VectorTests {
     @ParameterizedTest(name = "cv_sum({0}, {1})")
     @MethodSource("params")
     public void Test_cv_sum(int size, int offset) {
-        float cvz1[] = new float[cvz.length];
-        float cvz2[] = new float[cvz.length];
-        VO.cv_sum(cvz1, 0, cvx, offset, size);
-        VOVec.cv_sum(cvz2, 0, cvx, offset, size);
-        assertArrayEquals(cvz1, cvz2, EPSILON);
+        float csz1[] = new float[2];
+        float csz2[] = new float[2];
+        VO.cv_sum(csz1, cvx, offset, size);
+        VOVec.cv_sum(csz2, cvx, offset, size);
+        assertArrayEquals(csz1, csz2, EPSILON);
     }
 
     @ParameterizedTest(name = "rs_div_cv({0}, {1})")

@@ -340,7 +340,7 @@ sub generateBenchmark1o {
 	}
 	if      ($rtype ne 'void') {
 		# Don't add to @args anything
-	} elsif ($l eq 'cv' && ($op eq 'max' || $op eq 'min')) {
+	} elsif ($l eq 'cv' && ($op eq 'max' || $op eq 'min' || $op eq 'sum')) {
 		push @args, 'csz';
 	} elsif ($v) {
 		push @args, ($c?'cv':'rv').'z', 'i';

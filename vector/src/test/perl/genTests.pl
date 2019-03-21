@@ -372,7 +372,7 @@ sub generateTest1o {
 	}
 	if      ($rtype ne 'void') {
 		$out = 'rs';
-	} elsif ($l eq 'cv' && ($op eq 'max' || $op eq 'min')) {
+	} elsif ($l eq 'cv' && ($op eq 'max' || $op eq 'min' || $op eq 'sum')) {
 		$out = 'cs';
 	} else {
 		$out = ($c ? 'c' : 'r') . ($v ? 'v' : 's');

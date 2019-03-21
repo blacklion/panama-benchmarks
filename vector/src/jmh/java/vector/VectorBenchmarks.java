@@ -826,14 +826,14 @@ public class VectorBenchmarks {
     @Benchmark
     public void VO_cv_sum() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
-            VO.cv_sum(cvz, i, cvx, i, callSize);
+            VO.cv_sum(csz, cvx, i, callSize);
         }
     }
 
     @Benchmark
     public void VOVec_cv_sum() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
-            VOVec.cv_sum(cvz, i, cvx, i, callSize);
+            VOVec.cv_sum(csz, cvx, i, callSize);
         }
     }
 
