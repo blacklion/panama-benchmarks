@@ -219,6 +219,8 @@ All methods of `VOVec` are benchmarked against corresponding methods of `VO`. Be
 
 Each benchmark is parametrized by batch size and start offset and contains loop to process vector 65536 elements in several calls to API, when each call process batch of given size. Default batch sizes are `16`, `1024` and `65536`. Offsets `0` and `1` is used for input vectors.
 
+Please note, that we could compare results with different batch sizes directly, as one benchmark operation is processing of 65536 numbers no matter how large is batch size parameter.
+
 No results are provided now, as [needed branch](https://hg.openjdk.java.net/panama/dev/shortlog/01bb6f53b843) of [Panama repository](https://hg.openjdk.java.net/panama/dev/) is saw to be unstable right now.
 
 ## Future work
