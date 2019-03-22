@@ -1580,24 +1580,24 @@ public final class VOVec {
 			//@TODO: check, do we need one load & two reshuffles?
 			// vxre is [(x[0].re, x[0].re), (x[1].re, x[1].re), ...]
 			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_RE, 0);
-			// vximneg is [(-x[0].im, -x[0].im), (-x[1].im, -x[1].im), ...]
-			final FloatVector vximneg = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_IM, 0).neg();
+			// vxim is [(x[0].im, x[0].im), (x[1].im, x[1].im), ...]
+			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_SPREAD_IM, 0);
 
 			// vz is [(z[0].re, z[0].im), (z[1].re, z[1].im), ...]
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
 
 			// vmulxre is [(z[0].re * x[0].re, z[0].im * x[0].re), (z[1].re * x[0].re, z[1].im * x[0].re), ...]
 			final FloatVector vmulxre = vz.mul(vxre);
-			// vmulxim is [(-z[0].re * x[0].im, -z[0].im * x[0].im), (-z[1].re * x[1].im, -z[1].im * x[1].im), ...]
-			final FloatVector vmulxim = vz.mul(vximneg);
-			// vmulximswap is [(-z[0].im * x[0].im, -z[0].re * x[0].im), (-z[1].im * x[1].im, -z[1].re * x[1].im), ...]
+			// vmulxim is [(z[0].re * x[0].im, z[0].im * x[0].im), (z[1].re * x[1].im, z[1].im * x[1].im), ...]
+			final FloatVector vmulxim = vz.mul(vxim);
+			// vmulximswap is [(z[0].im * x[0].im, z[0].re * x[0].im), (z[1].im * x[1].im, z[1].re * x[1].im), ...]
 			final FloatVector vmulximswap = vmulxim.rearrange(SHUFFLE_CV_SWAP_RE_IM);
 
 			//@TODO: check, do we need mask here?
 			// vrre it is [(z[0].re * x[0].re + z[0].im * x[0].im, ?), (z[1].re * x[1].re + z[1].im * x[1].im, ?)]
-			final FloatVector vrre = vmulxre.sub(vmulximswap, MASK_C_RE);
+			final FloatVector vrre = vmulxre.add(vmulximswap, MASK_C_RE);
 			// vrim it is [(?, z[0].im * x[0].re - z[0].re * x[0].im), (?, z[1].im * x[1].re - z[1].re * x[1].im), ...]
-			final FloatVector vrim = vmulxre.add(vmulximswap, MASK_C_IM);
+			final FloatVector vrim = vmulxre.sub(vmulximswap, MASK_C_IM);
 
 			// Blend together & save
 			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
@@ -1629,7 +1629,7 @@ public final class VOVec {
 			// vyre is [(y[0].re, y[0].re), (y[1].re, y[1].re), ...]
 			final FloatVector vyre = FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_SPREAD_RE, 0);
 			// vyimneg is [(-y[0].im, -y[0].im), (-y[1].im, -y[1].im), ...]
-			final FloatVector vyimneg = FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_SPREAD_IM, 0).neg();
+			final FloatVector vyimneg = FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_SPREAD_IM, 0);
 
 			// Load x
 			// vx is [(x[0].re, x[0].im), (x[1].re, x[1].im), ...]
@@ -1644,9 +1644,9 @@ public final class VOVec {
 
 			//@TODO: check, do we need mask here?
 			// vrre it is [(x[0].re * y[0].re + x[0].im * y[0].im, ?), (x[1].re * y[1].re + x[1].im * y[1].im, ?)]
-			final FloatVector vrre = vmulyre.sub(vmulyimswap, MASK_C_RE);
+			final FloatVector vrre = vmulyre.add(vmulyimswap, MASK_C_RE);
 			// vrim it is [(?, x[0].im * y[0].re - x[0].re * y[0].im), (?, x[1].im * y[1].re - x[1].re * y[1].im), ...]
-			final FloatVector vrim = vmulyre.add(vmulyimswap, MASK_C_IM);
+			final FloatVector vrim = vmulyre.sub(vmulyimswap, MASK_C_IM);
 
 			// Blend together & save
 			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
