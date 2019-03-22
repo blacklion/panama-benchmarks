@@ -1,6 +1,6 @@
 #! /usr/bin/perl -w
 #***************************************************************************
-# Copyright (c) 2014, Lev Serebryakov <lev@serebryakov.spb.ru>
+# Copyright (c) 2019, Lev Serebryakov <lev@serebryakov.spb.ru>
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -48,7 +48,7 @@ my $CODE_INDENT = "            ";
 # Generate benchmark
 print<<__HEADER;
 /*****************************************************************************
- * Copyright (c) 2014, Lev Serebryakov <lev\@serebryakov.spb.ru>
+ * Copyright (c) 2019, Lev Serebryakov <lev\@serebryakov.spb.ru>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

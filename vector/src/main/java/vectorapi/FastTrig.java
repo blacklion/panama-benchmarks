@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2014, Lev Serebryakov <lev@serebryakov.spb.ru>
+ * Copyright (c) 2014-2019, Lev Serebryakov <lev@serebryakov.spb.ru>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
