@@ -28,6 +28,14 @@
 use warnings;
 use strict;
 
+my $SKIPPED_OPS = {
+  'sub'     => 'add',
+  '20log10' => '10log10',
+  'conjmul' => 'mul',
+  'min'     => 'max',
+  'minarg'  => 'maxarg'
+};
+
 die "Syntax: $0 <BaseImpl.java> <VectorImpl.java>\n" unless @ARGV == 2;
 
 my $BASE = &loadFile($ARGV[0], 1);
@@ -47,6 +55,9 @@ my $CODE_INDENT = "            ";
 
 # Generate benchmark
 print<<__HEADER;
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\\
+!! THIS FILE IS GENERATED WITH genBenchmarks.pl SCRIPT. DO NOT EDIT! !!
+\\!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 /*****************************************************************************
  * Copyright (c) 2019, Lev Serebryakov <lev\@serebryakov.spb.ru>
  * All rights reserved.
@@ -155,8 +166,8 @@ for my $name (sort keys %{$VEC}) {
 		my $op = $2;
 		my $r  = $3;
 		
-		if ($op eq 'sub') {
-			print STDERR "Skip \"$name\" as it is not interesting\n";
+		if (exists $SKIPPED_OPS->{$op}) {
+			print STDERR "Skip \"$name\" as it is not interesting, same as \"".$SKIPPED_OPS->{$op}."\"\n";
 			next;
 		}
 
@@ -171,8 +182,8 @@ for my $name (sort keys %{$VEC}) {
 		my $l  = $1;
 		my $op = $2;
 
-		if ($op eq '20log10') {
-			print STDERR "Skip \"$name\" as it is not interesting\n";
+		if (exists $SKIPPED_OPS->{$op}) {
+			print STDERR "Skip \"$name\" as it is not interesting, same as \"".$SKIPPED_OPS->{$op}."\"\n";
 			next;
 		}
 
