@@ -66,7 +66,6 @@ public final class VOVec {
 	private final static Vector.Mask<Float> MASK_C_RE;
 	private final static Vector.Mask<Float> MASK_C_IM;
 	private final static FloatVector ZERO = PFS.zero();
-	private final static int[] LOAD_RV_TO_CV_RE;
 	private final static int[] LOAD_RV_TO_CV_BOTH;
 	private final static int[] LOAD_CV_TO_CV_SPREAD_RE;
 	private final static int[] LOAD_CV_TO_CV_SPREAD_IM;
@@ -86,7 +85,7 @@ public final class VOVec {
 		MASK_C_RE = FloatVector.maskFromArray(PFS, alter, 0);
 		MASK_C_IM = FloatVector.maskFromArray(PFS, alter, 1);
 
-		LOAD_RV_TO_CV_RE = new int[EPV];
+		int[] load_rv2cv_re = new int[EPV];
 		LOAD_RV_TO_CV_BOTH = new int[EPV];
 		int[] load_cs2cv_spread = new int[EPV];
 		LOAD_CV_TO_CV_SPREAD_RE = new int[EPV];
@@ -96,7 +95,7 @@ public final class VOVec {
 		for (int i = 0; i < EPV; i++) {
 			// Load real vector to complex vector's RE part
 			// [r1, r2, ...] -> [(r1, ?), (r2, ?), ...]
-			LOAD_RV_TO_CV_RE[i] = i / 2;
+			load_rv2cv_re[i] = i / 2;
 
 			// Load real vector to complex vector's IM part
 			// [r1, r2, ...] -> [(r1, r1), (r2, r2), ...]
@@ -125,7 +124,7 @@ public final class VOVec {
 			// [(re1, im1), (re2, im2), ...] -> [im1, im2, ...]
 			LOAD_CV_TO_CV_PACK_IM[i] = i * 2 + 1;
 		}
-		SHUFFLE_RV_TO_CV_RE = FloatVector.shuffleFromArray(PFS, LOAD_RV_TO_CV_RE, 0);
+		SHUFFLE_RV_TO_CV_RE = FloatVector.shuffleFromArray(PFS, load_rv2cv_re, 0);
 		SHUFFLE_CS_TO_CV_SPREAD = FloatVector.shuffleFromArray(PFS, load_cs2cv_spread, 0);
 		SHUFFLE_CV_SPREAD_RE = FloatVector.shuffleFromArray(PFS, LOAD_CV_TO_CV_SPREAD_RE, 0);
 		SHUFFLE_CV_SPREAD_IM = FloatVector.shuffleFromArray(PFS, LOAD_CV_TO_CV_SPREAD_IM, 0);
@@ -1393,9 +1392,9 @@ public final class VOVec {
 			// vyim is [(y[0].im, y[0].im), (y[1].im, y[1].im), ...]
 			final FloatVector vyim = vy.rearrange(SHUFFLE_CV_SPREAD_IM);
 
-			//@TODO: check, do we need to load vx to shorter vector and reshape it?
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
 			// vx is [(x[0], 0), (x[1], 0), ...]
-			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset, LOAD_RV_TO_CV_RE, 0);
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset).rearrange(SHUFFLE_RV_TO_CV_RE).blend(PFS.zero(), MASK_C_IM);
 
 			// vmulxre is [(x[0] * y[0].re, 0), (x[1] * y[1].re, 0), ...]
 			final FloatVector vmulxre = vx.mul(vyre);
