@@ -2266,9 +2266,9 @@ public final class VOVec {
 		while (count >= EPV2) {
 			//@TODO Check, can we pack and process twice elements, and save result twice
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			//@TODO: Masks are swapped, it is bug in Vector API now
-			re += vx.addAll(MASK_C_IM);
-			im += vx.addAll(MASK_C_RE);
+
+			re += vx.addAll(MASK_C_RE);
+			im += vx.addAll(MASK_C_IM);
 
 			xOffset += EPV;
 			count -= EPV2;
@@ -2371,9 +2371,8 @@ public final class VOVec {
 			// vrim is ([?, x[0].im * y.re + x[0].re * y.im], ...)
 			final FloatVector vrim = vmulyre.add(vmulximswap);
 
-			//@TODO: Masks are swapped, it is bug in Vector API now
-			re += vrre.addAll(MASK_C_IM);
-			im += vrim.addAll(MASK_C_RE);
+			re += vrre.addAll(MASK_C_RE);
+			im += vrim.addAll(MASK_C_IM);
 
 			xOffset += EPV;
 			yOffset += EPV;
