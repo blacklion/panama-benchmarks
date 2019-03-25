@@ -30,6 +30,8 @@ package vectorapi;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.Vector;
 
+import java.util.Arrays;
+
 /**
  * @author Lev Serebryakov
  * @noinspection CStyleArrayDeclaration
@@ -65,11 +67,8 @@ public final class VOVec {
 	private final static FloatVector.FloatSpecies FS64 = FloatVector.species(Vector.Shape.S_64_BIT);
 	private final static Vector.Mask<Float> MASK_C_RE;
 	private final static Vector.Mask<Float> MASK_C_IM;
+	private final static Vector.Mask<Float> MASK_SECOND_HALF;
 	private final static FloatVector ZERO = PFS.zero();
-	private final static int[] LOAD_CV_TO_CV_SPREAD_RE;
-	private final static int[] LOAD_CV_TO_CV_SPREAD_IM;
-	private final static int[] LOAD_CV_TO_CV_PACK_RE;
-	private final static int[] LOAD_CV_TO_CV_PACK_IM;
 	private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE;
 	private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_BOTH;
 	private final static Vector.Shuffle<Float> SHUFFLE_CS_TO_CV_SPREAD;
@@ -77,21 +76,38 @@ public final class VOVec {
 	private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_RE;
 	private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_IM;
 
+	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST;
+ 	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST;
+
+ 	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND;
+ 	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND;
+
+
+
 	static {
 		boolean[] alter = new boolean[EPV + 1];
+
 		alter[0] = true;
 		for (int i = 1; i < alter.length; i++)
 			alter[i] = !alter[i-1];
 		MASK_C_RE = FloatVector.maskFromArray(PFS, alter, 0);
 		MASK_C_IM = FloatVector.maskFromArray(PFS, alter, 1);
 
+		boolean[] secondhalf = new boolean[EPV];
+		Arrays.fill(secondhalf, PFS.length() / 2, secondhalf.length, true);
+		MASK_SECOND_HALF = FloatVector.maskFromArray(PFS, secondhalf, 0);
+
 		int[] load_rv2cv_re = new int[EPV];
 		int[] load_rv2cv_both = new int[EPV];
 		int[] load_cs2cv_spread = new int[EPV];
-		LOAD_CV_TO_CV_SPREAD_RE = new int[EPV];
-		LOAD_CV_TO_CV_SPREAD_IM = new int[EPV];
-		LOAD_CV_TO_CV_PACK_RE = new int[EPV];
-		LOAD_CV_TO_CV_PACK_IM = new int[EPV];
+		int[] load_cv2cv_spread_re = new int[EPV];
+		int[] load_cv2cv_spread_im = new int[EPV];
+
+		int[] load_cv2cv_pack_re_first = new int[EPV];
+		int[] load_cv2cv_pack_im_first = new int[EPV];
+		int[] load_cv2cv_pack_re_second = new int[EPV];
+		int[] load_cv2cv_pack_im_second = new int[EPV];
+
 		for (int i = 0; i < EPV; i++) {
 			// Load real vector to complex vector's RE part
 			// [r1, r2, ...] -> [(r1, ?), (r2, ?), ...]
@@ -110,25 +126,35 @@ public final class VOVec {
 
 			// Complex vector to complex vector of duplicated real parts:
 			// [(re1, im1), (re2, im2), ...] -> [re1, re1, re2, re2, ...]
-			LOAD_CV_TO_CV_SPREAD_RE[i] = (i / 2) * 2;
+			load_cv2cv_spread_re[i] = (i / 2) * 2;
 
 			// Complex vector to complex vector of duplicated image parts:
 			// [(re1, im1), (re2, im2), ...] -> [im1, im1, im2, im2, ...]
-			LOAD_CV_TO_CV_SPREAD_IM[i] = (i / 2) * 2 + 1;
+			load_cv2cv_spread_im[i] = (i / 2) * 2 + 1;
 
-			// Vector complex to vector of twice as much real parts
-			// [(re1, im1), (re2, im2), ...] -> [re1, re2, ...]
-			LOAD_CV_TO_CV_PACK_RE[i] = i * 2;
-
-			// Vector complex to vector of twice as much imaginary parts
-			// [(re1, im1), (re2, im2), ...] -> [im1, im2, ...]
-			LOAD_CV_TO_CV_PACK_IM[i] = i * 2 + 1;
+			if (i < PFS.length() / 2) {
+				// [(re1, im1), (re2, im2), ...] -> [re1, re2, ...]
+				load_cv2cv_pack_re_first[i] = i * 2;
+				// [(re1, im1), (re2, im2), ...] -> [im1, im2, ...]
+				load_cv2cv_pack_im_first[i] = i * 2 + 1;
+			}
+			if (i >= PFS.length() / 2) {
+				// [(re1, im1), (re2, im2), ...] -> [..., re1, re2, ...]
+				load_cv2cv_pack_re_second[i] = i * 2 - PFS.length();
+				// [(re1, im1), (re2, im2), ...] -> [..., im1, im2, ...]
+				load_cv2cv_pack_im_second[i] = i * 2 + 1 - PFS.length();
+			}
 		}
 		SHUFFLE_RV_TO_CV_RE = FloatVector.shuffleFromArray(PFS, load_rv2cv_re, 0);
 		SHUFFLE_RV_TO_CV_BOTH = FloatVector.shuffleFromArray(PFS, load_rv2cv_both, 0);
 		SHUFFLE_CS_TO_CV_SPREAD = FloatVector.shuffleFromArray(PFS, load_cs2cv_spread, 0);
-		SHUFFLE_CV_SPREAD_RE = FloatVector.shuffleFromArray(PFS, LOAD_CV_TO_CV_SPREAD_RE, 0);
-		SHUFFLE_CV_SPREAD_IM = FloatVector.shuffleFromArray(PFS, LOAD_CV_TO_CV_SPREAD_IM, 0);
+		SHUFFLE_CV_SPREAD_RE = FloatVector.shuffleFromArray(PFS, load_cv2cv_spread_re, 0);
+		SHUFFLE_CV_SPREAD_IM = FloatVector.shuffleFromArray(PFS, load_cv2cv_spread_im, 0);
+
+		SHUFFLE_CV_TO_CV_PACK_RE_FIRST = FloatVector.shuffleFromArray(PFS, load_cv2cv_pack_re_first, 0);
+		SHUFFLE_CV_TO_CV_PACK_IM_FIRST = FloatVector.shuffleFromArray(PFS, load_cv2cv_pack_im_first, 0);
+		SHUFFLE_CV_TO_CV_PACK_RE_SECOND = FloatVector.shuffleFromArray(PFS, load_cv2cv_pack_re_second, 0);
+		SHUFFLE_CV_TO_CV_PACK_IM_SECOND = FloatVector.shuffleFromArray(PFS, load_cv2cv_pack_im_second, 0);
 
 		int[] shuffle_c_swap_re_im = new int[EPV];
 		for (int i = 0; i < shuffle_c_swap_re_im.length; i += 2) {
@@ -1873,7 +1899,14 @@ public final class VOVec {
 		xOffset <<= 1;
 
 		while (count >= EPV) {
-			FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0).intoArray(z, zOffset);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0)
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
+
+			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+			vxim.intoArray(z, zOffset);
 
 			xOffset += EPV * 2;
 			zOffset += EPV;
@@ -1891,7 +1924,14 @@ public final class VOVec {
 		xOffset <<= 1;
 
 		while (count >= EPV) {
-			FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0).intoArray(z, zOffset);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0)
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
+
+			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
+			vxre.intoArray(z, zOffset);
 
 			xOffset += EPV * 2;
 			zOffset += EPV;
@@ -1908,10 +1948,19 @@ public final class VOVec {
 		xOffset <<= 1;
 
 		while(count >= EPV) {
-			//@TODO: CHECK
-			// Or load and reshuffle?
-			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
-			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
+
+			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+
+			final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+
+			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
+			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+
 			vxre.hypot(vxim).intoArray(z, zOffset);
 			// We load twice as much complex numbers
 			xOffset += EPV * 2;
@@ -1929,10 +1978,19 @@ public final class VOVec {
 		xOffset <<= 1;
 
 		while(count >= EPV) {
-			//@TODO: CHECK
-			// Or load and reshuffle?
-			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
-			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
+
+			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+
+			final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+
+			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
+			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+
 			vxim.atan2(vxre).intoArray(z, zOffset);
 			// We load twice as much complex numbers
 			xOffset += EPV * 2;
@@ -1950,9 +2008,19 @@ public final class VOVec {
 		xOffset <<= 1;
 
 		while(count >= EPV) {
-			//@TODO: check, do we need one load & two reshuffles?
-			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
-			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
+
+			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+
+			final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+
+			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
+			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+
 			//@TODO: check, do we need to factor-out broadcasted version?
 			vxim.atan2(vxre).mul(y).intoArray(z, zOffset);
 
@@ -2213,9 +2281,19 @@ public final class VOVec {
 
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			//@TODO: check, do we need one load & two reshuffles?
-			final FloatVector vyre = FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_PACK_RE, 0);
-			final FloatVector vyim = FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
+			final FloatVector vy1 = FloatVector.fromArray(PFS, y, yOffset);
+			final FloatVector vy2 = FloatVector.fromArray(PFS, y, yOffset + PFS.length());
+
+			final FloatVector vy1re = vy1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vy1im = vy1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+
+			final FloatVector vy2re = vy2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vy2im = vy2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+
+			final FloatVector vyre = vy1re.blend(vy2re, MASK_SECOND_HALF);
+			final FloatVector vyim = vy1im.blend(vy2im, MASK_SECOND_HALF);
+
 			re += vx.mul(vyre).addAll();
 			im += vx.mul(vyim).addAll();
 
@@ -2352,10 +2430,19 @@ public final class VOVec {
 		xOffset <<= 1;
 
 		while (count >= EPV) {
-			//@TODO Check other load politics
-			// We need to load RE and IM
-			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
-			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
+
+			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+
+			final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+
+			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
+			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
 			float localMax = vxabs.maxAll();
 			if (max < localMax) {
@@ -2539,10 +2626,19 @@ public final class VOVec {
 		xOffset <<= 1;
 
 		while (count >= EPV) {
-			//@TODO Check other load politics
-			// We need to load RE and IM
-			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
-			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
+
+			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+
+			final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+
+			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
+			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
 			float localMin = vxabs.minAll();
 			if (min > localMin) {
@@ -2705,9 +2801,19 @@ public final class VOVec {
 		xOffset <<= 1;
 
 		while (count >= EPV) {
-			//@TODO: check, do we need one load & two reshuffles?
-			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
-			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
+
+			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+
+			final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+
+			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
+			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
 			float localMax = vxabs.maxAll();
 
@@ -2782,9 +2888,19 @@ public final class VOVec {
 		xOffset <<= 1;
 
 		while (count >= EPV) {
-			//@TODO: check, do we need one load & two reshuffles?
-			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
-			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
+
+			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+
+			final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+
+			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
+			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
 			float localMin = vxabs.minAll();
 
@@ -2921,9 +3037,19 @@ public final class VOVec {
 		xOffset <<= 1;
 
 		while(count >= EPV) {
-			//@TODO: check, do we need one load & two reshuffles?
-			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
-			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
+
+			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+
+			final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+
+			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
+			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
 
 			//@TODO: do something with MIN_NORMAL?
@@ -2947,9 +3073,19 @@ public final class VOVec {
 		xOffset <<= 1;
 
 		while(count >= EPV) {
-			//@TODO: check, do we need one load & two reshuffles?
-			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
-			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
+
+			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+
+			final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+
+			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
+			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
 
 			//@TODO: do something with MIN_NORMAL?
@@ -3038,9 +3174,19 @@ public final class VOVec {
 		xOffset <<= 1;
 
 		while(count >= EPV) {
-			//@TODO: check, do we need one load & two reshuffles?
-			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
-			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
+
+			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+
+			final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+
+			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
+			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
 
 			//@TODO: do something with MIN_NORMAL?
@@ -3064,9 +3210,19 @@ public final class VOVec {
 		xOffset <<= 1;
 
 		while(count >= EPV) {
-			//@TODO: check, do we need one load & two reshuffles?
-			final FloatVector vxre = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_RE, 0);
-			final FloatVector vxim = FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_IM, 0);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
+
+			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+
+			final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+
+			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
+			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
 
 			//@TODO: do something with MIN_NORMAL?
