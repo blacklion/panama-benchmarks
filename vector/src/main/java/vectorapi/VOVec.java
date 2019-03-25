@@ -62,17 +62,18 @@ public final class VOVec {
 	private final static int EPV = PFS.length();
 	private final static FloatVector.FloatSpecies PFS2 = FloatVector.species(Vector.Shape.forBitSize(PFS.bitSize() / 2));
 	private final static int EPV2 = EPV / 2;
+	private final static FloatVector.FloatSpecies FS64 = FloatVector.species(Vector.Shape.S_64_BIT);
 	private final static Vector.Mask<Float> MASK_C_RE;
 	private final static Vector.Mask<Float> MASK_C_IM;
 	private final static FloatVector ZERO = PFS.zero();
 	private final static int[] LOAD_RV_TO_CV_RE;
 	private final static int[] LOAD_RV_TO_CV_BOTH;
-	private final static int[] LOAD_CS_TO_CV_SPREAD;
 	private final static int[] LOAD_CV_TO_CV_SPREAD_RE;
 	private final static int[] LOAD_CV_TO_CV_SPREAD_IM;
 	private final static int[] LOAD_CV_TO_CV_PACK_RE;
 	private final static int[] LOAD_CV_TO_CV_PACK_IM;
 	private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE;
+	private final static Vector.Shuffle<Float> SHUFFLE_CS_TO_CV_SPREAD;
 	private final static Vector.Shuffle<Float> SHUFFLE_CV_SWAP_RE_IM;
 	private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_RE;
 	private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_IM;
@@ -87,7 +88,7 @@ public final class VOVec {
 
 		LOAD_RV_TO_CV_RE = new int[EPV];
 		LOAD_RV_TO_CV_BOTH = new int[EPV];
-		LOAD_CS_TO_CV_SPREAD = new int[EPV];
+		int[] load_cs2cv_spread = new int[EPV];
 		LOAD_CV_TO_CV_SPREAD_RE = new int[EPV];
 		LOAD_CV_TO_CV_SPREAD_IM = new int[EPV];
 		LOAD_CV_TO_CV_PACK_RE = new int[EPV];
@@ -104,9 +105,9 @@ public final class VOVec {
 			// Complex scalar complex to complex vector with spread to each element
 			// [re, im] -> [re, im, re, im, re, im, ...]
 			if (i % 2 == 0)
-				LOAD_CS_TO_CV_SPREAD[i] = 0;
+				load_cs2cv_spread[i] = 0;
 			else
-				LOAD_CS_TO_CV_SPREAD[i] = 1;
+				load_cs2cv_spread[i] = 1;
 
 			// Complex vector to complex vector of duplicated real parts:
 			// [(re1, im1), (re2, im2), ...] -> [re1, re1, re2, re2, ...]
@@ -125,6 +126,7 @@ public final class VOVec {
 			LOAD_CV_TO_CV_PACK_IM[i] = i * 2 + 1;
 		}
 		SHUFFLE_RV_TO_CV_RE = FloatVector.shuffleFromArray(PFS, LOAD_RV_TO_CV_RE, 0);
+		SHUFFLE_CS_TO_CV_SPREAD = FloatVector.shuffleFromArray(PFS, load_cs2cv_spread, 0);
 		SHUFFLE_CV_SPREAD_RE = FloatVector.shuffleFromArray(PFS, LOAD_CV_TO_CV_SPREAD_RE, 0);
 		SHUFFLE_CV_SPREAD_IM = FloatVector.shuffleFromArray(PFS, LOAD_CV_TO_CV_SPREAD_IM, 0);
 
@@ -208,9 +210,9 @@ public final class VOVec {
 
 	public static void cv_add_cs_i(float z[], int zOffset, float x[], int count) {
 		FloatVector vx = null;
-		//@TODO: check, do we need to load vx to shorter vector and reshape it?
+		//@DONE: It is faster than FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0)
 		if (count>= EPV2)
-				vx = FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0);
+				vx = FloatVector.fromArray(FS64, x, 0).reshape(PFS).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV_SPREAD);
 
 		zOffset <<= 1;
 
@@ -333,8 +335,9 @@ public final class VOVec {
 
 	public static void cv_add_cs(float z[], int zOffset, float x[], int xOffset, float y[], int count) {
 		FloatVector vy = null;
+		//@DONE: It is faster than FloatVector.fromArray(PFS, y, 0, LOAD_CS_TO_CV_SPREAD, 0)
 		if (count >= EPV2)
-			vy = FloatVector.fromArray(PFS, y, 0, LOAD_CS_TO_CV_SPREAD, 0);
+			vy = FloatVector.fromArray(FS64, y, 0).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV_SPREAD);
 
 		xOffset <<= 1;
 		zOffset <<= 1;
@@ -453,8 +456,9 @@ public final class VOVec {
 
 	public static void cv_sub_cs_i(float z[], int zOffset, float x[], int count) {
 		FloatVector vx = null;
+		//@DONE: It is faster than FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0)
 		if (count >= EPV2)
-			vx = FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0);
+			vx = FloatVector.fromArray(FS64, x, 0).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV_SPREAD);
 
 		zOffset <<= 1;
 
@@ -645,9 +649,9 @@ public final class VOVec {
 
 	public static void cv_sub_cs(float z[], int zOffset, float x[], int xOffset, float y[], int count) {
 		FloatVector vy = null;
-		//@TODO: check, do we need to load vy to shorter vector and reshape it
+		//@DONE: It is faster than FloatVector.fromArray(PFS, y, 0, LOAD_CS_TO_CV_SPREAD, 0)
 		if (count >= EPV2)
-			vy = FloatVector.fromArray(PFS, y, 0, LOAD_CS_TO_CV_SPREAD, 0);
+			vy = FloatVector.fromArray(FS64, y, 0).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV_SPREAD);
 
 		xOffset <<= 1;
 		zOffset <<= 1;
@@ -671,9 +675,9 @@ public final class VOVec {
 
 	public static void cs_sub_cv(float z[], int zOffset, float x[], float y[], int yOffset, int count) {
 		FloatVector vx = null;
-		//@TODO: check, do we need to load vx to shorter vector and reshape it
+		//@DONE: It is faster than FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0)
 		if (count >= EPV2)
-			vx = FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0);
+			vx = FloatVector.fromArray(FS64, x, 0).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV_SPREAD);
 
 		yOffset <<= 1;
 		zOffset <<= 1;
@@ -1480,10 +1484,9 @@ public final class VOVec {
 
 	public static void cs_div_cv(float z[], int zOffset, float x[], float y[], int yOffset, int count) {
 		FloatVector vx = null;
-		if (count >= EPV2) {
-			// vx is [(x.re, x.im), (x.re, x.im), ...]
-			vx = FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0);
-		}
+		//@DONE: It is faster than FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0)
+		if (count >= EPV2)
+			vx = FloatVector.fromArray(FS64, x, 0).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV_SPREAD);
 
 		zOffset <<= 1;
 		yOffset <<= 1;
