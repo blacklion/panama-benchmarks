@@ -916,10 +916,14 @@ public final class VOVec {
 	}
 
 	public static void rv_mul_rs(float z[], int zOffset, float x[], int xOffset, float y, int count) {
+		FloatVector vy = null;
+		//@DONE: it is fater thab vx.mul(y)
+		if (count >= EPV)
+		    vy = PFS.broadcast(y);
+
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			//@TODO: check, do we need to factor-out broadcasted version
-			vx.mul(y).intoArray(z, zOffset);
+			vx.mul(vy).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
@@ -946,13 +950,17 @@ public final class VOVec {
 	}
 
 	public static void cv_mul_rs(float z[], int zOffset, float x[], int xOffset, float y, int count) {
+		FloatVector vy = null;
+		//@DONE: it is fater thab vx.mul(y)
+		if (count >= EPV2)
+		    vy = PFS.broadcast(y);
+
 		xOffset <<= 1;
 		zOffset <<= 1;
 
 		while (count >= EPV2) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			//@TODO: check, do we need to factor-out broadcasted version
-			vx.mul(y).intoArray(z, zOffset);
+			vx.mul(vy).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
@@ -1089,10 +1097,14 @@ public final class VOVec {
 	}
 
 	public static void rv_div_rs_i(float z[], int zOffset, float x, int count) {
+		FloatVector vx = null;
+		//@DONE: it is fater thab vz.mul(x)
+		if (count >= EPV)
+		    vx = PFS.broadcast(x);
+
 		while (count >= EPV) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-			//@TODO: check, do we need to factor-out broadcasted version?
-			vz.div(x).intoArray(z, zOffset);
+			vz.div(vx).intoArray(z, zOffset);
 
 			zOffset += EPV;
 			count -= EPV;
@@ -1118,12 +1130,16 @@ public final class VOVec {
 	}
 
 	public static void cv_div_rs_i(float z[], int zOffset, float x, int count) {
+		FloatVector vx = null;
+		//@DONE: it is fater thab vz.mul(x)
+		if (count >= EPV2)
+		    vx = PFS.broadcast(x);
+
 		zOffset <<= 1;
 
 		while (count >= EPV2) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-			//@TODO: check, do we need to factor-out broadcasted version?
-			vz.div(x).intoArray(z, zOffset);
+			vz.div(vx).intoArray(z, zOffset);
 
 			zOffset += EPV;
 			count -= EPV2;
@@ -1263,10 +1279,14 @@ public final class VOVec {
 	}
 
 	public static void rv_div_rs(float z[], int zOffset, float x[], int xOffset, float y, int count) {
+		FloatVector vy = null;
+		//@DONE: it is fater thab vx.div(y)
+		if (count >= EPV)
+		    vy = PFS.broadcast(y);
+
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			//@TODO: check, do we need to factor-out broadcasted version?
-			vx.div(y).intoArray(z, zOffset);
+			vx.div(vy).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
@@ -1312,13 +1332,17 @@ public final class VOVec {
 	}
 
 	public static void cv_div_rs(float z[], int zOffset, float x[], int xOffset, float y, int count) {
+		FloatVector vy = null;
+		//@DONE: it is fater thab vx.div(y)
+		if (count >= EPV2)
+		    vy = PFS.broadcast(y);
+
 		zOffset <<= 1;
 		xOffset <<= 1;
 
 		while (count >= EPV2) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			//@TODO: check, do we need to factor-out broadcasted version?
-			vx.div(y).intoArray(z, zOffset);
+			vx.div(vy).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
@@ -2005,6 +2029,11 @@ public final class VOVec {
 	}
 
 	public static void cv_argmul_rs(float z[], int zOffset, float x[], int xOffset, float y, int count) {
+		FloatVector vy = null;
+		//@DONE: it is fater thab ...mul(y)
+		if (count >= EPV)
+		    vy = PFS.broadcast(y);
+
 		xOffset <<= 1;
 
 		while(count >= EPV) {
@@ -2021,8 +2050,7 @@ public final class VOVec {
 			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-			//@TODO: check, do we need to factor-out broadcasted version?
-			vxim.atan2(vxre).mul(y).intoArray(z, zOffset);
+			vxim.atan2(vxre).mul(vy).intoArray(z, zOffset);
 
 			// We load twice as much complex numbers
 			xOffset += EPV * 2;
@@ -2932,11 +2960,18 @@ public final class VOVec {
 	}
 
 	public static void rv_rs_lin_rv_rs_i(float z[], int zOffset, float a1, float x[], int xOffset, float a2, int count) {
+		FloatVector va1 = null;
+		FloatVector va2 = null;
+		//@DONE: it is fater thab ...mul(a1)
+		if (count >= EPV) {
+			va1 = PFS.broadcast(a1);
+			va2 = PFS.broadcast(a2);
+		}
+
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-			//@TODO: check, do we need to factor-out broadcasted version?
-			vz.mul(a1).add(vx.mul(a2)).intoArray(z, zOffset);
+			vz.mul(va1).add(vx.mul(va2)).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
@@ -2951,11 +2986,18 @@ public final class VOVec {
 	}
 
 	public static void rv_rs_lin_rv_rs(float z[], int zOffset, float x[], int xOffset, float a1, float y[], int yOffset, float a2, int count) {
+		FloatVector va1 = null;
+		FloatVector va2 = null;
+		//@DONE: it is fater thab ...mul(a1)
+		if (count >= EPV) {
+			va1 = PFS.broadcast(a1);
+			va2 = PFS.broadcast(a2);
+		}
+
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
-			//@TODO: check, do we need to factor-out broadcasted version?
-			vx.mul(a1).add(vy.mul(a2)).intoArray(z, zOffset);
+			vx.mul(va1).add(vy.mul(va2)).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			yOffset += EPV;
