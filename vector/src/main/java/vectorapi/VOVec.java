@@ -165,12 +165,16 @@ public final class VOVec {
 	}
 
 	public static void cv_add_rs_i(float z[], int zOffset, float x, int count) {
+		FloatVector vx = null;
+		if (count >= EPV2)
+			vx = PFS.zero().blend(x, MASK_C_RE);
+
 		zOffset <<= 1;
 
 		while (count >= EPV2) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-			//@TODO: check, do we need to factor-out broadcasted version?
-			vz.add(x, MASK_C_RE).intoArray(z, zOffset);
+			//@DONE: it is faster than add(x, MASK_C_RE)
+			vz.add(vx).intoArray(z, zOffset);
 
 			zOffset += EPV;
 			count -= EPV2;
@@ -277,12 +281,17 @@ public final class VOVec {
 	}
 
 	public static void cv_add_rs(float z[], int zOffset, float x[], int xOffset, float y, int count) {
+		FloatVector vy = null;
+		if (count >= EPV2)
+			vy = PFS.zero().blend(y, MASK_C_RE);
+
 		xOffset <<= 1;
 		zOffset <<= 1;
 
 		while (count >= EPV2) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			vx.add(y, MASK_C_RE).intoArray(z, zOffset);
+			//@DONE: it is faster than add(y, MASK_C_RE)
+			vx.add(vy).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
@@ -302,6 +311,7 @@ public final class VOVec {
 		zOffset <<= 1;
 
 		while (count >= EPV2) {
+			//@TODO: check load strategy
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
 			vx.add(vy, MASK_C_RE).intoArray(z, zOffset);
@@ -400,11 +410,16 @@ public final class VOVec {
 	}
 
 	public static void cv_sub_rs_i(float z[], int zOffset, float x, int count) {
+		FloatVector vx = null;
+		if (count >= EPV2)
+			vx = PFS.zero().blend(x, MASK_C_RE);
+
 		zOffset <<= 1;
 
 		while (count >= EPV2) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-			vz.sub(x, MASK_C_RE).intoArray(z, zOffset);
+			//@DONE: it is faster than sub(x, MASK_C_RE)
+			vz.sub(vx).intoArray(z, zOffset);
 
 			zOffset += EPV;
 			count -= EPV2;
@@ -528,13 +543,17 @@ public final class VOVec {
 	}
 
 	public static void cv_sub_rs(float z[], int zOffset, float x[], int xOffset, float y, int count) {
+		FloatVector vy = null;
+		if (count >= EPV2)
+			vy = PFS.zero().blend(y, MASK_C_RE);
+
 		zOffset <<= 1;
 		xOffset <<= 1;
 
 		while (count >= EPV2) {
-			//@TODO: check, do we need to factor-out broadcasted vector and remove mask from add()?
+			//@DONE: it is faster than add(x, MASK_C_RE)
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			vx.sub(y, MASK_C_RE).intoArray(z, zOffset);
+			vx.sub(vy).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
