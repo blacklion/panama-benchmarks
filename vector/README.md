@@ -1,9 +1,11 @@
 # Panama Vector API Test and Benchmarks.
 ## Goals
-This project has two goals:
+This project has two main goals:
 
  1. To create set of vector (see below) operations using Vector API from [Project Panama](http://openjdk.java.net/projects/panama/).
  2. To benchmark Vector API against non-vectorized Java implementations of same operations.
+ 
+Also, there will be different small benchmarks for different Vector API code snippets. 
 
 ## Introduction.
 This project contains two implementations of `Math`-like API for math operations over vectors of real (`float`) and complex (pairs of `float`) numbers. Operations are all arithmetic operations plus some specific ones, as exponentiation and complex exponentiation, logarithms, and such.
