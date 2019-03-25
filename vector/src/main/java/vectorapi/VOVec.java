@@ -840,11 +840,11 @@ public final class VOVec {
 			// vmulximswap is [(z[0].im * x.im, z[0].re * x.im), (z[1].im * x.im, z[1].re * x.im), ...]
 			final FloatVector vmulximswap = vmulxim.rearrange(SHUFFLE_CV_SWAP_RE_IM);
 
-			//@TODO: check, do we need mask here and in next call?
+			//@DONE: Looks like sub(vmulximswap, MASK_C_RE) and add(vmulximswap, MASK_C_IM) is slower
 			// vrre ([z[0].re * x.re - z[0].im * x.im, ?], ...)
-			final FloatVector vrre = vmulxre.sub(vmulximswap, MASK_C_RE);
+			final FloatVector vrre = vmulxre.sub(vmulximswap);
 			// vrim ([?, z[0].im * x.re + z[0].re * x.im], ...)
-			final FloatVector vrim = vmulxre.add(vmulximswap, MASK_C_IM);
+			final FloatVector vrim = vmulxre.add(vmulximswap);
 
 			// Blend together & save
 			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
@@ -889,12 +889,11 @@ public final class VOVec {
 			// vmulximswap is [(z[0].im * x.im, z[0].re * x.im), (z[1].im * x.im, z[1].re * x.im), ...]
 			final FloatVector vmulximswap = vmulxim.rearrange(SHUFFLE_CV_SWAP_RE_IM);
 
-			//@TODO: check, do we need mask here and in next call?
+			//@DONE: Looks like sub(vmulximswap, MASK_C_RE) and add(vmulximswap, MASK_C_IM) is slower
 			// vrre is ([z[0].re * x.re - z[0].im * x.im, ?], ...)
-			final FloatVector vrre = vmulxre.sub(vmulximswap, MASK_C_RE);
-
+			final FloatVector vrre = vmulxre.sub(vmulximswap);
 			// vrim is ([?, z[0].im * x.re + z[0].re * x.im], ...)
-			final FloatVector vrim = vmulxre.add(vmulximswap, MASK_C_IM);
+			final FloatVector vrim = vmulxre.add(vmulximswap);
 
 			// Blend together & save
 			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
@@ -1013,11 +1012,11 @@ public final class VOVec {
 			// vmulximswap [(x[0].im * y.im, x[0].re y x.im), (x[1].im * y.im, x[1].re * y.im), ...]
 			final FloatVector vmulximswap = vmulyim.rearrange(SHUFFLE_CV_SWAP_RE_IM);
 
-			//@TODO: check, do we need mask here?
+			//@DONE: Looks like sub(vmulximswap, MASK_C_RE) and add(vmulximswap, MASK_C_IM) is slower
 			// it is ([x[0].re * y.re - x[0].im * y.im, ?], ...)
-			final FloatVector vrre = vmulyre.sub(vmulximswap, MASK_C_RE);
+			final FloatVector vrre = vmulyre.sub(vmulximswap);
 			// it is ([?, x[0].im * y.re + x[0].re * y.im], ...)
-			final FloatVector vrim = vmulyre.add(vmulximswap, MASK_C_IM);
+			final FloatVector vrim = vmulyre.add(vmulximswap);
 
 			// Blend together & save
 			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
@@ -1062,11 +1061,11 @@ public final class VOVec {
 			// vmulximswap is [(x[0].im * y[0].im, x[0].re * x[0].im), (x[1].im * y[1].im, x[1].re * y[1].im), ...]
 			final FloatVector vmulximswap = vmulyim.rearrange(SHUFFLE_CV_SWAP_RE_IM);
 
-			//@TODO: check, do we need mask here and in next call?
+			//@DONE: Looks like sub(vmulximswap, MASK_C_RE) and add(vmulximswap, MASK_C_IM) is slower
 			// vrre is ([x[0].re * y.re - x[0].im * y.im, ?], ...)
-			final FloatVector vrre = vmulyre.sub(vmulximswap, MASK_C_RE);
+			final FloatVector vrre = vmulyre.sub(vmulximswap);
 			// vrim is ([?, x[0].im * y.re + x[0].re * y.im], ...)
-			final FloatVector vrim = vmulyre.add(vmulximswap, MASK_C_IM);
+			final FloatVector vrim = vmulyre.add(vmulximswap);
 
 			// Blend together & save
 			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
@@ -1186,11 +1185,11 @@ public final class VOVec {
 			// vmulximswap is [(z[0].im * x.im, z[0].re * x.im), (z[1].im * x.im, z[1].re * x.im), ...]
 			final FloatVector vmulximswap = vmulxim.rearrange(SHUFFLE_CV_SWAP_RE_IM);
 
-			//@TODO: check, do we need mask here?
+			//@DONE: Looks like sub(vmulximswap, MASK_C_RE) and add(vmulximswap, MASK_C_IM) is slower
 			// vrre is ([z[0].re * x.re + z[0].im * x.im, ?], ...)
-			final FloatVector vrre = vmulxre.add(vmulximswap, MASK_C_RE);
+			final FloatVector vrre = vmulxre.add(vmulximswap);
 			// vrim is ([?, z[0].im * x.re - z[0].re * x.im], ...)
-			final FloatVector vrim = vmulxre.sub(vmulximswap, MASK_C_IM);
+			final FloatVector vrim = vmulxre.sub(vmulximswap);
 
 			// Divide, Blend together & save
 			vrre.blend(vrim, MASK_C_IM).div(vxsq).intoArray(z, zOffset);
@@ -1237,11 +1236,11 @@ public final class VOVec {
 			// vxsq is [(x[0].re * x[0].re + x[0].im * x[0].im, x[0].re * x[0].re + x[0].im * x[0].im), (x[1].re * x[1].re + x[1].im * x[1].im, x[1].re * x[1].re + x[1].im * x[1].im), ...]
 			final FloatVector vxsq = vxre.mul(vxre).add(vxim.mul(vxim));
 
-			//@TODO: check, do we need mask here?
+			//@DONE: Looks like sub(vmulximswap, MASK_C_RE) and add(vmulximswap, MASK_C_IM) is slower
 			// vrre is ([z[0].re * x[0].re - z[0].im * x[0].im, ?], ...)
-			final FloatVector vrre = vmulxre.add(vmulximswap, MASK_C_RE);
+			final FloatVector vrre = vmulxre.add(vmulximswap);
 			// vrim is ([?, z[0].im * x.re - z[0].re * x.im], ...)
-			final FloatVector vrim = vmulxre.sub(vmulximswap, MASK_C_IM);
+			final FloatVector vrim = vmulxre.sub(vmulximswap);
 
 			// Divide, Blend together & save
 			vrre.blend(vrim, MASK_C_IM).div(vxsq).intoArray(z, zOffset);
@@ -1485,11 +1484,11 @@ public final class VOVec {
 			// vmulximswap is [(x[0].im * y.im, x[0].re * y.im), (x[1].im * y.im, x[1].re * y.im), ...]
 			final FloatVector vmulximswap = vmulxim.rearrange(SHUFFLE_CV_SWAP_RE_IM);
 
-			//@TODO: check, do we need mask here?
+			//@DONE: Looks like sub(vmulximswap, MASK_C_RE) and add(vmulximswap, MASK_C_IM) is slower
 			// vrre is ([x[0].re * y.re + x[0].im * y.im, ?], ...)
-			final FloatVector vrre = vmulxre.add(vmulximswap, MASK_C_RE);
+			final FloatVector vrre = vmulxre.add(vmulximswap);
 			// vrim is ([?, x[0].im * y.re - x[0].re * y.im], ...)
-			final FloatVector vrim = vmulxre.sub(vmulximswap, MASK_C_IM);
+			final FloatVector vrim = vmulxre.sub(vmulximswap);
 
 			// Divide, Blend together & save
 			vrre.blend(vrim, MASK_C_IM).div(vysq).intoArray(z, zOffset);
@@ -1538,11 +1537,11 @@ public final class VOVec {
 			// Get abs to divide
 			final FloatVector vysq = vyre.mul(vyre).add(vyim.mul(vyim));
 
-			//@TODO: check, do we need mask here?
+			//@DONE: Looks like sub(vmulximswap, MASK_C_RE) and add(vmulximswap, MASK_C_IM) is slower
 			// vrre is [(x.re * y[0].re + x.im * y[0].im, ?), (x.re * y[1].re + x.im * y[1].im, ?), ...]
-			final FloatVector vrre = vmulxre.add(vmulximswap, MASK_C_RE);
+			final FloatVector vrre = vmulxre.add(vmulximswap);
 			// vrim it is [(?, x.im * y[0].re - x.re * y[0].im), (?, x.im * y[1].re - x.re * y[1].im), ...]
-			final FloatVector vrim = vmulxre.sub(vmulximswap, MASK_C_IM);
+			final FloatVector vrim = vmulxre.sub(vmulximswap);
 
 			// Divide, Blend together & save
 			vrre.blend(vrim, MASK_C_IM).div(vysq).intoArray(z, zOffset);
@@ -1588,11 +1587,11 @@ public final class VOVec {
 			// vysq is [(y[0].re * y[0].re + y[0].im * y[0].im, y[0].re * y[0].re + y[0].im * y[0].im), (y[1].re * y[1].re + y[1].im * y[1].im, y[1].re * y[1].re + y[1].im * y[1].im), ...]
 			final FloatVector vysq = vyre.mul(vyre).add(vyim.mul(vyim));
 
-			//@TODO: check, do we need mask here?
+			//@DONE: Looks like sub(vmulximswap, MASK_C_RE) and add(vmulximswap, MASK_C_IM) is slower
 			// vrre is [(x[0].re * y[0].re + x[0].im * y[0].im, ?), (x[1].re * y[1].re + x[1].im * y[1].im, ?), ...]
-			final FloatVector vrre = vmulxre.add(vmulximswap, MASK_C_RE);
+			final FloatVector vrre = vmulxre.add(vmulximswap);
 			// vrim it is [(?, x[0].im * y[0].re - x[0].re * y[0].im), (?, x[1].im * y[1].re - x[1].re * y[1].im), ...]
-			final FloatVector vrim = vmulxre.sub(vmulximswap, MASK_C_IM);
+			final FloatVector vrim = vmulxre.sub(vmulximswap);
 
 			// Divide, Blend together & save
 			vrre.blend(vrim, MASK_C_IM).div(vysq).intoArray(z, zOffset);
@@ -1662,11 +1661,11 @@ public final class VOVec {
 			// vmulximswap is [(z[0].im * x[0].im, z[0].re * x[0].im), (z[1].im * x[1].im, z[1].re * x[1].im), ...]
 			final FloatVector vmulximswap = vmulxim.rearrange(SHUFFLE_CV_SWAP_RE_IM);
 
-			//@TODO: check, do we need mask here?
+			//@DONE: Looks like sub(vmulximswap, MASK_C_RE) and add(vmulximswap, MASK_C_IM) is slower
 			// vrre it is [(z[0].re * x[0].re + z[0].im * x[0].im, ?), (z[1].re * x[1].re + z[1].im * x[1].im, ?)]
-			final FloatVector vrre = vmulxre.add(vmulximswap, MASK_C_RE);
+			final FloatVector vrre = vmulxre.add(vmulximswap);
 			// vrim it is [(?, z[0].im * x[0].re - z[0].re * x[0].im), (?, z[1].im * x[1].re - z[1].re * x[1].im), ...]
-			final FloatVector vrim = vmulxre.sub(vmulximswap, MASK_C_IM);
+			final FloatVector vrim = vmulxre.sub(vmulximswap);
 
 			// Blend together & save
 			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
@@ -1713,11 +1712,11 @@ public final class VOVec {
 			// vmulyswap is [(x[0].im * y[0].im, x[0].re * x[0].im), (x[1].im * y[1].im, x[1].re * y[1].im), ...]
 			final FloatVector vmulyimswap = vmulyim.rearrange(SHUFFLE_CV_SWAP_RE_IM);
 
-			//@TODO: check, do we need mask here?
+			//@DONE: Looks like sub(vmulximswap, MASK_C_RE) and add(vmulximswap, MASK_C_IM) is slower
 			// vrre it is [(x[0].re * y[0].re + x[0].im * y[0].im, ?), (x[1].re * y[1].re + x[1].im * y[1].im, ?)]
-			final FloatVector vrre = vmulyre.add(vmulyimswap, MASK_C_RE);
+			final FloatVector vrre = vmulyre.add(vmulyimswap);
 			// vrim it is [(?, x[0].im * y[0].re - x[0].re * y[0].im), (?, x[1].im * y[1].re - x[1].re * y[1].im), ...]
-			final FloatVector vrim = vmulyre.sub(vmulyimswap, MASK_C_IM);
+			final FloatVector vrim = vmulyre.sub(vmulyimswap);
 
 			// Blend together & save
 			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
@@ -1785,8 +1784,9 @@ public final class VOVec {
 			//@TODO: check, do we need pack and process twice elements, and save result twice
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_RV_TO_CV_BOTH, 0);
 			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
-			final FloatVector vzre = vx.cos(MASK_C_RE);
-			final FloatVector vzim = vx.sin(MASK_C_IM);
+			//@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
+			final FloatVector vzre = vx.cos();
+			final FloatVector vzim = vx.sin();
 			vzre.blend(vzim, MASK_C_IM).intoArray(z, zOffset);
 
 			xOffset += EPV2;
@@ -1829,7 +1829,7 @@ public final class VOVec {
 			// vzim is [(z[0].im, z[0].im), (z[1].im, z[1].im), ...]
 			final FloatVector vzim = vz.rearrange(SHUFFLE_CV_SPREAD_IM);
 
-			//@TODO: check, do we need mask here?
+			//@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
 			final FloatVector vrre = vzreexp.mul(vzim.cos());
 			final FloatVector vrim = vzreexp.mul(vzim.sin());
 
@@ -1875,7 +1875,7 @@ public final class VOVec {
 			// vxim is [(x[0].im, x[0].im), (x[1].im, x[1].im), ...]
 			final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
 
-			//@TODO: check, do we need mask here?
+			//@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
 			final FloatVector vrre = vxreexp.mul(vxim.cos());
 			final FloatVector vrim = vxreexp.mul(vxim.sin());
 
@@ -2097,7 +2097,7 @@ public final class VOVec {
 			// vzim is [(z[0].im, z[0].im), (z[1].im, z[1].im), ...]
 			final FloatVector vzim = vz.rearrange(SHUFFLE_CV_SPREAD_IM);
 
-			//@TODO: check, do we need add masks here?
+			//@DONE: Masks are insanely expensive here
 			final FloatVector vrre = vzre.hypot(vzim);
 			final FloatVector vrim = vzim.atan2(vzre);
 
@@ -2130,7 +2130,7 @@ public final class VOVec {
 			// vxim is [(x[0].im, x[0].im), (x[1].im, x[1].im), ...]
 			final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
 
-			//@TODO: check, do we need add masks here?
+			//@DONE: Masks are insanely expensive here
 			final FloatVector vrre = vxre.hypot(vxim);
 			final FloatVector vrim = vxim.atan2(vxre);
 
@@ -2162,7 +2162,7 @@ public final class VOVec {
 			// vzim is [(z[0].im, z[0].im), (z[1].im, z[1].im), ...]
 			final FloatVector vzim = vz.rearrange(SHUFFLE_CV_SPREAD_IM);
 
-			//@TODO: check, do we need add masks here?
+			//@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
 			final FloatVector vrre = vzre.mul(vzim.cos());
 			final FloatVector vrim = vzre.mul(vzim.sin());
 
@@ -2196,7 +2196,7 @@ public final class VOVec {
 			// vxim is [(x[0].im, x[0].im), (x[1].im, x[1].im), ...]
 			final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
 
-			//@TODO: check, do we need add masks here?
+			//@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
 			final FloatVector vrre = vxre.mul(vxim.cos());
 			final FloatVector vrim = vxre.mul(vxim.sin());
 
@@ -2337,11 +2337,11 @@ public final class VOVec {
 			// vmulximswap is [(x[0].im * y[0].im, x[0].re * x[0].im), (x[1].im * y[1].im, x[1].re * y[1].im), ...]
 			final FloatVector vmulximswap = vmulyim.rearrange(SHUFFLE_CV_SWAP_RE_IM);
 
-			//@TODO: check, do we need mask here and in next call?
+			//@DONE: vmulyre.sub(vmulximswap, MASK_C_RE) / vmulyre.add(vmulximswap, MASK_C_IM) are slower
 			// vrre is ([x[0].re * y.re - x[0].im * y.im, ?], ...)
-			final FloatVector vrre = vmulyre.sub(vmulximswap, MASK_C_RE);
+			final FloatVector vrre = vmulyre.sub(vmulximswap);
 			// vrim is ([?, x[0].im * y.re + x[0].re * y.im], ...)
-			final FloatVector vrim = vmulyre.add(vmulximswap, MASK_C_IM);
+			final FloatVector vrim = vmulyre.add(vmulximswap);
 
 			//@TODO: Masks are swapped, it is bug in Vector API now
 			re += vrre.addAll(MASK_C_IM);
