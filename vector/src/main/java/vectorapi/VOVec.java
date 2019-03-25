@@ -60,6 +60,7 @@ public final class VOVec {
 	 */
 	private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
 	private final static int EPV = PFS.length();
+	private final static FloatVector.FloatSpecies PFS2 = FloatVector.species(Vector.Shape.forBitSize(PFS.bitSize() / 2));
 	private final static int EPV2 = EPV / 2;
 	private final static Vector.Mask<Float> MASK_C_RE;
 	private final static Vector.Mask<Float> MASK_C_IM;
@@ -71,6 +72,7 @@ public final class VOVec {
 	private final static int[] LOAD_CV_TO_CV_SPREAD_IM;
 	private final static int[] LOAD_CV_TO_CV_PACK_RE;
 	private final static int[] LOAD_CV_TO_CV_PACK_IM;
+	private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE;
 	private final static Vector.Shuffle<Float> SHUFFLE_CV_SWAP_RE_IM;
 	private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_RE;
 	private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_IM;
@@ -92,11 +94,8 @@ public final class VOVec {
 		LOAD_CV_TO_CV_PACK_IM = new int[EPV];
 		for (int i = 0; i < EPV; i++) {
 			// Load real vector to complex vector's RE part
-			// [r1, r2, ...] -> [(r1, 0), (r2, 0), ...]
-			if (i % 2 == 0)
-				LOAD_RV_TO_CV_RE[i] = i / 2;
-			else
-				LOAD_RV_TO_CV_RE[i] = 0;
+			// [r1, r2, ...] -> [(r1, ?), (r2, ?), ...]
+			LOAD_RV_TO_CV_RE[i] = i / 2;
 
 			// Load real vector to complex vector's IM part
 			// [r1, r2, ...] -> [(r1, r1), (r2, r2), ...]
@@ -125,6 +124,7 @@ public final class VOVec {
 			// [(re1, im1), (re2, im2), ...] -> [im1, im2, ...]
 			LOAD_CV_TO_CV_PACK_IM[i] = i * 2 + 1;
 		}
+		SHUFFLE_RV_TO_CV_RE = FloatVector.shuffleFromArray(PFS, LOAD_RV_TO_CV_RE, 0);
 		SHUFFLE_CV_SPREAD_RE = FloatVector.shuffleFromArray(PFS, LOAD_CV_TO_CV_SPREAD_RE, 0);
 		SHUFFLE_CV_SPREAD_IM = FloatVector.shuffleFromArray(PFS, LOAD_CV_TO_CV_SPREAD_IM, 0);
 
@@ -191,9 +191,9 @@ public final class VOVec {
 
 		while (count >= EPV2) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-			//@TODO: check, do we need to load vx to shorter vector and reshape it, or remove mask from add?
-			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
-			vz.add(vx, MASK_C_RE).intoArray(z, zOffset);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset).rearrange(SHUFFLE_RV_TO_CV_RE).blend(PFS.zero(), MASK_C_IM);
+			vz.add(vx).intoArray(z, zOffset);
 
 			xOffset += EPV2;
 			zOffset += EPV;
@@ -311,10 +311,10 @@ public final class VOVec {
 		zOffset <<= 1;
 
 		while (count >= EPV2) {
-			//@TODO: check load strategy
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
-			vx.add(vy, MASK_C_RE).intoArray(z, zOffset);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, y, yOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
+			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset).rearrange(SHUFFLE_RV_TO_CV_RE).blend(PFS.zero(), MASK_C_IM);
+			vx.add(vy).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			yOffset += EPV2;
@@ -436,8 +436,9 @@ public final class VOVec {
 
 		while (count >= EPV2) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
-			vz.sub(vx, MASK_C_RE).intoArray(z, zOffset);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset).rearrange(SHUFFLE_RV_TO_CV_RE).blend(PFS.zero(), MASK_C_IM);
+			vz.sub(vx).intoArray(z, zOffset);
 
 			xOffset += EPV2;
 			zOffset += EPV;
@@ -599,9 +600,9 @@ public final class VOVec {
 
 		while (count >= EPV2) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			//@TODO: check, do we need to load vy to shorter vector and reshape it, or remove mask from add?
-			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
-			vx.sub(vy, MASK_C_RE).intoArray(z, zOffset);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, y, yOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
+			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset).rearrange(SHUFFLE_RV_TO_CV_RE).blend(PFS.zero(), MASK_C_IM);
+			vx.sub(vy).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			yOffset += EPV2;
@@ -622,8 +623,8 @@ public final class VOVec {
 		zOffset <<= 1;
 
 		while (count >= EPV2) {
-			//@TODO: check, do we need to load vx to shorter vector and reshape it, or pass mask to sub()?
-			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset).rearrange(SHUFFLE_RV_TO_CV_RE).blend(PFS.zero(), MASK_C_IM);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
 			vx.sub(vy).intoArray(z, zOffset);
 
@@ -1994,7 +1995,9 @@ public final class VOVec {
 	public static void rv_cvt(float z[], int zOffset, float x[], int xOffset, int count) {
 		zOffset <<= 1;
 		while (count >= EPV2) {
-			FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0).intoArray(z, zOffset);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset).rearrange(SHUFFLE_RV_TO_CV_RE).blend(PFS.zero(), MASK_C_IM);
+			vx.intoArray(z, zOffset);
 
 			xOffset += EPV2;
 			zOffset += EPV;
