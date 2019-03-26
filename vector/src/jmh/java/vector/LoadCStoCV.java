@@ -69,15 +69,15 @@ public class LoadCStoCV {
         }
     }
 
-
     @Benchmark
     public void complexLoad(Blackhole bh) {
-        bh.consume( FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0));
+        final FloatVector vx = FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0);
+        bh.consume(vx.add(vx));
     }
 
     @Benchmark
     public void loadAndReshuffle(Blackhole bh) {
-        final FloatVector vr = FloatVector.fromArray(FS64, x, 0);
-        bh.consume(vr.reshape(PFS).rearrange(SHUFFLE_CS_TO_CV));
+        final FloatVector vx = FloatVector.fromArray(FS64, x, 0).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV);
+        bh.consume(vx.add(vx));
     }
 }
