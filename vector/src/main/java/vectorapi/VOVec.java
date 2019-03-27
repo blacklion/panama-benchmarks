@@ -2283,6 +2283,32 @@ public final class VOVec {
 		z[1] = im;
 	}
 
+	public static void cv_sum(float z[], int zOffset, float x[], int xOffset, int count) {
+		float re = 0.0f;
+		float im = 0.0f;
+		xOffset <<= 1;
+		zOffset <<= 1;
+
+		while (count >= EPV2) {
+			//@TODO Check, can we pack and process twice elements, and save result twice
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+
+			re += vx.addAll(MASK_C_RE);
+			im += vx.addAll(MASK_C_IM);
+
+			xOffset += EPV;
+			count -= EPV2;
+		}
+
+		while (count-- > 0) {
+			re += x[xOffset + 0];
+			im += x[xOffset + 1];
+			xOffset += 2;
+		}
+		z[zOffset + 0] = re;
+		z[zOffset + 1] = im;
+	}
+
 	public static float rv_dot_rv(float x[], int xOffset, float y[], int yOffset, int count) {
 		float sum = 0.0f;
 
@@ -2340,6 +2366,45 @@ public final class VOVec {
 		z[1] = im;
 	}
 
+	public static void rv_dot_cv(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
+		float re = 0.0f;
+		float im = 0.0f;
+		yOffset <<= 1;
+		zOffset <<= 1;
+
+		while (count >= EPV) {
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			//@DONE: It is faster than FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
+			final FloatVector vy1 = FloatVector.fromArray(PFS, y, yOffset);
+			final FloatVector vy2 = FloatVector.fromArray(PFS, y, yOffset + PFS.length());
+
+			final FloatVector vy1re = vy1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vy1im = vy1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+
+			final FloatVector vy2re = vy2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vy2im = vy2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+
+			final FloatVector vyre = vy1re.blend(vy2re, MASK_SECOND_HALF);
+			final FloatVector vyim = vy1im.blend(vy2im, MASK_SECOND_HALF);
+
+			re += vx.mul(vyre).addAll();
+			im += vx.mul(vyim).addAll();
+
+			xOffset += EPV;
+			yOffset += EPV * 2; // We load twice as much complex numbers
+			count -= EPV;
+		}
+
+		while (count-- > 0) {
+			re += x[xOffset] * y[yOffset + 0];
+			im += x[xOffset] * y[yOffset + 1];
+			xOffset += 1;
+			yOffset += 2;
+		}
+		z[zOffset + 0] = re;
+		z[zOffset + 1] = im;
+	}
+
 	public static void cv_dot_cv(float z[], float x[], int xOffset, float y[], int yOffset, int count) {
 		float re = 0.0f;
 		float im = 0.0f;
@@ -2390,6 +2455,86 @@ public final class VOVec {
 		}
 		z[0] = re;
 		z[1] = im;
+	}
+
+	public static void cv_dot_cv(float z[], int zOffset, float x[], int xOffset, float y[], int yOffset, int count) {
+		float re = 0.0f;
+		float im = 0.0f;
+		xOffset <<= 1;
+		yOffset <<= 1;
+		zOffset <<= 1;
+
+		while (count >= EPV2) {
+			//@DONE: one load & two reshuffles are faster
+			// vy is [(y[0].re, y[0].im), (y[1].re, y[1].im), ...]
+			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+			// vyre is [(y[0].re, y[0].re), (y[1].re, y[1].re), ...]
+			final FloatVector vyre = vy.rearrange(SHUFFLE_CV_SPREAD_RE);
+			// vyim is [(y[0].im, y[0].im), (y[1].im, y[1].im), ...]
+			final FloatVector vyim = vy.rearrange(SHUFFLE_CV_SPREAD_IM);
+
+			// vx is [(x[0].re, x[0].im), (x[1].re, x[1].im), ...]
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+
+			// vmulyre is [(x[0].re * y[0].re, x[0].im * y.re), (x[1].re * y[1].re, x[1].im * y[1].re), ...]
+			final FloatVector vmulyre = vx.mul(vyre);
+			// vmulyim is [(x[0].re * y.im, x[0].im * y.im), (x[1].re * y.im, x[1].im * y[1].im), ...]
+			final FloatVector vmulyim = vx.mul(vyim);
+			// vmulximswap is [(x[0].im * y[0].im, x[0].re * x[0].im), (x[1].im * y[1].im, x[1].re * y[1].im), ...]
+			final FloatVector vmulximswap = vmulyim.rearrange(SHUFFLE_CV_SWAP_RE_IM);
+
+			//@DONE: vmulyre.sub(vmulximswap, MASK_C_RE) / vmulyre.add(vmulximswap, MASK_C_IM) are slower
+			// vrre is ([x[0].re * y.re - x[0].im * y.im, ?], ...)
+			final FloatVector vrre = vmulyre.sub(vmulximswap);
+			// vrim is ([?, x[0].im * y.re + x[0].re * y.im], ...)
+			final FloatVector vrim = vmulyre.add(vmulximswap);
+
+			re += vrre.addAll(MASK_C_RE);
+			im += vrim.addAll(MASK_C_IM);
+
+			xOffset += EPV;
+			yOffset += EPV;
+			count -= EPV2;
+		}
+
+		float k0, k1;
+		while (count-- > 0) {
+			k0 = x[xOffset + 0] * y[yOffset + 0];
+			k1 = x[xOffset + 1] * y[yOffset + 1];
+			re += k0 - k1;
+			im += (x[xOffset + 0] + x[xOffset + 1]) * (y[yOffset + 0] + y[yOffset + 1]) - k0 - k1;
+			xOffset += 2;
+			yOffset += 2;
+		}
+		z[zOffset + 0] = re;
+		z[zOffset + 1] = im;
+	}
+
+	public static void rv_cpy(float z[], int zOffset, float x[], int xOffset, int count) {
+		// Just for fun: maybe, it is faster than System.arraycopy()? :-)
+		while (count >= EPV) {
+			FloatVector.fromArray(PFS, x, xOffset).intoArray(z, zOffset);
+
+			xOffset += EPV;
+			zOffset += EPV;
+			count -= EPV;
+		}
+		System.arraycopy(x, xOffset, z, zOffset, count);
+	}
+
+	public static void cv_cpy(float z[], int zOffset, float x[], int xOffset, int count) {
+		xOffset <<= 1;
+		zOffset <<= 1;
+
+		// Just for fun: maybe, it is faster than System.arraycopy()? :-)
+		while (count >= EPV2) {
+			FloatVector.fromArray(PFS, x, xOffset).intoArray(z, zOffset);
+
+			xOffset += EPV;
+			zOffset += EPV;
+			count -= EPV2;
+		}
+		System.arraycopy(x, xOffset, z, zOffset, count * 2);
 	}
 
 	public static float rv_max(float x[], int xOffset, int count) {
@@ -2497,6 +2642,55 @@ public final class VOVec {
 		}
 		z[0] = x[i + 0];
 		z[1] = x[i + 1];
+	}
+
+	public static void cv_max(float z[], int zOffset, float x[], int xOffset, int count) {
+		float max = Float.NEGATIVE_INFINITY;
+		int i = -1;
+		xOffset <<= 1;
+		zOffset <<= 1;
+
+		while (count >= EPV) {
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
+
+			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+
+			final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+
+			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
+			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+
+			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			float localMax = vxabs.maxAll();
+			if (max < localMax) {
+				// Find it now
+				for (int j = 0; j < EPV; j++) {
+					if (vxabs.get(j) == localMax) {
+						i = xOffset + j * 2;
+						break;
+					}
+				}
+				max = localMax;
+			}
+
+			xOffset += EPV * 2;
+			count -= EPV;
+		}
+
+		while (count-- > 0) {
+			float abs = x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1];
+			if (max < abs) {
+				max = abs;
+				i = xOffset;
+			}
+			xOffset += 2;
+		}
+		z[zOffset + 0] = x[i + 0];
+		z[zOffset + 1] = x[i + 1];
 	}
 
 	public static void cv_max_cv_i(float z[], int zOffset, float x[], int xOffset, int count) {
@@ -2693,6 +2887,55 @@ public final class VOVec {
 		}
 		z[0] = x[i + 0];
 		z[1] = x[i + 1];
+	}
+
+	public static void cv_min(float z[], int zOffset, float x[], int xOffset, int count) {
+		float min = Float.POSITIVE_INFINITY;
+		int i = -1;
+		xOffset <<= 1;
+		zOffset <<= 1;
+
+		while (count >= EPV) {
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
+
+			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+
+			final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+
+			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
+			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+
+			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			float localMin = vxabs.minAll();
+			if (min > localMin) {
+				// Find it/ now
+				for (int j = 0; j < EPV; j++) {
+					if (vxabs.get(j) == localMin) {
+						i = xOffset + j * 2;
+						break;
+					}
+				}
+				min = localMin;
+			}
+
+			xOffset += EPV * 2;
+			count -= EPV;
+		}
+
+		while (count-- > 0) {
+			float abs = x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1];
+			if (min > abs) {
+				min = abs;
+				i = xOffset;
+			}
+			xOffset += 2;
+		}
+		z[zOffset + 0] = x[i + 0];
+		z[zOffset + 1] = x[i + 1];
 	}
 
 	public static void cv_min_cv_i(float z[], int zOffset, float x[], int xOffset, int count) {

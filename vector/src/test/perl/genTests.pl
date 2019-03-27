@@ -332,6 +332,15 @@ sub generateTest2o {
 		print $CODE_INDENT, "VO.$name(",    join(', ', ("${out}z1", @args)), ");\n";
 		print $CODE_INDENT, "VOVec.$name(", join(', ', ("${out}z2", @args)), ");\n";
 		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op), ");\n";
+
+		# And second one!
+		&generateTestFooter();
+		&generateTestHeader($name.'_zoffset');
+		print $CODE_INDENT, "float ${out}z1[] = new float[6];\n";
+		print $CODE_INDENT, "float ${out}z2[] = new float[6];\n";
+		print $CODE_INDENT, "VO.$name(",    join(', ', ("${out}z1", "1", @args)), ");\n";
+		print $CODE_INDENT, "VOVec.$name(", join(', ', ("${out}z2", "1", @args)), ");\n";
+		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op), ");\n";
 	} elsif ($out eq 'rv' || $out eq 'cv') {
 		print $CODE_INDENT, "float ${out}z1[] = new float[${out}z.length];\n";
 		print $CODE_INDENT, "float ${out}z2[] = new float[${out}z.length];\n";

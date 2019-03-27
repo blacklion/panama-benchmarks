@@ -339,6 +339,16 @@ public class VectorTests {
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
+    @ParameterizedTest(name = "cv_cpy({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_cpy(int size, int offset) {
+        float cvz1[] = new float[cvz.length];
+        float cvz2[] = new float[cvz.length];
+        VO.cv_cpy(cvz1, 0, cvx, offset, size);
+        VOVec.cv_cpy(cvz2, 0, cvx, offset, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
     @ParameterizedTest(name = "cv_div_cs({0}, {1})")
     @MethodSource("params")
     public void Test_cv_div_cs(int size, int offset) {
@@ -430,6 +440,16 @@ public class VectorTests {
         float csz2[] = new float[2];
         VO.cv_dot_cv(csz1, cvx, offset, cvy, offset, size);
         VOVec.cv_dot_cv(csz2, cvx, offset, cvy, offset, size);
+        assertArrayEquals(csz1, csz2, EPSILON * size);
+    }
+
+    @ParameterizedTest(name = "cv_dot_cv_zoffset({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_dot_cv_zoffset(int size, int offset) {
+        float csz1[] = new float[6];
+        float csz2[] = new float[6];
+        VO.cv_dot_cv(csz1, 1, cvx, offset, cvy, offset, size);
+        VOVec.cv_dot_cv(csz2, 1, cvx, offset, cvy, offset, size);
         assertArrayEquals(csz1, csz2, EPSILON * size);
     }
 
@@ -963,6 +983,16 @@ public class VectorTests {
         assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
+    @ParameterizedTest(name = "rv_cpy({0}, {1})")
+    @MethodSource("params")
+    public void Test_rv_cpy(int size, int offset) {
+        float rvz1[] = new float[rvz.length];
+        float rvz2[] = new float[rvz.length];
+        VO.rv_cpy(rvz1, 0, rvx, offset, size);
+        VOVec.rv_cpy(rvz2, 0, rvx, offset, size);
+        assertArrayEquals(rvz1, rvz2, EPSILON);
+    }
+
     @ParameterizedTest(name = "rv_cvt({0}, {1})")
     @MethodSource("params")
     public void Test_rv_cvt(int size, int offset) {
@@ -1032,6 +1062,16 @@ public class VectorTests {
         float csz2[] = new float[2];
         VO.rv_dot_cv(csz1, rvx, offset, cvy, offset, size);
         VOVec.rv_dot_cv(csz2, rvx, offset, cvy, offset, size);
+        assertArrayEquals(csz1, csz2, EPSILON * size);
+    }
+
+    @ParameterizedTest(name = "rv_dot_cv_zoffset({0}, {1})")
+    @MethodSource("params")
+    public void Test_rv_dot_cv_zoffset(int size, int offset) {
+        float csz1[] = new float[6];
+        float csz2[] = new float[6];
+        VO.rv_dot_cv(csz1, 1, rvx, offset, cvy, offset, size);
+        VOVec.rv_dot_cv(csz2, 1, rvx, offset, cvy, offset, size);
         assertArrayEquals(csz1, csz2, EPSILON * size);
     }
 
