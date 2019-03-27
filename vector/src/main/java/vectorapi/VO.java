@@ -3432,7 +3432,7 @@ public final class VO {
 
 	public static void rv_10log10_i(float z[], int zOffset, int count) {
 		while (count-- > 0) {
-			z[zOffset] = 10 * (float)Math.log10(Math.abs(z[zOffset]) + Float.MIN_NORMAL);
+			z[zOffset] = 10 * (float)Math.log10(Math.abs(z[zOffset]));
 			zOffset += 1;
 		}
 	}
@@ -3440,7 +3440,7 @@ public final class VO {
 	public static void rv_10log10_iw(float z[], int zOffset, int count) {
 		zOffset = preWrap(zOffset, z.length);
 		while (count-- > 0) {
-			z[zOffset] = 10 * (float)Math.log10(Math.abs(z[zOffset]) + Float.MIN_NORMAL);
+			z[zOffset] = 10 * (float)Math.log10(Math.abs(z[zOffset]));
 			zOffset += 1;
 			if (zOffset == z.length) zOffset = 0;
 		}
@@ -3448,14 +3448,14 @@ public final class VO {
 
 	public static void rv_10log10(float z[], int zOffset, float x[], int xOffset, int count) {
 		while (count-- > 0)
-			z[zOffset++] = 10 * (float)Math.log10(Math.abs(x[xOffset++]) + Float.MIN_NORMAL);
+			z[zOffset++] = 10 * (float)Math.log10(Math.abs(x[xOffset++]));
 	}
 
 	public static void rv_10log10_w(float z[], int zOffset, float x[], int xOffset, int count) {
 		zOffset = preWrap(zOffset, z.length);
 		xOffset = preWrap(xOffset, x.length);
 		while (count-- > 0) {
-			z[zOffset] = 10 * (float)Math.log10(Math.abs(x[xOffset]) + Float.MIN_NORMAL);
+			z[zOffset] = 10 * (float)Math.log10(Math.abs(x[xOffset]));
 			zOffset += 1;
 			if (zOffset == z.length) zOffset = 0;
 			xOffset += 1;
@@ -3464,35 +3464,35 @@ public final class VO {
 	}
 
 	public static void rv_10log10_rs_i(float z[], int zOffset, float base, int count) {
-		base = 10 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
+		base = 10 * (float)Math.log10(Math.abs(base));
 		while (count-- > 0) {
-			z[zOffset] = 10 * (float)Math.log10(Math.abs(z[zOffset]) + Float.MIN_NORMAL) - base;
+			z[zOffset] = 10 * (float)Math.log10(Math.abs(z[zOffset])) - base;
 			zOffset += 1;
 		}
 	}
 
 	public static void rv_10log10_rs_iw(float z[], int zOffset, float base, int count) {
-		base = 10 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
+		base = 10 * (float)Math.log10(Math.abs(base));
 		zOffset = preWrap(zOffset, z.length);
 		while (count-- > 0) {
-			z[zOffset] = 10 * (float)Math.log10(Math.abs(z[zOffset]) + Float.MIN_NORMAL) - base;
+			z[zOffset] = 10 * (float)Math.log10(Math.abs(z[zOffset])) - base;
 			zOffset += 1;
 			if (zOffset == z.length) zOffset = 0;
 		}
 	}
 
 	public static void rv_10log10_rs(float z[], int zOffset, float x[], int xOffset, float base, int count) {
-		base = 10 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
+		base = 10 * (float)Math.log10(Math.abs(base));
 		while (count-- > 0)
-			z[zOffset++] = 10 * (float)Math.log10(Math.abs(x[xOffset++]) + Float.MIN_NORMAL) - base;
+			z[zOffset++] = 10 * (float)Math.log10(Math.abs(x[xOffset++])) - base;
 	}
 
 	public static void rv_10log10_rs_w(float z[], int zOffset, float x[], int xOffset, float base, int count) {
-		base = 10 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
+		base = 10 * (float)Math.log10(Math.abs(base));
 		zOffset = preWrap(zOffset, z.length);
 		xOffset = preWrap(xOffset, x.length);
 		while (count-- > 0) {
-			z[zOffset] = 10 * (float)Math.log10(Math.abs(x[xOffset]) + Float.MIN_NORMAL) - base;
+			z[zOffset] = 10 * (float)Math.log10(Math.abs(x[xOffset])) - base;
 			zOffset += 1;
 			if (zOffset == z.length) zOffset = 0;
 			xOffset += 1;
@@ -3503,7 +3503,7 @@ public final class VO {
 	public static void cv_10log10(float z[], int zOffset, float x[], int xOffset, int count) {
 		xOffset <<= 1;
 		while (count-- > 0) {
-			z[zOffset] = 5 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL);
+			z[zOffset] = 5 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]);
 			zOffset += 1;
 			xOffset += 2;
 		}
@@ -3513,7 +3513,7 @@ public final class VO {
 		zOffset = preWrap(zOffset, z.length);
 		xOffset = preWrap(xOffset << 1, x.length);
 		while (count-- > 0) {
-			z[zOffset] = 5 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL);
+			z[zOffset] = 5 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]);
 			zOffset += 1;
 			if (zOffset == z.length) zOffset = 0;
 			xOffset += 2;
@@ -3522,21 +3522,21 @@ public final class VO {
 	}
 
 	public static void cv_10log10_rs(float z[], int zOffset, float x[], int xOffset, float base, int count) {
-		base = 10 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
+		base = 10 * (float)Math.log10(Math.abs(base));
 		xOffset <<= 1;
 		while (count-- > 0) {
-			z[zOffset] = 5 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL) - base;
+			z[zOffset] = 5 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]) - base;
 			zOffset += 1;
 			xOffset += 2;
 		}
 	}
 
 	public static void cv_10log10_rs_w(float z[], int zOffset, float x[], int xOffset, float base, int count) {
-		base = 10 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
+		base = 10 * (float)Math.log10(Math.abs(base));
 		zOffset = preWrap(zOffset, z.length);
 		xOffset = preWrap(xOffset << 1, x.length);
 		while (count-- > 0) {
-			z[zOffset] = 5 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL) - base;
+			z[zOffset] = 5 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]) - base;
 			zOffset += 1;
 			if (zOffset == z.length) zOffset = 0;
 			xOffset += 2;
@@ -3546,7 +3546,7 @@ public final class VO {
 
 	public static void rv_20log10_i(float z[], int zOffset, int count) {
 		while (count-- > 0) {
-			z[zOffset] = 20 * (float)Math.log10(Math.abs(z[zOffset]) + Float.MIN_NORMAL);
+			z[zOffset] = 20 * (float)Math.log10(Math.abs(z[zOffset]));
 			zOffset += 1;
 		}
 	}
@@ -3554,7 +3554,7 @@ public final class VO {
 	public static void rv_20log10_iw(float z[], int zOffset, int count) {
 		zOffset = preWrap(zOffset, z.length);
 		while (count-- > 0) {
-			z[zOffset] = 20 * (float)Math.log10(Math.abs(z[zOffset]) + Float.MIN_NORMAL);
+			z[zOffset] = 20 * (float)Math.log10(Math.abs(z[zOffset]));
 			zOffset += 1;
 			if (zOffset == z.length) zOffset = 0;
 		}
@@ -3562,14 +3562,14 @@ public final class VO {
 
 	public static void rv_20log10(float z[], int zOffset, float x[], int xOffset, int count) {
 		while (count-- > 0)
-			z[zOffset++] = 20 * (float)Math.log10(Math.abs(x[xOffset++]) + Float.MIN_NORMAL);
+			z[zOffset++] = 20 * (float)Math.log10(Math.abs(x[xOffset++]));
 	}
 
 	public static void rv_20log10_w(float z[], int zOffset, float x[], int xOffset, int count) {
 		zOffset = preWrap(zOffset, z.length);
 		xOffset = preWrap(xOffset, x.length);
 		while (count-- > 0) {
-			z[zOffset] = 20 * (float)Math.log10(Math.abs(x[xOffset]) + Float.MIN_NORMAL);
+			z[zOffset] = 20 * (float)Math.log10(Math.abs(x[xOffset]));
 			zOffset += 1;
 			if (zOffset == z.length) zOffset = 0;
 			xOffset += 1;
@@ -3578,35 +3578,35 @@ public final class VO {
 	}
 
 	public static void rv_20log10_rs_i(float z[], int zOffset, float base, int count) {
-		base = 20 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
+		base = 20 * (float)Math.log10(Math.abs(base));
 		while (count-- > 0) {
-			z[zOffset] = 20 * (float)Math.log10(Math.abs(z[zOffset]) + Float.MIN_NORMAL) - base;
+			z[zOffset] = 20 * (float)Math.log10(Math.abs(z[zOffset])) - base;
 			zOffset += 1;
 		}
 	}
 
 	public static void rv_20log10_rs_iw(float z[], int zOffset, float base, int count) {
-		base = 20 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
+		base = 20 * (float)Math.log10(Math.abs(base));
 		zOffset = preWrap(zOffset, z.length);
 		while (count-- > 0) {
-			z[zOffset] = 20 * (float)Math.log10(Math.abs(z[zOffset]) + Float.MIN_NORMAL) - base;
+			z[zOffset] = 20 * (float)Math.log10(Math.abs(z[zOffset])) - base;
 			zOffset += 1;
 			if (zOffset == z.length) zOffset = 0;
 		}
 	}
 
 	public static void rv_20log10_rs(float z[], int zOffset, float x[], int xOffset, float base, int count) {
-		base = 20 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
+		base = 20 * (float)Math.log10(Math.abs(base));
 		while (count-- > 0)
-			z[zOffset++] = 20 * (float)Math.log10(Math.abs(x[xOffset++]) + Float.MIN_NORMAL) - base;
+			z[zOffset++] = 20 * (float)Math.log10(Math.abs(x[xOffset++])) - base;
 	}
 
 	public static void rv_20log10_rs_w(float z[], int zOffset, float x[], int xOffset, float base, int count) {
-		base = 20 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
+		base = 20 * (float)Math.log10(Math.abs(base));
 		zOffset = preWrap(zOffset, z.length);
 		xOffset = preWrap(xOffset, x.length);
 		while (count-- > 0) {
-			z[zOffset] = 20 * (float)Math.log10(Math.abs(x[xOffset]) + Float.MIN_NORMAL) - base;
+			z[zOffset] = 20 * (float)Math.log10(Math.abs(x[xOffset])) - base;
 			zOffset += 1;
 			if (zOffset == z.length) zOffset = 0;
 			xOffset += 1;
@@ -3617,7 +3617,7 @@ public final class VO {
 	public static void cv_20log10(float z[], int zOffset, float x[], int xOffset, int count) {
 		xOffset <<= 1;
 		while (count-- > 0) {
-			z[zOffset] = 10 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL);
+			z[zOffset] = 10 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]);
 			zOffset += 1;
 			xOffset += 2;
 		}
@@ -3627,7 +3627,7 @@ public final class VO {
 		zOffset = preWrap(zOffset, z.length);
 		xOffset = preWrap(xOffset << 1, x.length);
 		while (count-- > 0) {
-			z[zOffset] = 10 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL);
+			z[zOffset] = 10 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]);
 			zOffset += 1;
 			if (zOffset == z.length) zOffset = 0;
 			xOffset += 2;
@@ -3636,21 +3636,21 @@ public final class VO {
 	}
 
 	public static void cv_20log10_rs(float z[], int zOffset, float x[], int xOffset, float base, int count) {
-		base = 20 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
+		base = 20 * (float)Math.log10(Math.abs(base));
 		xOffset <<= 1;
 		while (count-- > 0) {
-			z[zOffset] = 10 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL) - base;
+			z[zOffset] = 10 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]) - base;
 			zOffset += 1;
 			xOffset += 2;
 		}
 	}
 
 	public static void cv_20log10_rs_w(float z[], int zOffset, float x[], int xOffset, float base, int count) {
-		base = 20 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
+		base = 20 * (float)Math.log10(Math.abs(base));
 		zOffset = preWrap(zOffset, z.length);
 		xOffset = preWrap(xOffset << 1, x.length);
 		while (count-- > 0) {
-			z[zOffset] = 10 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1] + Float.MIN_NORMAL) - base;
+			z[zOffset] = 10 * (float)Math.log10(x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1]) - base;
 			zOffset += 1;
 			if (zOffset == z.length) zOffset = 0;
 			xOffset += 2;

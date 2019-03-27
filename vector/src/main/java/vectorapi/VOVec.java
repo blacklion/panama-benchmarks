@@ -82,8 +82,6 @@ public final class VOVec {
  	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND;
  	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND;
 
-
-
 	static {
 		boolean[] alter = new boolean[EPV + 1];
 
@@ -3254,8 +3252,7 @@ public final class VOVec {
 	public static void rv_10log10_i(float z[], int zOffset, int count) {
 		while (count >= EPV) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-			//@TODO: do something with MIN_NORMAL?
-			vz.abs().add(Float.MIN_NORMAL).log10().mul(10.0f).intoArray(z, zOffset);
+			vz.abs().log10().mul(10.0f).intoArray(z, zOffset);
 
 			zOffset += EPV;
 			count -= EPV;
@@ -3270,8 +3267,7 @@ public final class VOVec {
 	public static void rv_10log10(float z[], int zOffset, float x[], int xOffset, int count) {
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			//@TODO: do something with MIN_NORMAL?
-			vx.abs().add(Float.MIN_NORMAL).log10().mul(10.0f).intoArray(z, zOffset);
+			vx.abs().log10().mul(10.0f).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
@@ -3287,8 +3283,7 @@ public final class VOVec {
 
 		while (count >= EPV) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-			//@TODO: do something with MIN_NORMAL?
-			vz.abs().add(Float.MIN_NORMAL).log10().mul(10.0f).sub(base).intoArray(z, zOffset);
+			vz.abs().log10().mul(10.0f).sub(base).intoArray(z, zOffset);
 
 			zOffset += EPV;
 			count -= EPV;
@@ -3305,8 +3300,7 @@ public final class VOVec {
 
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			//@TODO: do something with MIN_NORMAL?
-			vx.abs().add(Float.MIN_NORMAL).log10().mul(10.0f).sub(base).intoArray(z, zOffset);
+			vx.abs().log10().mul(10.0f).sub(base).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
@@ -3336,8 +3330,7 @@ public final class VOVec {
 
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
 
-			//@TODO: do something with MIN_NORMAL?
-			vxabs.add(Float.MIN_NORMAL).log10().mul(5.0f).intoArray(z, zOffset);
+			vxabs.log10().mul(5.0f).intoArray(z, zOffset);
 
 			// We load twice as much complex numbers
 			xOffset += EPV * 2;
@@ -3372,8 +3365,7 @@ public final class VOVec {
 
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
 
-			//@TODO: do something with MIN_NORMAL?
-			vxabs.add(Float.MIN_NORMAL).log10().mul(5.0f).sub(base).intoArray(z, zOffset);
+			vxabs.log10().mul(5.0f).sub(base).intoArray(z, zOffset);
 
 			// We load twice as much complex numbers
 			xOffset += EPV * 2;
@@ -3391,8 +3383,7 @@ public final class VOVec {
 	public static void rv_20log10_i(float z[], int zOffset, int count) {
 		while (count >= EPV) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-			//@TODO: do something with MIN_NORMAL?
-			vz.abs().add(Float.MIN_NORMAL).log10().mul(20.0f).intoArray(z, zOffset);
+			vz.abs().log10().mul(20.0f).intoArray(z, zOffset);
 
 			zOffset += EPV;
 			count -= EPV;
@@ -3407,8 +3398,7 @@ public final class VOVec {
 	public static void rv_20log10(float z[], int zOffset, float x[], int xOffset, int count) {
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			//@TODO: do something with MIN_NORMAL?
-			vx.abs().add(Float.MIN_NORMAL).log10().mul(20.0f).intoArray(z, zOffset);
+			vx.abs().log10().mul(20.0f).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
@@ -3424,8 +3414,7 @@ public final class VOVec {
 
 		while (count >= EPV) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-			//@TODO: do something with MIN_NORMAL?
-			vz.abs().add(Float.MIN_NORMAL).log10().mul(20.0f).sub(base).intoArray(z, zOffset);
+			vz.abs().log10().mul(20.0f).sub(base).intoArray(z, zOffset);
 
 			zOffset += EPV;
 			count -= EPV;
@@ -3442,8 +3431,7 @@ public final class VOVec {
 
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			//@TODO: do something with MIN_NORMAL?
-			vx.abs().add(Float.MIN_NORMAL).log10().mul(20.0f).sub(base).intoArray(z, zOffset);
+			vx.abs().log10().mul(20.0f).sub(base).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
@@ -3473,8 +3461,7 @@ public final class VOVec {
 
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
 
-			//@TODO: do something with MIN_NORMAL?
-			vxabs.add(Float.MIN_NORMAL).log10().mul(10.0f).intoArray(z, zOffset);
+			vxabs.log10().mul(10.0f).intoArray(z, zOffset);
 
 			// We load twice as much complex numbers
 			xOffset += EPV * 2;
@@ -3509,8 +3496,7 @@ public final class VOVec {
 
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
 
-			//@TODO: do something with MIN_NORMAL?
-			vxabs.add(Float.MIN_NORMAL).log10().mul(10.0f).sub(base).intoArray(z, zOffset);
+			vxabs.log10().mul(10.0f).sub(base).intoArray(z, zOffset);
 
 			// We load twice as much complex numbers
 			xOffset += EPV * 2;

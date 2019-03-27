@@ -45,5 +45,10 @@ public class SimpleVectorOps {
         FloatVector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE_ZERO = FloatVector.shuffleFromValues(PFS, 0, l, 1, l, 2, l, 3, l);
         FloatVector xx = FloatVector.fromArray(PFS2, a, 0).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE_ZERO);
         System.out.println(Arrays.toString(xx.toArray()));
+
+        // And more
+        FloatVector _10log10 = xx.abs().log10().mul(10.0f);
+        System.out.println(Arrays.toString(_10log10.toArray()));
+
     }
 }
