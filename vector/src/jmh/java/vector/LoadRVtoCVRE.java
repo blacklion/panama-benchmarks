@@ -44,15 +44,19 @@ public class LoadRVtoCVRE {
     private final static Vector.Mask<Float> MASK_C_RE;
     private final static Vector.Mask<Float> MASK_C_IM;
     private final static FloatVector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE;
+    private final static FloatVector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE_ZERO;
 
     static {
         PFS = FloatVector.preferredSpecies();
         PFS2 = FloatVector.species(Vector.Shape.forBitSize(PFS.bitSize() / 2));
         LOAD_RV_TO_CV_RE = new int[PFS.length()];
+        int[] load_rv2cv_re_zero = new int[PFS.length()];
         for (int i = 0; i < PFS.length(); i++) {
 			LOAD_RV_TO_CV_RE[i] = i / 2;
+            load_rv2cv_re_zero[i] = (i % 2 == 0) ? (i / 2) : (PFS.length() - 1);
         }
         SHUFFLE_RV_TO_CV_RE = FloatVector.shuffleFromArray(PFS, LOAD_RV_TO_CV_RE, 0);
+        SHUFFLE_RV_TO_CV_RE_ZERO = FloatVector.shuffleFromArray(PFS, load_rv2cv_re_zero, 0);
 
         boolean[] alter = new boolean[PFS.length() + 1];
    		alter[0] = true;
@@ -80,8 +84,14 @@ public class LoadRVtoCVRE {
     }
 
     @Benchmark
-    public void loadAndReshuffle(Blackhole bh) {
+    public void loadAndReshuffleAndBlend(Blackhole bh) {
         final FloatVector vr = FloatVector.fromArray(PFS2, x, 0);
         bh.consume(vr.reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE).blend(PFS.zero(), MASK_C_IM));
+    }
+
+    @Benchmark
+    public void loadAndReshuffle(Blackhole bh) {
+        final FloatVector vr = FloatVector.fromArray(PFS2, x, 0);
+        bh.consume(vr.reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE_ZERO));
     }
 }

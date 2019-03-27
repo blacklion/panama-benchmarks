@@ -28,6 +28,16 @@
 use warnings;
 use strict;
 
+my $HORIZONTAL = {
+	'dot' => 1,
+	'sum' => 1
+};
+
+my $APPROX = {
+	'10log10' => 1,
+	'20log10' => 1
+};
+
 die "Syntax: $0 <BaseImpl.java> <VectorImpl.java>\n" unless @ARGV == 2;
 
 my $BASE = &loadFile($ARGV[0], 1);
@@ -47,6 +57,9 @@ my $CODE_INDENT = "        ";
 
 # Generate benchmark
 print<<__HEADER;
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\\
+!! THIS FILE IS GENERATED WITH genTests.pl SCRIPT. DO NOT EDIT! !!
+\\!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 /*****************************************************************************
  * Copyright (c) 2019, Lev Serebryakov <lev\@serebryakov.spb.ru>
  * All rights reserved.
@@ -95,11 +108,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * \@noinspection CStyleArrayDeclaration, WeakerAccess
  */
 public class VectorTests {
-    // We can not have 1E-7 EPSILON on horizontal operations (!)
     private static final float EPSILON = 0.000001f;
+    private static final float EPSILON_APPROX = 0.0001f;
 
     private static final int DATA_SIZE = 65536;
-    private static final int MAX_OFFSET = 63;
+    private static final int MAX_OFFSET = 1;
 
     private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
 
@@ -121,6 +134,8 @@ public class VectorTests {
         rv.add(Arguments.of(PFS.length() * 2, 1));
         rv.add(Arguments.of(PFS.length() * 2 + 1, 0));
         rv.add(Arguments.of(PFS.length() * 2 + 1, 1));
+        rv.add(Arguments.of(DATA_SIZE, 0));
+        rv.add(Arguments.of(DATA_SIZE, 1));
         return rv.stream();
     }
 
@@ -243,7 +258,7 @@ sub generateTest2i {
 	print "\n";
 	print $CODE_INDENT, "VO.$name(",    join(', ', ($out.'z1', 'offset', @args)), ");\n";
 	print $CODE_INDENT, "VOVec.$name(", join(', ', ($out.'z2', 'offset', @args)), ");\n";
-	print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, EPSILON);\n";
+	print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op), ");\n";
 	&generateTestFooter();
 }
 
@@ -307,7 +322,7 @@ sub generateTest2o {
 		print $CODE_INDENT, "$rtype ${out}z1 = VO.$name(", join(', ', @args), ");\n";
 		print $CODE_INDENT, "$rtype ${out}z2 = VOVec.$name(", join(', ', @args), ");\n";
 		if ($rtype eq 'float') {
-			print $CODE_INDENT, "assertEquals(${out}z1, ${out}z2, EPSILON);\n";
+			print $CODE_INDENT, "assertEquals(${out}z1, ${out}z2, ", &getEpsilon($op), ");\n";
 		} else {
 			print $CODE_INDENT, "assertEquals(${out}z1, ${out}z2);\n";
 		}
@@ -316,13 +331,13 @@ sub generateTest2o {
 		print $CODE_INDENT, "float ${out}z2[] = new float[2];\n";
 		print $CODE_INDENT, "VO.$name(",    join(', ', ("${out}z1", @args)), ");\n";
 		print $CODE_INDENT, "VOVec.$name(", join(', ', ("${out}z2", @args)), ");\n";
-		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, EPSILON);\n";
+		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op), ");\n";
 	} elsif ($out eq 'rv' || $out eq 'cv') {
 		print $CODE_INDENT, "float ${out}z1[] = new float[${out}z.length];\n";
 		print $CODE_INDENT, "float ${out}z2[] = new float[${out}z.length];\n";
 		print $CODE_INDENT, "VO.$name(",    join(', ', ("${out}z1", "0", @args)), ");\n";
 		print $CODE_INDENT, "VOVec.$name(", join(', ', ("${out}z2", "0", @args)), ");\n";
-		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, EPSILON);\n";
+		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op), ");\n";
 	} else {
 		die "Internal error\n";
 	}
@@ -348,7 +363,7 @@ sub generateTest1i {
 	print $CODE_INDENT, "float ${l}z2[] = Arrays.copyOf(${l}z, ${l}z.length);\n";
 	print $CODE_INDENT, "VO.$name(${l}z1, offset, size);\n";
 	print $CODE_INDENT, "VOVec.$name(${l}z2, offset, size);\n";
-	print $CODE_INDENT, "assertArrayEquals(${l}z1, ${l}z2, EPSILON);\n";
+	print $CODE_INDENT, "assertArrayEquals(${l}z1, ${l}z2, ", &getEpsilon($op), ");\n";
 	&generateTestFooter();
 }
 
@@ -374,6 +389,10 @@ sub generateTest1o {
 		$out = 'rs';
 	} elsif ($l eq 'cv' && ($op eq 'max' || $op eq 'min' || $op eq 'sum')) {
 		$out = 'cs';
+	} elsif ($l eq 'cv' && ($op eq 'im' || $op eq 're')) {
+		$out = 'rv';
+	} elsif ($l eq 'rv' && ($op eq 'cvt' || $op eq 'expi')) {
+		$out = 'cv';
 	} else {
 		$out = ($c ? 'c' : 'r') . ($v ? 'v' : 's');
 	}
@@ -400,7 +419,7 @@ sub generateTest1o {
 		print $CODE_INDENT, "$rtype ${out}z1 = VO.$name(", join(', ', @args), ");\n";
 		print $CODE_INDENT, "$rtype ${out}z2 = VOVec.$name(", join(', ', @args), ");\n";
 		if ($rtype eq 'float') {
-			print $CODE_INDENT, "assertEquals(${out}z1, ${out}z2, EPSILON);\n";
+			print $CODE_INDENT, "assertEquals(${out}z1, ${out}z2, ", &getEpsilon($op), ");\n";
 		} else {
 			print $CODE_INDENT, "assertEquals(${out}z1, ${out}z2);\n";
 		}
@@ -409,13 +428,13 @@ sub generateTest1o {
 		print $CODE_INDENT, "float ${out}z2[] = new float[2];\n";
 		print $CODE_INDENT, "VO.$name(",    join(', ', ("${out}z1", @args)), ");\n";
 		print $CODE_INDENT, "VOVec.$name(", join(', ', ("${out}z2", @args)), ");\n";
-		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, EPSILON);\n";
+		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op), ");\n";
 	} elsif ($out eq 'rv' || $out eq 'cv') {
 		print $CODE_INDENT, "float ${out}z1[] = new float[${out}z.length];\n";
 		print $CODE_INDENT, "float ${out}z2[] = new float[${out}z.length];\n";
 		print $CODE_INDENT, "VO.$name(",    join(', ', ("${out}z1", "0", @args)), ");\n";
 		print $CODE_INDENT, "VOVec.$name(", join(', ', ("${out}z2", "0", @args)), ");\n";
-		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, EPSILON);\n";
+		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op), ");\n";
 	} else {
 		die "Internal error\n";
 	}
@@ -434,13 +453,13 @@ sub generateTestRVRSLinRVRS {
 		print $CODE_INDENT, "float ${out}z2[] = Arrays.copyOf(${out}z, ${out}z.length);\n";
 		print $CODE_INDENT, "VO.$name(${out}z1, offset, rsz, rvx, offset, rsx, size);\n";
 		print $CODE_INDENT, "VOVec.$name(${out}z2, offset, rsz, rvx, offset, rsx, size);\n";
-		print $CODE_INDENT, "assertArrayEquals(${out}z2, ${out}z2, EPSILON);\n";
+		print $CODE_INDENT, "assertArrayEquals(${out}z2, ${out}z2, ", &getEpsilon('lin'), ");\n";
 	} else {
 		print $CODE_INDENT, "float ${out}z1[] = new float[${out}z.length];\n";
 		print $CODE_INDENT, "float ${out}z2[] = new float[${out}z.length];\n";
 		print $CODE_INDENT, "VO.$name(${out}z1, 0, rvx, offset, rsx, rvy, offset, rsy, size);\n";
 		print $CODE_INDENT, "VOVec.$name(${out}z2, 0, rvx, offset, rsx, rvy, offset, rsy, size);\n";
-		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, EPSILON);\n";
+		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon('lin'), ");\n";
 	}
 	&generateTestFooter();
 }
@@ -457,6 +476,17 @@ sub generateTestFooter {
 	print "    }\n";
 }
 
+sub getEpsilon {
+	my $op = shift;
+	if      (exists $HORIZONTAL->{$op}) {
+		return 'EPSILON * size';
+	} elsif (exists $APPROX->{$op}) {
+		return 'EPSILON_APPROX';
+	} else {
+		return 'EPSILON';
+	}
+}
+
 sub loadFile {
 	my ($name, $base) = @_;
 	open(my $fh, '<', $name) or die "Can npot open \"$name\"\n";
@@ -470,7 +500,7 @@ sub loadFile {
 		my $name = $2;
 		# Check if $name is or _w or _iw or _f or _fw
 		$total++;
-		if ($name =~ /_[fi]*w$/) {
+		if ($name =~ /_[fi]*w$/ || $name =~ /_i?f$/) {
 			print STDERR "Vectorized version implements strange method: \"$name\"\n" unless $base;
 			next;
 		}

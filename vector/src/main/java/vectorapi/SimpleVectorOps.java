@@ -17,6 +17,7 @@ public class SimpleVectorOps {
 
     public static void main(String[] args) {
         final FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
+        final FloatVector.FloatSpecies PFS2 = FloatVector.species(Vector.Shape.forBitSize(PFS.bitSize() / 2));
         float[] a = new float[PFS.length()];
         float[] b = new float[a.length];
         for (int i = 0; i < a.length; i++)
@@ -37,5 +38,12 @@ public class SimpleVectorOps {
         FloatVector v = FloatVector.fromArray(PFS, new float[] { 1.0f, 10.0f, 2.0f, 20.0f, 3.0f, 30.0f, 4.0f, 40.0f }, 0);
         float sum = v.mulAll(m);
         System.out.println(sum);
+
+        // One more test
+
+        int l = PFS.length() - 1;
+        FloatVector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE_ZERO = FloatVector.shuffleFromValues(PFS, 0, l, 1, l, 2, l, 3, l);
+        FloatVector xx = FloatVector.fromArray(PFS2, a, 0).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE_ZERO);
+        System.out.println(Arrays.toString(xx.toArray()));
     }
 }

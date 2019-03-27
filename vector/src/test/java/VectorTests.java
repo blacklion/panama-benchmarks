@@ -1,3 +1,6 @@
+/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\
+!! THIS FILE IS GENERATED WITH genTests.pl SCRIPT. DO NOT EDIT! !!
+\!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 /*****************************************************************************
  * Copyright (c) 2019, Lev Serebryakov <lev@serebryakov.spb.ru>
  * All rights reserved.
@@ -46,11 +49,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * @noinspection CStyleArrayDeclaration, WeakerAccess
  */
 public class VectorTests {
-    // We can not have 1E-7 EPSILON on horizontal operations (!)
     private static final float EPSILON = 0.000001f;
+    private static final float EPSILON_APPROX = 0.0001f;
 
     private static final int DATA_SIZE = 65536;
-    private static final int MAX_OFFSET = 63;
+    private static final int MAX_OFFSET = 1;
 
     private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
 
@@ -72,6 +75,8 @@ public class VectorTests {
         rv.add(Arguments.of(PFS.length() * 2, 1));
         rv.add(Arguments.of(PFS.length() * 2 + 1, 0));
         rv.add(Arguments.of(PFS.length() * 2 + 1, 1));
+        rv.add(Arguments.of(DATA_SIZE, 0));
+        rv.add(Arguments.of(DATA_SIZE, 1));
         return rv.stream();
     }
 
@@ -146,7 +151,7 @@ public class VectorTests {
         float cvz2[] = new float[cvz.length];
         VO.cv_10log10(cvz1, 0, cvx, offset, size);
         VOVec.cv_10log10(cvz2, 0, cvx, offset, size);
-        assertArrayEquals(cvz1, cvz2, EPSILON);
+        assertArrayEquals(cvz1, cvz2, EPSILON_APPROX);
     }
 
     @ParameterizedTest(name = "cv_10log10_rs({0}, {1})")
@@ -156,7 +161,7 @@ public class VectorTests {
         float cvz2[] = new float[cvz.length];
         VO.cv_10log10_rs(cvz1, 0, cvx, offset, rsy, size);
         VOVec.cv_10log10_rs(cvz2, 0, cvx, offset, rsy, size);
-        assertArrayEquals(cvz1, cvz2, EPSILON);
+        assertArrayEquals(cvz1, cvz2, EPSILON_APPROX);
     }
 
     @ParameterizedTest(name = "cv_20log10({0}, {1})")
@@ -166,7 +171,7 @@ public class VectorTests {
         float cvz2[] = new float[cvz.length];
         VO.cv_20log10(cvz1, 0, cvx, offset, size);
         VOVec.cv_20log10(cvz2, 0, cvx, offset, size);
-        assertArrayEquals(cvz1, cvz2, EPSILON);
+        assertArrayEquals(cvz1, cvz2, EPSILON_APPROX);
     }
 
     @ParameterizedTest(name = "cv_20log10_rs({0}, {1})")
@@ -176,7 +181,7 @@ public class VectorTests {
         float cvz2[] = new float[cvz.length];
         VO.cv_20log10_rs(cvz1, 0, cvx, offset, rsy, size);
         VOVec.cv_20log10_rs(cvz2, 0, cvx, offset, rsy, size);
-        assertArrayEquals(cvz1, cvz2, EPSILON);
+        assertArrayEquals(cvz1, cvz2, EPSILON_APPROX);
     }
 
     @ParameterizedTest(name = "cv_abs({0}, {1})")
@@ -425,7 +430,7 @@ public class VectorTests {
         float csz2[] = new float[2];
         VO.cv_dot_cv(csz1, cvx, offset, cvy, offset, size);
         VOVec.cv_dot_cv(csz2, cvx, offset, cvy, offset, size);
-        assertArrayEquals(csz1, csz2, EPSILON);
+        assertArrayEquals(csz1, csz2, EPSILON * size);
     }
 
     @ParameterizedTest(name = "cv_exp({0}, {1})")
@@ -451,11 +456,11 @@ public class VectorTests {
     @ParameterizedTest(name = "cv_im({0}, {1})")
     @MethodSource("params")
     public void Test_cv_im(int size, int offset) {
-        float cvz1[] = new float[cvz.length];
-        float cvz2[] = new float[cvz.length];
-        VO.cv_im(cvz1, 0, cvx, offset, size);
-        VOVec.cv_im(cvz2, 0, cvx, offset, size);
-        assertArrayEquals(cvz1, cvz2, EPSILON);
+        float rvz1[] = new float[rvz.length];
+        float rvz2[] = new float[rvz.length];
+        VO.cv_im(rvz1, 0, cvx, offset, size);
+        VOVec.cv_im(rvz2, 0, cvx, offset, size);
+        assertArrayEquals(rvz1, rvz2, EPSILON);
     }
 
     @ParameterizedTest(name = "cv_max({0}, {1})")
@@ -663,11 +668,11 @@ public class VectorTests {
     @ParameterizedTest(name = "cv_re({0}, {1})")
     @MethodSource("params")
     public void Test_cv_re(int size, int offset) {
-        float cvz1[] = new float[cvz.length];
-        float cvz2[] = new float[cvz.length];
-        VO.cv_re(cvz1, 0, cvx, offset, size);
-        VOVec.cv_re(cvz2, 0, cvx, offset, size);
-        assertArrayEquals(cvz1, cvz2, EPSILON);
+        float rvz1[] = new float[rvz.length];
+        float rvz2[] = new float[rvz.length];
+        VO.cv_re(rvz1, 0, cvx, offset, size);
+        VOVec.cv_re(rvz2, 0, cvx, offset, size);
+        assertArrayEquals(rvz1, rvz2, EPSILON);
     }
 
     @ParameterizedTest(name = "cv_sub_cs({0}, {1})")
@@ -761,7 +766,7 @@ public class VectorTests {
         float csz2[] = new float[2];
         VO.cv_sum(csz1, cvx, offset, size);
         VOVec.cv_sum(csz2, cvx, offset, size);
-        assertArrayEquals(csz1, csz2, EPSILON);
+        assertArrayEquals(csz1, csz2, EPSILON * size);
     }
 
     @ParameterizedTest(name = "rs_div_cv({0}, {1})")
@@ -811,7 +816,7 @@ public class VectorTests {
         float rvz2[] = new float[rvz.length];
         VO.rv_10log10(rvz1, 0, rvx, offset, size);
         VOVec.rv_10log10(rvz2, 0, rvx, offset, size);
-        assertArrayEquals(rvz1, rvz2, EPSILON);
+        assertArrayEquals(rvz1, rvz2, EPSILON_APPROX);
     }
 
     @ParameterizedTest(name = "rv_10log10_i({0}, {1})")
@@ -821,7 +826,7 @@ public class VectorTests {
         float rvz2[] = Arrays.copyOf(rvz, rvz.length);
         VO.rv_10log10_i(rvz1, offset, size);
         VOVec.rv_10log10_i(rvz2, offset, size);
-        assertArrayEquals(rvz1, rvz2, EPSILON);
+        assertArrayEquals(rvz1, rvz2, EPSILON_APPROX);
     }
 
     @ParameterizedTest(name = "rv_10log10_rs({0}, {1})")
@@ -831,7 +836,7 @@ public class VectorTests {
         float rvz2[] = new float[rvz.length];
         VO.rv_10log10_rs(rvz1, 0, rvx, offset, rsy, size);
         VOVec.rv_10log10_rs(rvz2, 0, rvx, offset, rsy, size);
-        assertArrayEquals(rvz1, rvz2, EPSILON);
+        assertArrayEquals(rvz1, rvz2, EPSILON_APPROX);
     }
 
     @ParameterizedTest(name = "rv_10log10_rs_i({0}, {1})")
@@ -842,7 +847,7 @@ public class VectorTests {
 
         VO.rv_10log10_rs_i(rvz1, offset, rsx, size);
         VOVec.rv_10log10_rs_i(rvz2, offset, rsx, size);
-        assertArrayEquals(rvz1, rvz2, EPSILON);
+        assertArrayEquals(rvz1, rvz2, EPSILON_APPROX);
     }
 
     @ParameterizedTest(name = "rv_20log10({0}, {1})")
@@ -852,7 +857,7 @@ public class VectorTests {
         float rvz2[] = new float[rvz.length];
         VO.rv_20log10(rvz1, 0, rvx, offset, size);
         VOVec.rv_20log10(rvz2, 0, rvx, offset, size);
-        assertArrayEquals(rvz1, rvz2, EPSILON);
+        assertArrayEquals(rvz1, rvz2, EPSILON_APPROX);
     }
 
     @ParameterizedTest(name = "rv_20log10_i({0}, {1})")
@@ -862,7 +867,7 @@ public class VectorTests {
         float rvz2[] = Arrays.copyOf(rvz, rvz.length);
         VO.rv_20log10_i(rvz1, offset, size);
         VOVec.rv_20log10_i(rvz2, offset, size);
-        assertArrayEquals(rvz1, rvz2, EPSILON);
+        assertArrayEquals(rvz1, rvz2, EPSILON_APPROX);
     }
 
     @ParameterizedTest(name = "rv_20log10_rs({0}, {1})")
@@ -872,7 +877,7 @@ public class VectorTests {
         float rvz2[] = new float[rvz.length];
         VO.rv_20log10_rs(rvz1, 0, rvx, offset, rsy, size);
         VOVec.rv_20log10_rs(rvz2, 0, rvx, offset, rsy, size);
-        assertArrayEquals(rvz1, rvz2, EPSILON);
+        assertArrayEquals(rvz1, rvz2, EPSILON_APPROX);
     }
 
     @ParameterizedTest(name = "rv_20log10_rs_i({0}, {1})")
@@ -883,7 +888,7 @@ public class VectorTests {
 
         VO.rv_20log10_rs_i(rvz1, offset, rsx, size);
         VOVec.rv_20log10_rs_i(rvz2, offset, rsx, size);
-        assertArrayEquals(rvz1, rvz2, EPSILON);
+        assertArrayEquals(rvz1, rvz2, EPSILON_APPROX);
     }
 
     @ParameterizedTest(name = "rv_abs({0}, {1})")
@@ -961,11 +966,11 @@ public class VectorTests {
     @ParameterizedTest(name = "rv_cvt({0}, {1})")
     @MethodSource("params")
     public void Test_rv_cvt(int size, int offset) {
-        float rvz1[] = new float[rvz.length];
-        float rvz2[] = new float[rvz.length];
-        VO.rv_cvt(rvz1, 0, rvx, offset, size);
-        VOVec.rv_cvt(rvz2, 0, rvx, offset, size);
-        assertArrayEquals(rvz1, rvz2, EPSILON);
+        float cvz1[] = new float[cvz.length];
+        float cvz2[] = new float[cvz.length];
+        VO.rv_cvt(cvz1, 0, rvx, offset, size);
+        VOVec.rv_cvt(cvz2, 0, rvx, offset, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
     @ParameterizedTest(name = "rv_div_cv({0}, {1})")
@@ -1027,7 +1032,7 @@ public class VectorTests {
         float csz2[] = new float[2];
         VO.rv_dot_cv(csz1, rvx, offset, cvy, offset, size);
         VOVec.rv_dot_cv(csz2, rvx, offset, cvy, offset, size);
-        assertArrayEquals(csz1, csz2, EPSILON);
+        assertArrayEquals(csz1, csz2, EPSILON * size);
     }
 
     @ParameterizedTest(name = "rv_dot_rv({0}, {1})")
@@ -1035,7 +1040,7 @@ public class VectorTests {
     public void Test_rv_dot_rv(int size, int offset) {
         float rsz1 = VO.rv_dot_rv(rvx, offset, rvy, offset, size);
         float rsz2 = VOVec.rv_dot_rv(rvx, offset, rvy, offset, size);
-        assertEquals(rsz1, rsz2, EPSILON);
+        assertEquals(rsz1, rsz2, EPSILON * size);
     }
 
     @ParameterizedTest(name = "rv_exp({0}, {1})")
@@ -1061,11 +1066,11 @@ public class VectorTests {
     @ParameterizedTest(name = "rv_expi({0}, {1})")
     @MethodSource("params")
     public void Test_rv_expi(int size, int offset) {
-        float rvz1[] = new float[rvz.length];
-        float rvz2[] = new float[rvz.length];
-        VO.rv_expi(rvz1, 0, rvx, offset, size);
-        VOVec.rv_expi(rvz2, 0, rvx, offset, size);
-        assertArrayEquals(rvz1, rvz2, EPSILON);
+        float cvz1[] = new float[cvz.length];
+        float cvz2[] = new float[cvz.length];
+        VO.rv_expi(cvz1, 0, rvx, offset, size);
+        VOVec.rv_expi(cvz2, 0, rvx, offset, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
     }
 
     @ParameterizedTest(name = "rv_max({0}, {1})")
@@ -1261,6 +1266,6 @@ public class VectorTests {
     public void Test_rv_sum(int size, int offset) {
         float rsz1 = VO.rv_sum(rvx, offset, size);
         float rsz2 = VOVec.rv_sum(rvx, offset, size);
-        assertEquals(rsz1, rsz2, EPSILON);
+        assertEquals(rsz1, rsz2, EPSILON * size);
     }
 }

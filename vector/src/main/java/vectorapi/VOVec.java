@@ -111,7 +111,7 @@ public final class VOVec {
 		for (int i = 0; i < EPV; i++) {
 			// Load real vector to complex vector's RE part
 			// [r1, r2, ...] -> [(r1, ?), (r2, ?), ...]
-			load_rv2cv_re[i] = i / 2;
+			load_rv2cv_re[i] = (i % 2 == 0) ? (i / 2) : (EPV - 1);
 
 			// Load real vector to complex vector's IM part
 			// [r1, r2, ...] -> [(r1, r1), (r2, r2), ...]
@@ -220,7 +220,7 @@ public final class VOVec {
 		while (count >= EPV2) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
-			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset).rearrange(SHUFFLE_RV_TO_CV_RE).blend(PFS.zero(), MASK_C_IM);
+			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE);
 			vz.add(vx).intoArray(z, zOffset);
 
 			xOffset += EPV2;
@@ -341,7 +341,7 @@ public final class VOVec {
 		while (count >= EPV2) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			//@DONE: It is faster than FloatVector.fromArray(PFS, y, yOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
-			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset).rearrange(SHUFFLE_RV_TO_CV_RE).blend(PFS.zero(), MASK_C_IM);
+			final FloatVector vy = FloatVector.fromArray(PFS2, y, yOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE);
 			vx.add(vy).intoArray(z, zOffset);
 
 			xOffset += EPV;
@@ -466,7 +466,7 @@ public final class VOVec {
 		while (count >= EPV2) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
-			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset).rearrange(SHUFFLE_RV_TO_CV_RE).blend(PFS.zero(), MASK_C_IM);
+			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE);
 			vz.sub(vx).intoArray(z, zOffset);
 
 			xOffset += EPV2;
@@ -631,7 +631,7 @@ public final class VOVec {
 		while (count >= EPV2) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			//@DONE: It is faster than FloatVector.fromArray(PFS, y, yOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
-			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset).rearrange(SHUFFLE_RV_TO_CV_RE).blend(PFS.zero(), MASK_C_IM);
+			final FloatVector vy = FloatVector.fromArray(PFS2, y, yOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE);
 			vx.sub(vy).intoArray(z, zOffset);
 
 			xOffset += EPV;
@@ -654,7 +654,7 @@ public final class VOVec {
 
 		while (count >= EPV2) {
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
-			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset).rearrange(SHUFFLE_RV_TO_CV_RE).blend(PFS.zero(), MASK_C_IM);
+			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
 			vx.sub(vy).intoArray(z, zOffset);
 
@@ -1446,7 +1446,7 @@ public final class VOVec {
 
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
 			// vx is [(x[0], 0), (x[1], 0), ...]
-			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset).rearrange(SHUFFLE_RV_TO_CV_RE).blend(PFS.zero(), MASK_C_IM);
+			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE);
 
 			// vmulxre is [(x[0] * y[0].re, 0), (x[1] * y[1].re, 0), ...]
 			final FloatVector vmulxre = vx.mul(vyre);
@@ -2097,7 +2097,7 @@ public final class VOVec {
 		zOffset <<= 1;
 		while (count >= EPV2) {
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
-			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset).rearrange(SHUFFLE_RV_TO_CV_RE).blend(PFS.zero(), MASK_C_IM);
+			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE);
 			vx.intoArray(z, zOffset);
 
 			xOffset += EPV2;
