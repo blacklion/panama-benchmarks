@@ -71,6 +71,10 @@ public final class VOVec {
 	private final static FloatVector ZERO = PFS.zero();
 	private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE;
 	private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_BOTH;
+	private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE_LOW;
+	private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_IM_LOW;
+	private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE_HIGH;
+	private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_IM_HIGH;
 	private final static Vector.Shuffle<Float> SHUFFLE_CS_TO_CV_SPREAD;
 	private final static Vector.Shuffle<Float> SHUFFLE_CV_SWAP_RE_IM;
 	private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_RE;
@@ -106,6 +110,12 @@ public final class VOVec {
 		int[] load_cv2cv_pack_re_second = new int[EPV];
 		int[] load_cv2cv_pack_im_second = new int[EPV];
 
+		int[] rv2cv_both = new int[EPV];
+		int[] rv2cv_re_low = new int[EPV];
+		int[] rv2cv_im_low = new int[EPV];
+		int[] rv2cv_re_high = new int[EPV];
+		int[] rv2cv_im_high = new int[EPV];
+
 		for (int i = 0; i < EPV; i++) {
 			// Load real vector to complex vector's RE part
 			// [r1, r2, ...] -> [(r1, ?), (r2, ?), ...]
@@ -138,13 +148,28 @@ public final class VOVec {
 			}
 			if (i >= PFS.length() / 2) {
 				// [(re1, im1), (re2, im2), ...] -> [..., re1, re2, ...]
-				load_cv2cv_pack_re_second[i] = i * 2 - PFS.length();
+				load_cv2cv_pack_re_second[i] = i * 2 - EPV;
 				// [(re1, im1), (re2, im2), ...] -> [..., im1, im2, ...]
-				load_cv2cv_pack_im_second[i] = i * 2 + 1 - PFS.length();
+				load_cv2cv_pack_im_second[i] = i * 2 + 1 - EPV;
 			}
+
+			// [0, ?, 1, ?, 2, ?, 3, ?]
+			rv2cv_re_low[i] = (i % 2 == 0) ? (i / 2) : 0;
+			// [?, 0, ?, 1, ?, 2, ?, 3]
+			rv2cv_im_low[i] = (i % 2 == 0) ? 0 : (i / 2);
+			// [4, ?, 5, ?, 6, ?, 7, ?]
+			rv2cv_re_high[i] = (i % 2 == 0) ? (i / 2 + EPV / 2) : 0;
+			// [?, 4, ?, 5, ?, 6, ?, 7]
+			rv2cv_im_high[i] = (i % 2 == 0) ? 0 : (i / 2 + EPV / 2);
 		}
 		SHUFFLE_RV_TO_CV_RE = FloatVector.shuffleFromArray(PFS, load_rv2cv_re, 0);
 		SHUFFLE_RV_TO_CV_BOTH = FloatVector.shuffleFromArray(PFS, load_rv2cv_both, 0);
+
+		SHUFFLE_RV_TO_CV_RE_LOW = FloatVector.shuffleFromArray(PFS, rv2cv_re_low, 0);
+		SHUFFLE_RV_TO_CV_IM_LOW = FloatVector.shuffleFromArray(PFS, rv2cv_im_low, 0);
+		SHUFFLE_RV_TO_CV_RE_HIGH = FloatVector.shuffleFromArray(PFS, rv2cv_re_high, 0);
+		SHUFFLE_RV_TO_CV_IM_HIGH = FloatVector.shuffleFromArray(PFS, rv2cv_im_high, 0);
+
 		SHUFFLE_CS_TO_CV_SPREAD = FloatVector.shuffleFromArray(PFS, load_cs2cv_spread, 0);
 		SHUFFLE_CV_SPREAD_RE = FloatVector.shuffleFromArray(PFS, load_cv2cv_spread_re, 0);
 		SHUFFLE_CV_SPREAD_IM = FloatVector.shuffleFromArray(PFS, load_cv2cv_spread_im, 0);
@@ -1802,22 +1827,36 @@ public final class VOVec {
 
 	public static void rv_expi(float z[], int zOffset, float x[], int xOffset, int count) {
 		zOffset <<= 1;
-		while (count >= EPV2) {
-			//@TODO: check, do we need pack and process twice elements, and save result twice
+		while (count >= EPV) {
+			//@DONE: check, do we need pack and process twice elements, and save result twice
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_RV_TO_CV_BOTH, 0);
-			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
-			//@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vzre = vx.cos();
 			final FloatVector vzim = vx.sin();
+			// And now we should combine TWO z vectors from re/im, as they are packed without empty slots
+			vzre.rearrange(SHUFFLE_RV_TO_CV_RE_LOW).blend(vzim.rearrange(SHUFFLE_RV_TO_CV_IM_LOW), MASK_C_IM).intoArray(z, zOffset);
+			vzre.rearrange(SHUFFLE_RV_TO_CV_RE_HIGH).blend(vzim.rearrange(SHUFFLE_RV_TO_CV_IM_HIGH), MASK_C_IM).intoArray(z, zOffset + EPV);
+
+			// We stored twice as much complex numbers
+			xOffset += EPV;
+			zOffset += EPV * 2;
+			count -= EPV;
+		}
+		// If we have half-vector
+		if (count >= EPV2) {
+			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset);
+			final FloatVector vzre = vx.cos().reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
+			final FloatVector vzim = vx.sin().reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
 			vzre.blend(vzim, MASK_C_IM).intoArray(z, zOffset);
 
 			xOffset += EPV2;
 			zOffset += EPV;
 			count -= EPV2;
 		}
+
 		while (count-- > 0) {
-			z[zOffset + 0] = (float)Math.cos(x[xOffset]);
-			z[zOffset + 1] = (float)Math.sin(x[xOffset]);
+			z[zOffset + 0] = (float) Math.cos(x[xOffset]);
+			z[zOffset + 1] = (float) Math.sin(x[xOffset]);
 			xOffset += 1;
 			zOffset += 2;
 		}
