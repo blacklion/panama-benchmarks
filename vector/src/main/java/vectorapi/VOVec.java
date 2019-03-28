@@ -99,14 +99,14 @@ public final class VOVec {
 		Arrays.fill(secondhalf, PFS.length() / 2, secondhalf.length, true);
 		MASK_SECOND_HALF = FloatVector.maskFromArray(PFS, secondhalf, 0);
 
-		// [r1, r2, ...] -> [(r1, ?), (r2, ?), ...], take ? from last element for now
+		// [r0, r1, ...] -> [(r0, ?), (r1, ?), ...], take ? from last element for now
 		SHUFFLE_RV_TO_CV_RE = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2) : (EPV - 1));
-		// [r1, r2, ...] -> [(r1, r1), (r2, r2), ...]
+		// [r0, r1, ...] -> [(r0, r0), (r1, r1), ...]
 		SHUFFLE_RV_TO_CV_BOTH = FloatVector.shuffle(PFS, i -> i / 2);
 
-		// [r1, r2, ..., r_len] -> [(r1, ?), (r2, ?), ... (r_{len/2}, ?)]
+		// [r0, r1, ..., r_len] -> [(r0, ?), (r1, ?), ... (r_{len/2}, ?)]
 		SHUFFLE_RV_TO_CV_RE_LOW = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2) : 0);
-		// [r1, r2, ..., r_len] -> [(?, r1), (?, r2), ... (?, r_{len/2})]
+		// [r0, r1, ..., r_len] -> [(?, r0), (?, r1), ... (?, r_{len/2})]
 		SHUFFLE_RV_TO_CV_IM_LOW = FloatVector.shuffle(PFS, i-> (i % 2 == 0) ? 0 : (i / 2));
 
 		// [..., r_{len/2} ..., r_len] -> [(r_{len/2}, ?), ..., (r_len, ?)]
@@ -117,22 +117,22 @@ public final class VOVec {
 		// [re, im] -> [(re, im), (re, im), (re, im), ...]
 		SHUFFLE_CS_TO_CV_SPREAD = FloatVector.shuffle(PFS, i -> i % 2);
 
-		// [(re1, im1), (re2, im2), ...] -> [(re1, re1), (re2, re2), ...]
+		// [(re0, im0), (re1, im1), ...] -> [(re0, re0), (re1, re1), ...]
 		SHUFFLE_CV_SPREAD_RE = FloatVector.shuffle(PFS, i -> i - i % 2);
-		// [(re1, im1), (re2, im2), ...] -> [(im1, im1), (im2, im2), ...]
+		// [(re0, im0), (re1, im1), ...] -> [(im0, im0), (im1, im1), ...]
 		SHUFFLE_CV_SPREAD_IM = FloatVector.shuffle(PFS, i -> i - i % 2 + 1);
 
-		// [(re1, im1), (re2, im2), ...] -> [re1, re2, ..., re_len, ?, ...]
+		// [(re0, im0), (re1, im1), ...] -> [re0, re1, ..., re_len, ?, ...]
 		SHUFFLE_CV_TO_CV_PACK_RE_FIRST = FloatVector.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
-		// [(re1, im1), (re2, im2), ...] -> [im1, im2, ..., im_len, ?, ...]
+		// [(re0, im0), (re1, im1), ...] -> [im0, im1, ..., im_len, ?, ...]
 		SHUFFLE_CV_TO_CV_PACK_IM_FIRST = FloatVector.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
 
-		// [(re1, im1), (re2, im2), ...] -> [?, ..., re1, re2, ..., re_len]
+		// [(re0, im0), (re1, im1), ...] -> [?, ..., re0, re1, ..., re_len]
 		SHUFFLE_CV_TO_CV_PACK_RE_SECOND = FloatVector.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
-		// [(re1, im1), (re2, im2), ...] -> [?, ..., im1, im2, ..., im_len]
+		// [(re0, im0), (re1, im1), ...] -> [?, ..., im0, im1, ..., im_len]
 		SHUFFLE_CV_TO_CV_PACK_IM_SECOND = FloatVector.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1: 0);
 
-		// [(re1, im1), (re2, im2), ...] -> [(im1, re1), (im2, re2), ...]
+		// [(re0, im0), (re1, im1), ...] -> [(im0, re0), (im1, re1), ...]
 		SHUFFLE_CV_SWAP_RE_IM = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? i + 1 : i - 1);
 	}
 
