@@ -25,7 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ****************************************************************************/
 
-package vector;
+package vector.specific;
 
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.Vector;
@@ -36,11 +36,10 @@ import org.openjdk.jmh.infra.Blackhole;
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
 @Threads(1)
-@State(Scope.Thread)
-public class MaskedArithmeticOps {
+@State(org.openjdk.jmh.annotations.Scope.Thread)
+public class BroadcastAddWithMask {
     private final static FloatVector.FloatSpecies PFS;
 	private final static Vector.Mask<Float> MASK_C_RE;
-    private final static Vector.Mask<Float> MASK_C_IM;
 
     static {
         PFS = FloatVector.preferredSpecies();
@@ -50,53 +49,31 @@ public class MaskedArithmeticOps {
 		for (int i = 1; i < alter.length; i++)
 			alter[i] = !alter[i-1];
 		MASK_C_RE = FloatVector.maskFromArray(PFS, alter, 0);
-        MASK_C_IM = FloatVector.maskFromArray(PFS, alter, 1);
     }
 
-    private FloatVector vx;
+    private float x[];
+    private float y;
     private FloatVector vy;
 
     @Setup(Level.Trial)
     public void Setup() {
-        float[] x = new float[PFS.length() * 2];
-        float[] y = new float[PFS.length() * 2];
+        x = new float[PFS.length() * 2];
 
         for (int i = 0; i < x.length; i++) {
             x[i] = (float) (Math.random() * 2.0 - 1.0);
-            y[i] = (float) (Math.random() * 2.0 - 1.0);
         }
-        vx = FloatVector.fromArray(PFS, y, 0);
-        vy = FloatVector.fromArray(PFS, y, 0);
+        y = (float) (Math.random() * 2.0 - 1.0);
+        vy = PFS.zero().blend(y, MASK_C_RE);
     }
 
 
     @Benchmark
-    public void addsubWithMask(Blackhole bh) {
-        bh.consume(vx.add(vy, MASK_C_RE).blend(vx.sub(vy, MASK_C_IM), MASK_C_IM));
+    public void addWithMask(Blackhole bh) {
+        bh.consume(FloatVector.fromArray(PFS, x, 0).add(y, MASK_C_RE));
     }
 
     @Benchmark
-    public void addsub(Blackhole bh) {
-        bh.consume(vx.add(vy).blend(vx.sub(vy), MASK_C_IM));
-    }
-
-    @Benchmark
-    public void cossinWithMask(Blackhole bh) {
-        bh.consume(vx.cos(MASK_C_RE).blend(vx.sin(MASK_C_IM), MASK_C_IM));
-    }
-
-    @Benchmark
-    public void cossin(Blackhole bh) {
-        bh.consume(vx.cos().blend(vx.sin(), MASK_C_IM));
-    }
-
-    @Benchmark
-    public void hypotatan2WithMask(Blackhole bh) {
-        bh.consume(vx.hypot(vy,MASK_C_RE).blend(vx.atan2(vy, MASK_C_IM), MASK_C_IM));
-    }
-
-    @Benchmark
-    public void hypotatan2(Blackhole bh) {
-        bh.consume(vx.hypot(vy).blend(vx.atan2(vy), MASK_C_IM));
+    public void addWithBroadcasted(Blackhole bh) {
+        bh.consume(FloatVector.fromArray(PFS, x, 0).add(vy));
     }
 }

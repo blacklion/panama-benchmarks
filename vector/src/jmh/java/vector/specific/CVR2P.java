@@ -25,7 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ****************************************************************************/
 
-package vector;
+package vector.specific;
 
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.Vector;
@@ -38,7 +38,7 @@ import java.util.Arrays;
 @Measurement(iterations = 10, time = 2)
 @Threads(1)
 @State(Scope.Thread)
-public class CVExp {
+public class CVR2P {
     private final static int MAX_SIZE = 1031;
 
     // EPV on my system is 8
@@ -113,58 +113,58 @@ public class CVExp {
     }
 
     @Benchmark
-    public void pfs() {
-        cv_exp_i(z, 0, size);
+    public void epv2() {
+        cv_r2p_i1(z, 0, size);
     }
 
     @Benchmark
-    public void pfs_pfs() {
-        cv_exp_i2(z, 0, size);
+    public void epv() {
+        cv_r2p_i2(z, 0, size);
     }
 
     @Benchmark
-    public void pfs_pfs_pfs2() {
-        cv_exp_i3(z, 0, size);
+    public void epv_epv2() {
+        cv_r2p_i3(z, 0, size);
     }
 
-    public static void cv_exp_i(float z[], int zOffset, int count) {
-   		zOffset <<= 1;
 
-   		while (count >= EPV2) {
-   			//@DONE: one load & two reshuffles are faster
-   			//@TODO: check, do we need pack and process twice elements, and save result twice
-   			// vz is [(z[0].re, z[0].im), (z[1].re, z[1].im), ...]
-   			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-   			// vzreexp is [(exp(z[0].re), exp(z[0].re)), (exp(z[1].re), exp(z[1].re)), ...]
-   			final FloatVector vzreexp = vz.rearrange(SHUFFLE_CV_SPREAD_RE).exp();
-   			// vzim is [(z[0].im, z[0].im), (z[1].im, z[1].im), ...]
-   			final FloatVector vzim = vz.rearrange(SHUFFLE_CV_SPREAD_IM);
+    public static void cv_r2p_i1(float z[], int zOffset, int count) {
+        zOffset <<= 1;
 
-   			//@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
-   			final FloatVector vrre = vzreexp.mul(vzim.cos());
-   			final FloatVector vrim = vzreexp.mul(vzim.sin());
+        while (count >= EPV2) {
+            //@DONE: one load & two reshuffles are faster
+            // vz is [(z[0].re, z[0].im), (z[1].re, z[1].im), ...]
+            final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
+            // vzreezp is [(z[0].re, z[0].re), (z[1].re, z[1].re), ...]
+            final FloatVector vzre = vz.rearrange(SHUFFLE_CV_SPREAD_RE);
+            // vzim is [(z[0].im, z[0].im), (z[1].im, z[1].im), ...]
+            final FloatVector vzim = vz.rearrange(SHUFFLE_CV_SPREAD_IM);
 
-   			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
+            //@DONE: Masks are insanely expensive here
+            final FloatVector vrre = vzre.hypot(vzim);
+            final FloatVector vrim = vzim.atan2(vzre);
 
-   			zOffset += EPV;
-   			count -= EPV2;
-   		}
+            vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
 
-   		while (count-- > 0) {
-   			float g = (float)Math.exp(z[zOffset + 0]);
-   			z[zOffset + 0] = g * (float)Math.cos(z[zOffset + 1]);
-   			z[zOffset + 1] = g * (float)Math.sin(z[zOffset + 1]);
-   			zOffset += 2;
-   		}
-   	}
+            zOffset += EPV;
+            count -= EPV2;
+        }
 
-    public static void cv_exp_i2(float z[], int zOffset, int count) {
-   		zOffset <<= 1;
+        float abs, arg;
+        while (count-- > 0) {
+            abs = (float) Math.hypot(z[zOffset + 0], z[zOffset + 1]);
+            arg = (float) Math.atan2(z[zOffset + 1], z[zOffset + 0]);
+            z[zOffset + 0] = abs;
+            z[zOffset + 1] = arg;
+            zOffset += 2;
+        }
+    }
 
-   		// To process  
-   		while (count >= EPV * 2) {
-   			// vz is [(z[0].re, z[0].im), (z[1].re, z[1].im), ...]
-   			final FloatVector vz1 = FloatVector.fromArray(PFS, z, zOffset);
+    public static void cv_r2p_i2(float z[], int zOffset, int count) {
+        zOffset <<= 1;
+
+        while (count >= EPV) {
+            final FloatVector vz1 = FloatVector.fromArray(PFS, z, zOffset);
             final FloatVector vz2 = FloatVector.fromArray(PFS, z, zOffset + EPV);
 
             // Ger vz1re/vz1im till vz2 is loading
@@ -176,74 +176,72 @@ public class CVExp {
             final FloatVector vz2im = vz2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
 
             // Combine them
-            final FloatVector vzreexp = vz1re.blend(vz2re, MASK_SECOND_HALF).exp();
+            final FloatVector vzre = vz1re.blend(vz2re, MASK_SECOND_HALF);
             final FloatVector vzim = vz1im.blend(vz2im, MASK_SECOND_HALF);
 
-   			final FloatVector vrre = vzreexp.mul(vzim.cos());
-   			final FloatVector vrim = vzreexp.mul(vzim.sin());
+            final FloatVector vrre = vzre.hypot(vzim);
+            final FloatVector vrim = vzim.atan2(vzre);
 
-   			// And combine & store twice
-   			vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST), MASK_C_IM).intoArray(z, zOffset);
+            // And combine & store twice
+            vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST), MASK_C_IM).intoArray(z, zOffset);
             vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND), MASK_C_IM).intoArray(z, zOffset + EPV);
 
-   			// We loaded and stored twice as many numbers
-   			zOffset += EPV * 2;
-   			count -= EPV;
-   		}
+            zOffset += EPV * 2;
+            count -= EPV;
+        }
 
-   		while (count-- > 0) {
-   			float g = (float)Math.exp(z[zOffset + 0]);
-   			z[zOffset + 0] = g * (float)Math.cos(z[zOffset + 1]);
-   			z[zOffset + 1] = g * (float)Math.sin(z[zOffset + 1]);
-   			zOffset += 2;
-   		}
-   	}
+        float abs, arg;
+        while (count-- > 0) {
+            abs = (float) Math.hypot(z[zOffset + 0], z[zOffset + 1]);
+            arg = (float) Math.atan2(z[zOffset + 1], z[zOffset + 0]);
+            z[zOffset + 0] = abs;
+            z[zOffset + 1] = arg;
+            zOffset += 2;
+        }
+    }
 
-   	public static void cv_exp_i3(float z[], int zOffset, int count) {
-   		zOffset <<= 1;
+    public static void cv_r2p_i3(float z[], int zOffset, int count) {
+        zOffset <<= 1;
 
-   		while (count >= EPV) {
-   			// vz is [(z[0].re, z[0].im), (z[1].re, z[1].im), ...]
-   			final FloatVector vz1 = FloatVector.fromArray(PFS, z, zOffset);
+        while (count >= EPV) {
+            final FloatVector vz1 = FloatVector.fromArray(PFS, z, zOffset);
             final FloatVector vz2 = FloatVector.fromArray(PFS, z, zOffset + EPV);
 
             // Ger vz1re/vz1im till vz2 is loading
             final FloatVector vz1re = vz1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
             final FloatVector vz1im = vz1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
 
-            // Get vz2re/vz2im
+            // Ger vz2re/vz2im
             final FloatVector vz2re = vz2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
             final FloatVector vz2im = vz2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
 
             // Combine them
-            final FloatVector vzreexp = vz1re.blend(vz2re, MASK_SECOND_HALF).exp();
+            final FloatVector vzre = vz1re.blend(vz2re, MASK_SECOND_HALF);
             final FloatVector vzim = vz1im.blend(vz2im, MASK_SECOND_HALF);
 
-   			final FloatVector vrre = vzreexp.mul(vzim.cos());
-   			final FloatVector vrim = vzreexp.mul(vzim.sin());
+            final FloatVector vrre = vzre.hypot(vzim);
+            final FloatVector vrim = vzim.atan2(vzre);
 
-   			// And combine & store twice
-   			vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST), MASK_C_IM).intoArray(z, zOffset);
+            // And combine & store twice
+            vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST), MASK_C_IM).intoArray(z, zOffset);
             vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND), MASK_C_IM).intoArray(z, zOffset + EPV);
 
-   			// We loaded and stored twice as many numbers
-   			zOffset += EPV * 2;
-   			count -= EPV;
-   		}
+            zOffset += EPV * 2;
+            count -= EPV;
+        }
 
         if (count >= EPV2) {
             //@DONE: one load & two reshuffles are faster
-            //@TODO: check, do we need pack and process twice elements, and save result twice
             // vz is [(z[0].re, z[0].im), (z[1].re, z[1].im), ...]
             final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-            // vzreexp is [(exp(z[0].re), exp(z[0].re)), (exp(z[1].re), exp(z[1].re)), ...]
-            final FloatVector vzreexp = vz.rearrange(SHUFFLE_CV_SPREAD_RE).exp();
+            // vzreezp is [(z[0].re, z[0].re), (z[1].re, z[1].re), ...]
+            final FloatVector vzre = vz.rearrange(SHUFFLE_CV_SPREAD_RE);
             // vzim is [(z[0].im, z[0].im), (z[1].im, z[1].im), ...]
             final FloatVector vzim = vz.rearrange(SHUFFLE_CV_SPREAD_IM);
 
-            //@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
-            final FloatVector vrre = vzreexp.mul(vzim.cos());
-            final FloatVector vrim = vzreexp.mul(vzim.sin());
+            //@DONE: Masks are insanely expensive here
+            final FloatVector vrre = vzre.hypot(vzim);
+            final FloatVector vrim = vzim.atan2(vzre);
 
             vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
 
@@ -251,11 +249,13 @@ public class CVExp {
             count -= EPV2;
         }
 
-   		while (count-- > 0) {
-   			float g = (float)Math.exp(z[zOffset + 0]);
-   			z[zOffset + 0] = g * (float)Math.cos(z[zOffset + 1]);
-   			z[zOffset + 1] = g * (float)Math.sin(z[zOffset + 1]);
-   			zOffset += 2;
-   		}
-   	}
+        float abs, arg;
+        while (count-- > 0) {
+            abs = (float) Math.hypot(z[zOffset + 0], z[zOffset + 1]);
+            arg = (float) Math.atan2(z[zOffset + 1], z[zOffset + 0]);
+            z[zOffset + 0] = abs;
+            z[zOffset + 1] = arg;
+            zOffset += 2;
+        }
+    }
 }

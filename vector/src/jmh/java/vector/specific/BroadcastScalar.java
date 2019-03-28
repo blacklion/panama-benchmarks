@@ -25,7 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ****************************************************************************/
 
-package vector;
+package vector.specific;
 
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.Vector;
@@ -36,33 +36,17 @@ import org.openjdk.jmh.infra.Blackhole;
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
 @Threads(1)
-@State(org.openjdk.jmh.annotations.Scope.Thread)
-public class LoadREIM {
+@State(Scope.Thread)
+public class BroadcastScalar {
     private final static FloatVector.FloatSpecies PFS;
-    private final static int[] LOAD_CV_TO_CV_SPREAD_RE;
-    private final static int[] LOAD_CV_TO_CV_SPREAD_IM;
-    private static final Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_RE;
-    private static final Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_IM;
 
     static {
         PFS = FloatVector.preferredSpecies();
-        LOAD_CV_TO_CV_SPREAD_RE = new int[PFS.length()];
-        LOAD_CV_TO_CV_SPREAD_IM = new int[PFS.length()];
-
-        for (int i = 0; i < PFS.length(); i++) {
-            // Complex vector to complex vector of duplicated real parts:
-            // [(re1, im1), (re2, im2), ...] -> [re1, re1, re2, re2, ...]
-            LOAD_CV_TO_CV_SPREAD_RE[i] = (i / 2) * 2;
-
-            // Complex vector to complex vector of duplicated image parts:
-            // [(re1, im1), (re2, im2), ...] -> [im1, im1, im2, im2, ...]
-            LOAD_CV_TO_CV_SPREAD_IM[i] = (i / 2) * 2 + 1;
-        }
-        SHUFFLE_CV_SPREAD_RE = FloatVector.shuffleFromArray(PFS, LOAD_CV_TO_CV_SPREAD_RE, 0);
-        SHUFFLE_CV_SPREAD_IM = FloatVector.shuffleFromArray(PFS, LOAD_CV_TO_CV_SPREAD_IM, 0);
     }
 
     private float x[];
+    private float y;
+    private FloatVector vy;
 
     @Setup(Level.Trial)
     public void Setup() {
@@ -71,23 +55,18 @@ public class LoadREIM {
         for (int i = 0; i < x.length; i++) {
             x[i] = (float) (Math.random() * 2.0 - 1.0);
         }
+        y = (float) (Math.random() * 2.0 - 1.0);
+        vy = PFS.broadcast(y);
     }
 
 
     @Benchmark
-    public void loadTwice(Blackhole bh) {
-        final FloatVector vxre = FloatVector.fromArray(PFS, x, 0, LOAD_CV_TO_CV_SPREAD_RE, 0);
-        final FloatVector vxim = FloatVector.fromArray(PFS, x, 0, LOAD_CV_TO_CV_SPREAD_IM, 0);
-        bh.consume(vxre);
-        bh.consume(vxim);
+    public void addScalar(Blackhole bh) {
+        bh.consume(FloatVector.fromArray(PFS, x, 0).add(y));
     }
 
     @Benchmark
-    public void loadAndReshuffle(Blackhole bh) {
-        final FloatVector vx = FloatVector.fromArray(PFS, x, 0);
-        final FloatVector vxre = vx.rearrange(SHUFFLE_CV_SPREAD_RE);
-        final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
-        bh.consume(vxre);
-        bh.consume(vxim);
+    public void addVector(Blackhole bh) {
+        bh.consume(FloatVector.fromArray(PFS, x, 0).add(vy));
     }
 }

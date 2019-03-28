@@ -25,10 +25,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ****************************************************************************/
 
-package vector;
+package vector.specific;
 
 import jdk.incubator.vector.FloatVector;
-import jdk.incubator.vector.Vector;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -37,43 +36,45 @@ import org.openjdk.jmh.infra.Blackhole;
 @Measurement(iterations = 10, time = 2)
 @Threads(1)
 @State(org.openjdk.jmh.annotations.Scope.Thread)
-public class BroadcastAddWithMask {
-    private final static FloatVector.FloatSpecies PFS;
-	private final static Vector.Mask<Float> MASK_C_RE;
+public class Offsets {
+    private final static int MAX_OFFSET = 3;
+    @Param({"0", "1", "2", "3"})
+    public int offset;
 
-    static {
-        PFS = FloatVector.preferredSpecies();
-
-		boolean[] alter = new boolean[PFS.length() + 1];
-		alter[0] = true;
-		for (int i = 1; i < alter.length; i++)
-			alter[i] = !alter[i-1];
-		MASK_C_RE = FloatVector.maskFromArray(PFS, alter, 0);
-    }
-
+    private FloatVector.FloatSpecies PFS;
+    private FloatVector zero;
+    private int EPV;
     private float x[];
-    private float y;
-    private FloatVector vy;
-
+    private float y[];
+    
+    
     @Setup(Level.Trial)
     public void Setup() {
-        x = new float[PFS.length() * 2];
-
+        PFS = FloatVector.preferredSpecies();
+        zero = PFS.zero();
+        EPV = PFS.length();
+        x = new float[EPV + MAX_OFFSET];
+        y = new float[EPV + MAX_OFFSET];
+        
         for (int i = 0; i < x.length; i++) {
-            x[i] = (float) (Math.random() * 2.0 - 1.0);
+            x[i] = (float)(Math.random() * 2.0 - 1.0);
+            y[i] = (float)(Math.random() * 2.0 - 1.0);
         }
-        y = (float) (Math.random() * 2.0 - 1.0);
-        vy = PFS.zero().blend(y, MASK_C_RE);
     }
 
 
     @Benchmark
-    public void addWithMask(Blackhole bh) {
-        bh.consume(FloatVector.fromArray(PFS, x, 0).add(y, MASK_C_RE));
+    public void load(Blackhole bh) {
+        bh.consume(FloatVector.fromArray(PFS, x, offset));
     }
 
     @Benchmark
-    public void addWithBroadcasted(Blackhole bh) {
-        bh.consume(FloatVector.fromArray(PFS, x, 0).add(vy));
+    public void store() {
+        zero.intoArray(y, offset);
+    }
+
+    @Benchmark
+    public void loadstore() {
+         FloatVector.fromArray(PFS, x, offset).intoArray(y, offset);
     }
 }
