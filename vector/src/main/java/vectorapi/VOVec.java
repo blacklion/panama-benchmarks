@@ -99,93 +99,41 @@ public final class VOVec {
 		Arrays.fill(secondhalf, PFS.length() / 2, secondhalf.length, true);
 		MASK_SECOND_HALF = FloatVector.maskFromArray(PFS, secondhalf, 0);
 
-		int[] load_rv2cv_re = new int[EPV];
-		int[] load_rv2cv_both = new int[EPV];
-		int[] load_cs2cv_spread = new int[EPV];
-		int[] load_cv2cv_spread_re = new int[EPV];
-		int[] load_cv2cv_spread_im = new int[EPV];
+		// [r1, r2, ...] -> [(r1, ?), (r2, ?), ...], take ? from last element for now
+		SHUFFLE_RV_TO_CV_RE = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2) : (EPV - 1));
+		// [r1, r2, ...] -> [(r1, r1), (r2, r2), ...]
+		SHUFFLE_RV_TO_CV_BOTH = FloatVector.shuffle(PFS, i -> i / 2);
 
-		int[] load_cv2cv_pack_re_first = new int[EPV];
-		int[] load_cv2cv_pack_im_first = new int[EPV];
-		int[] load_cv2cv_pack_re_second = new int[EPV];
-		int[] load_cv2cv_pack_im_second = new int[EPV];
+		// [r1, r2, ..., r_len] -> [(r1, ?), (r2, ?), ... (r_{len/2}, ?)]
+		SHUFFLE_RV_TO_CV_RE_LOW = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2) : 0);
+		// [r1, r2, ..., r_len] -> [(?, r1), (?, r2), ... (?, r_{len/2})]
+		SHUFFLE_RV_TO_CV_IM_LOW = FloatVector.shuffle(PFS, i-> (i % 2 == 0) ? 0 : (i / 2));
 
-		int[] rv2cv_both = new int[EPV];
-		int[] rv2cv_re_low = new int[EPV];
-		int[] rv2cv_im_low = new int[EPV];
-		int[] rv2cv_re_high = new int[EPV];
-		int[] rv2cv_im_high = new int[EPV];
+		// [..., r_{len/2} ..., r_len] -> [(r_{len/2}, ?), ..., (r_len, ?)]
+		SHUFFLE_RV_TO_CV_RE_HIGH = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2 + EPV / 2) : 0);
+		// [..., r_{len/2} ..., r_len] -> [(?, r_{len/2}), ..., (?, r_len)]
+		SHUFFLE_RV_TO_CV_IM_HIGH = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? 0 : (i / 2 + EPV / 2));
 
-		for (int i = 0; i < EPV; i++) {
-			// Load real vector to complex vector's RE part
-			// [r1, r2, ...] -> [(r1, ?), (r2, ?), ...]
-			load_rv2cv_re[i] = (i % 2 == 0) ? (i / 2) : (EPV - 1);
+		// [re, im] -> [(re, im), (re, im), (re, im), ...]
+		SHUFFLE_CS_TO_CV_SPREAD = FloatVector.shuffle(PFS, i -> i % 2);
 
-			// Load real vector to complex vector's IM part
-			// [r1, r2, ...] -> [(r1, r1), (r2, r2), ...]
-			load_rv2cv_both[i] = i / 2;
+		// [(re1, im1), (re2, im2), ...] -> [(re1, re1), (re2, re2), ...]
+		SHUFFLE_CV_SPREAD_RE = FloatVector.shuffle(PFS, i -> i - i % 2);
+		// [(re1, im1), (re2, im2), ...] -> [(im1, im1), (im2, im2), ...]
+		SHUFFLE_CV_SPREAD_IM = FloatVector.shuffle(PFS, i -> i - i % 2 + 1);
 
-			// Complex scalar complex to complex vector with spread to each element
-			// [re, im] -> [re, im, re, im, re, im, ...]
-			if (i % 2 == 0)
-				load_cs2cv_spread[i] = 0;
-			else
-				load_cs2cv_spread[i] = 1;
+		// [(re1, im1), (re2, im2), ...] -> [re1, re2, ..., re_len, ?, ...]
+		SHUFFLE_CV_TO_CV_PACK_RE_FIRST = FloatVector.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
+		// [(re1, im1), (re2, im2), ...] -> [im1, im2, ..., im_len, ?, ...]
+		SHUFFLE_CV_TO_CV_PACK_IM_FIRST = FloatVector.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
 
-			// Complex vector to complex vector of duplicated real parts:
-			// [(re1, im1), (re2, im2), ...] -> [re1, re1, re2, re2, ...]
-			load_cv2cv_spread_re[i] = (i / 2) * 2;
+		// [(re1, im1), (re2, im2), ...] -> [?, ..., re1, re2, ..., re_len]
+		SHUFFLE_CV_TO_CV_PACK_RE_SECOND = FloatVector.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
+		// [(re1, im1), (re2, im2), ...] -> [?, ..., im1, im2, ..., im_len]
+		SHUFFLE_CV_TO_CV_PACK_IM_SECOND = FloatVector.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1: 0);
 
-			// Complex vector to complex vector of duplicated image parts:
-			// [(re1, im1), (re2, im2), ...] -> [im1, im1, im2, im2, ...]
-			load_cv2cv_spread_im[i] = (i / 2) * 2 + 1;
-
-			if (i < PFS.length() / 2) {
-				// [(re1, im1), (re2, im2), ...] -> [re1, re2, ...]
-				load_cv2cv_pack_re_first[i] = i * 2;
-				// [(re1, im1), (re2, im2), ...] -> [im1, im2, ...]
-				load_cv2cv_pack_im_first[i] = i * 2 + 1;
-			}
-			if (i >= PFS.length() / 2) {
-				// [(re1, im1), (re2, im2), ...] -> [..., re1, re2, ...]
-				load_cv2cv_pack_re_second[i] = i * 2 - EPV;
-				// [(re1, im1), (re2, im2), ...] -> [..., im1, im2, ...]
-				load_cv2cv_pack_im_second[i] = i * 2 + 1 - EPV;
-			}
-
-			// [0, ?, 1, ?, 2, ?, 3, ?]
-			rv2cv_re_low[i] = (i % 2 == 0) ? (i / 2) : 0;
-			// [?, 0, ?, 1, ?, 2, ?, 3]
-			rv2cv_im_low[i] = (i % 2 == 0) ? 0 : (i / 2);
-			// [4, ?, 5, ?, 6, ?, 7, ?]
-			rv2cv_re_high[i] = (i % 2 == 0) ? (i / 2 + EPV / 2) : 0;
-			// [?, 4, ?, 5, ?, 6, ?, 7]
-			rv2cv_im_high[i] = (i % 2 == 0) ? 0 : (i / 2 + EPV / 2);
-		}
-		SHUFFLE_RV_TO_CV_RE = FloatVector.shuffleFromArray(PFS, load_rv2cv_re, 0);
-		SHUFFLE_RV_TO_CV_BOTH = FloatVector.shuffleFromArray(PFS, load_rv2cv_both, 0);
-
-		SHUFFLE_RV_TO_CV_RE_LOW = FloatVector.shuffleFromArray(PFS, rv2cv_re_low, 0);
-		SHUFFLE_RV_TO_CV_IM_LOW = FloatVector.shuffleFromArray(PFS, rv2cv_im_low, 0);
-		SHUFFLE_RV_TO_CV_RE_HIGH = FloatVector.shuffleFromArray(PFS, rv2cv_re_high, 0);
-		SHUFFLE_RV_TO_CV_IM_HIGH = FloatVector.shuffleFromArray(PFS, rv2cv_im_high, 0);
-
-		SHUFFLE_CS_TO_CV_SPREAD = FloatVector.shuffleFromArray(PFS, load_cs2cv_spread, 0);
-		SHUFFLE_CV_SPREAD_RE = FloatVector.shuffleFromArray(PFS, load_cv2cv_spread_re, 0);
-		SHUFFLE_CV_SPREAD_IM = FloatVector.shuffleFromArray(PFS, load_cv2cv_spread_im, 0);
-
-		SHUFFLE_CV_TO_CV_PACK_RE_FIRST = FloatVector.shuffleFromArray(PFS, load_cv2cv_pack_re_first, 0);
-		SHUFFLE_CV_TO_CV_PACK_IM_FIRST = FloatVector.shuffleFromArray(PFS, load_cv2cv_pack_im_first, 0);
-		SHUFFLE_CV_TO_CV_PACK_RE_SECOND = FloatVector.shuffleFromArray(PFS, load_cv2cv_pack_re_second, 0);
-		SHUFFLE_CV_TO_CV_PACK_IM_SECOND = FloatVector.shuffleFromArray(PFS, load_cv2cv_pack_im_second, 0);
-
-		int[] shuffle_c_swap_re_im = new int[EPV];
-		for (int i = 0; i < shuffle_c_swap_re_im.length; i += 2) {
-			shuffle_c_swap_re_im[i + 0] = i + 1;
-			shuffle_c_swap_re_im[i + 1] = i + 0;
-		}
-
-		SHUFFLE_CV_SWAP_RE_IM = FloatVector.shuffleFromArray(PFS, shuffle_c_swap_re_im, 0);
+		// [(re1, im1), (re2, im2), ...] -> [(im1, re1), (im2, re2), ...]
+		SHUFFLE_CV_SWAP_RE_IM = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? i + 1 : i - 1);
 	}
 
 	public static void rv_add_rs_i(float z[], int zOffset, float x, int count) {
