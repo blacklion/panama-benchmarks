@@ -82,9 +82,13 @@ public final class VOVec {
 
 	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST;
  	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST;
-
  	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND;
  	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND;
+
+	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST;
+	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST;
+	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND;
+	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND;
 
 	static {
 		boolean[] alter = new boolean[EPV + 1];
@@ -126,11 +130,19 @@ public final class VOVec {
 		SHUFFLE_CV_TO_CV_PACK_RE_FIRST = FloatVector.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
 		// [(re0, im0), (re1, im1), ...] -> [im0, im1, ..., im_len, ?, ...]
 		SHUFFLE_CV_TO_CV_PACK_IM_FIRST = FloatVector.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
-
 		// [(re0, im0), (re1, im1), ...] -> [?, ..., re0, re1, ..., re_len]
 		SHUFFLE_CV_TO_CV_PACK_RE_SECOND = FloatVector.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
 		// [(re0, im0), (re1, im1), ...] -> [?, ..., im0, im1, ..., im_len]
 		SHUFFLE_CV_TO_CV_PACK_IM_SECOND = FloatVector.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1: 0);
+
+		// [re0, re1, re2, ...] -> [(re0, ?), (re1, ?), ..., (re_{len/2}, ?)]
+		SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? i / 2 : 0);
+		// [im0, im1, im2, ...] -> [(?, im0), (?, im1), ..., (?, im_{len/2})]
+		SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST = FloatVector.shuffle(PFS, i -> (i % 2 == 1) ? i / 2 : 0);
+		// [..., re_{len/2}, ..., re_len] -> [(re_{len/2}, ?), ..., (re_len, ?)]
+		SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? i / 2 + EPV2 : 0);
+		// [..., im_{len/2}, ..., im_len] -> [(?, im_{len/2}), ..., (?, im_len)]
+		SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND = FloatVector.shuffle(PFS, i -> (i % 2 == 1) ? i / 2 + EPV2 : 0);
 
 		// [(re0, im0), (re1, im1), ...] -> [(im0, re0), (im1, re1), ...]
 		SHUFFLE_CV_SWAP_RE_IM = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? i + 1 : i - 1);
@@ -1828,30 +1840,43 @@ public final class VOVec {
 	public static void cv_exp_i(float z[], int zOffset, int count) {
 		zOffset <<= 1;
 
-		while (count >= EPV2) {
+		// To process
+		while (count >= EPV) {
 			//@DONE: one load & two reshuffles are faster
-			//@TODO: check, do we need pack and process twice elements, and save result twice
-			// vz is [(z[0].re, z[0].im), (z[1].re, z[1].im), ...]
-			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-			// vzreexp is [(exp(z[0].re), exp(z[0].re)), (exp(z[1].re), exp(z[1].re)), ...]
-			final FloatVector vzreexp = vz.rearrange(SHUFFLE_CV_SPREAD_RE).exp();
-			// vzim is [(z[0].im, z[0].im), (z[1].im, z[1].im), ...]
-			final FloatVector vzim = vz.rearrange(SHUFFLE_CV_SPREAD_IM);
+			//@DONE: it is better than process one vector
+			final FloatVector vz1 = FloatVector.fromArray(PFS, z, zOffset);
+			final FloatVector vz2 = FloatVector.fromArray(PFS, z, zOffset + EPV);
 
-			//@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
+			// Ger vz1re/vz1im till vz2 is loading
+			final FloatVector vz1re = vz1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vz1im = vz1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+
+			// Ger vz2re/vz2im
+			final FloatVector vz2re = vz2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vz2im = vz2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+
+			// Combine them
+			final FloatVector vzreexp = vz1re.blend(vz2re, MASK_SECOND_HALF).exp();
+			final FloatVector vzim = vz1im.blend(vz2im, MASK_SECOND_HALF);
+
 			final FloatVector vrre = vzreexp.mul(vzim.cos());
 			final FloatVector vrim = vzreexp.mul(vzim.sin());
 
-			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
+			// And combine & store twice
+			vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST), MASK_C_IM).intoArray(z, zOffset);
+			vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND), MASK_C_IM).intoArray(z, zOffset + EPV);
 
-			zOffset += EPV;
-			count -= EPV2;
+			// We loaded and stored twice as many numbers
+			zOffset += EPV * 2;
+			count -= EPV;
 		}
 
+		//@DONE: Don't process obe PFS-sized vector, it is too expensive to setup for only one
+
 		while (count-- > 0) {
-			float g = (float)Math.exp(z[zOffset + 0]);
-			z[zOffset + 0] = g * (float)Math.cos(z[zOffset + 1]);
-			z[zOffset + 1] = g * (float)Math.sin(z[zOffset + 1]);
+			float g = (float) Math.exp(z[zOffset + 0]);
+			z[zOffset + 0] = g * (float) Math.cos(z[zOffset + 1]);
+			z[zOffset + 1] = g * (float) Math.sin(z[zOffset + 1]);
 			zOffset += 2;
 		}
 	}
@@ -1871,32 +1896,45 @@ public final class VOVec {
 	}
 
 	public static void cv_exp(float z[], int zOffset, float x[], int xOffset, int count) {
-		zOffset <<= 1;
 		xOffset <<= 1;
+		zOffset <<= 1;
 
-		while (count >= EPV2) {
+		// To process
+		while (count >= EPV) {
 			//@DONE: one load & two reshuffles are faster
-			//@TODO: check, do we need pack and process twice elements, and save result twice
-			// vx is [(x[0].re, x[0].im), (x[1].re, x[1].im), ...]
-			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			// vxreexp is [(exp(x[0].re), exp(x[0].re)), (exp(x[1].re), exp(x[1].re)), ...]
-			final FloatVector vxreexp = vx.rearrange(SHUFFLE_CV_SPREAD_RE).exp();
-			// vxim is [(x[0].im, x[0].im), (x[1].im, x[1].im), ...]
-			final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
+			//@DONE: it is better than process one vector
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
 
-			//@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
+			// Ger vx1re/vx1im till vx2 is loading
+			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+
+			// Ger vx2re/vx2im
+			final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+
+			// Combine them
+			final FloatVector vxreexp = vx1re.blend(vx2re, MASK_SECOND_HALF).exp();
+			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+
 			final FloatVector vrre = vxreexp.mul(vxim.cos());
 			final FloatVector vrim = vxreexp.mul(vxim.sin());
 
-			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
+			// And combine & store twice
+			vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST), MASK_C_IM).intoArray(z, zOffset);
+			vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND), MASK_C_IM).intoArray(z, zOffset + EPV);
 
-			xOffset += EPV;
-			zOffset += EPV;
-			count -= EPV2;
+			// We loaded and stored twice as many numbers
+			xOffset += EPV * 2;
+			zOffset += EPV * 2;
+			count -= EPV;
 		}
 
+		//@DONE: Don't process obe PFS-sized vector, it is too expensive to setup for only one
+
 		while (count-- > 0) {
-			float g = (float)Math.exp(x[xOffset + 0]);
+			float g = (float) Math.exp(x[xOffset + 0]);
 			z[zOffset + 0] = g * (float)Math.cos(x[xOffset + 1]);
 			z[zOffset + 1] = g * (float)Math.sin(x[xOffset + 1]);
 			xOffset += 2;
