@@ -32,35 +32,27 @@ import jdk.incubator.vector.Vector;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
+/** @noinspection CStyleArrayDeclaration*/
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
 @Threads(1)
 @State(Scope.Thread)
 public class LoadRVtoCVBoth {
-    private final static FloatVector.FloatSpecies PFS;
-    private final static FloatVector.FloatSpecies PFS2;
-    private final static int[] LOAD_RV_TO_CV_BOTH;
-    private final static FloatVector.Shuffle<Float> SHUFFLE_RV_TO_CV_BOTH;
+    private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
+    private final static int EPV = PFS.length();
+    private final static FloatVector.FloatSpecies PFS2 = FloatVector.species(Vector.Shape.forBitSize(PFS.bitSize() / 2));
 
-    static {
-        PFS = FloatVector.preferredSpecies();
-        PFS2 = FloatVector.species(Vector.Shape.forBitSize(PFS.bitSize() / 2));
-        LOAD_RV_TO_CV_BOTH = new int[PFS.length()];
-        for (int i = 0; i < PFS.length(); i++) {
-            LOAD_RV_TO_CV_BOTH[i] = i / 2;
-        }
-        SHUFFLE_RV_TO_CV_BOTH = FloatVector.shuffleFromArray(PFS, LOAD_RV_TO_CV_BOTH, 0);
-    }
+    private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_BOTH = FloatVector.shuffle(PFS, i -> i / 2);
+    private final static int[] LOAD_RV_TO_CV_BOTH = SHUFFLE_RV_TO_CV_BOTH.toArray();
 
     private float x[];
 
     @Setup(Level.Trial)
     public void Setup() {
-        x = new float[PFS.length() * 2];
-
+        x = new float[EPV * 2];
         for (int i = 0; i < x.length; i++) {
-            x[i] = (float) (Math.random() * 2.0 - 1.0);
+            x[i] = (float)(Math.random() * 2.0 - 1.0);
         }
     }
 

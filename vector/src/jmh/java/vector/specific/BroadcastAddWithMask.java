@@ -32,19 +32,19 @@ import jdk.incubator.vector.Vector;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
+/** @noinspection CStyleArrayDeclaration*/
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
 @Threads(1)
 @State(org.openjdk.jmh.annotations.Scope.Thread)
 public class BroadcastAddWithMask {
-    private final static FloatVector.FloatSpecies PFS;
+	private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
+	private final static int EPV = PFS.length();
 	private final static Vector.Mask<Float> MASK_C_RE;
 
     static {
-        PFS = FloatVector.preferredSpecies();
-
-		boolean[] alter = new boolean[PFS.length() + 1];
+		boolean[] alter = new boolean[EPV];
 		alter[0] = true;
 		for (int i = 1; i < alter.length; i++)
 			alter[i] = !alter[i-1];
@@ -57,23 +57,22 @@ public class BroadcastAddWithMask {
 
     @Setup(Level.Trial)
     public void Setup() {
-        x = new float[PFS.length() * 2];
-
+        x = new float[EPV * 2];
         for (int i = 0; i < x.length; i++) {
-            x[i] = (float) (Math.random() * 2.0 - 1.0);
+            x[i] = (float)(Math.random() * 2.0 - 1.0);
         }
-        y = (float) (Math.random() * 2.0 - 1.0);
+        y = (float)(Math.random() * 2.0 - 1.0);
         vy = PFS.zero().blend(y, MASK_C_RE);
     }
 
 
     @Benchmark
-    public void addWithMask(Blackhole bh) {
+    public void addsm(Blackhole bh) {
         bh.consume(FloatVector.fromArray(PFS, x, 0).add(y, MASK_C_RE));
     }
 
     @Benchmark
-    public void addWithBroadcasted(Blackhole bh) {
+    public void addv(Blackhole bh) {
         bh.consume(FloatVector.fromArray(PFS, x, 0).add(vy));
     }
 }

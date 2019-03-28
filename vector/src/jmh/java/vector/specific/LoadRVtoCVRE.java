@@ -32,33 +32,26 @@ import jdk.incubator.vector.Vector;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
+/** @noinspection CStyleArrayDeclaration*/
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
 @Threads(1)
 @State(Scope.Thread)
 public class LoadRVtoCVRE {
-    private final static FloatVector.FloatSpecies PFS;
-    private final static FloatVector.FloatSpecies PFS2;
-    private final static int[] LOAD_RV_TO_CV_RE;
+    private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
+    private final static int EPV = PFS.length();
+    private final static FloatVector.FloatSpecies PFS2 = FloatVector.species(Vector.Shape.forBitSize(PFS.bitSize() / 2));
+
+    private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE = FloatVector.shuffle(PFS, i -> i / 2);
+    private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE_ZERO = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2) : (EPV - 1));
+    private final static int[] LOAD_RV_TO_CV_RE = SHUFFLE_RV_TO_CV_RE.toArray();
+
     private final static Vector.Mask<Float> MASK_C_RE;
     private final static Vector.Mask<Float> MASK_C_IM;
-    private final static FloatVector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE;
-    private final static FloatVector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE_ZERO;
 
     static {
-        PFS = FloatVector.preferredSpecies();
-        PFS2 = FloatVector.species(Vector.Shape.forBitSize(PFS.bitSize() / 2));
-        LOAD_RV_TO_CV_RE = new int[PFS.length()];
-        int[] load_rv2cv_re_zero = new int[PFS.length()];
-        for (int i = 0; i < PFS.length(); i++) {
-			LOAD_RV_TO_CV_RE[i] = i / 2;
-            load_rv2cv_re_zero[i] = (i % 2 == 0) ? (i / 2) : (PFS.length() - 1);
-        }
-        SHUFFLE_RV_TO_CV_RE = FloatVector.shuffleFromArray(PFS, LOAD_RV_TO_CV_RE, 0);
-        SHUFFLE_RV_TO_CV_RE_ZERO = FloatVector.shuffleFromArray(PFS, load_rv2cv_re_zero, 0);
-
-        boolean[] alter = new boolean[PFS.length() + 1];
+        boolean[] alter = new boolean[EPV + 1];
    		alter[0] = true;
    		for (int i = 1; i < alter.length; i++)
    			alter[i] = !alter[i-1];
@@ -70,10 +63,10 @@ public class LoadRVtoCVRE {
 
     @Setup(Level.Trial)
     public void Setup() {
-        x = new float[PFS.length() * 2];
+        x = new float[EPV * 2];
 
         for (int i = 0; i < x.length; i++) {
-            x[i] = (float) (Math.random() * 2.0 - 1.0);
+            x[i] = (float)(Math.random() * 2.0 - 1.0);
         }
     }
 

@@ -32,40 +32,27 @@ import jdk.incubator.vector.Vector;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
+/** @noinspection CStyleArrayDeclaration*/
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
 @Threads(1)
 @State(Scope.Thread)
 public class LoadCStoCV {
-    private final static FloatVector.FloatSpecies PFS;
-    private final static FloatVector.FloatSpecies FS64;
-    private final static int[] LOAD_CS_TO_CV_SPREAD;
-    private final static FloatVector.Shuffle<Float> SHUFFLE_CS_TO_CV;
+    private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
+    private final static int EPV = PFS.length();
+    private final static FloatVector.FloatSpecies FS64 = FloatVector.species(Vector.Shape.S_64_BIT);
 
-    static {
-        PFS = FloatVector.preferredSpecies();
-        // Minimum needed
-        FS64 = FloatVector.species(Vector.Shape.S_64_BIT);
-
-        LOAD_CS_TO_CV_SPREAD = new int[PFS.length()];
-        for (int i = 0; i < PFS.length(); i++) {
-            if (i % 2 == 0)
-   				LOAD_CS_TO_CV_SPREAD[i] = 0;
-   			else
-    			LOAD_CS_TO_CV_SPREAD[i] = 1;
-        }
-        SHUFFLE_CS_TO_CV = FloatVector.shuffleFromArray(PFS, LOAD_CS_TO_CV_SPREAD, 0);
-    }
+    private final static Vector.Shuffle<Float> SHUFFLE_CS_TO_CV = FloatVector.shuffle(PFS, i -> i % 2);
+    private final static int[] LOAD_CS_TO_CV_SPREAD = SHUFFLE_CS_TO_CV.toArray();
 
     private float x[];
 
     @Setup(Level.Trial)
     public void Setup() {
-        x = new float[PFS.length() * 2];
-
+        x = new float[EPV * 2];
         for (int i = 0; i < x.length; i++) {
-            x[i] = (float) (Math.random() * 2.0 - 1.0);
+            x[i] = (float)(Math.random() * 2.0 - 1.0);
         }
     }
 

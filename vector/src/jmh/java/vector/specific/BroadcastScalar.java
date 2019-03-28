@@ -28,45 +28,44 @@
 package vector.specific;
 
 import jdk.incubator.vector.FloatVector;
-import jdk.incubator.vector.Vector;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
+/**
+ * @noinspection CStyleArrayDeclaration
+ */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
 @Threads(1)
 @State(Scope.Thread)
 public class BroadcastScalar {
-    private final static FloatVector.FloatSpecies PFS;
+	private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
+	private final static int EPV = PFS.length();
 
-    static {
-        PFS = FloatVector.preferredSpecies();
-    }
+	private float x[];
+	private float y;
+	private FloatVector vy;
 
-    private float x[];
-    private float y;
-    private FloatVector vy;
+	@Setup(Level.Trial)
+	public void Setup() {
+		x = new float[EPV * 2];
 
-    @Setup(Level.Trial)
-    public void Setup() {
-        x = new float[PFS.length() * 2];
-
-        for (int i = 0; i < x.length; i++) {
-            x[i] = (float) (Math.random() * 2.0 - 1.0);
-        }
-        y = (float) (Math.random() * 2.0 - 1.0);
-        vy = PFS.broadcast(y);
-    }
+		for (int i = 0; i < x.length; i++) {
+			x[i] = (float)(Math.random() * 2.0 - 1.0);
+		}
+		y = (float)(Math.random() * 2.0 - 1.0);
+		vy = PFS.broadcast(y);
+	}
 
 
-    @Benchmark
-    public void addScalar(Blackhole bh) {
-        bh.consume(FloatVector.fromArray(PFS, x, 0).add(y));
-    }
+	@Benchmark
+	public void adds(Blackhole bh) {
+		bh.consume(FloatVector.fromArray(PFS, x, 0).add(y));
+	}
 
-    @Benchmark
-    public void addVector(Blackhole bh) {
-        bh.consume(FloatVector.fromArray(PFS, x, 0).add(vy));
-    }
+	@Benchmark
+	public void addv(Blackhole bh) {
+		bh.consume(FloatVector.fromArray(PFS, x, 0).add(vy));
+	}
 }

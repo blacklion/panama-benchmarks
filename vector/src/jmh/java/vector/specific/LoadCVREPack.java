@@ -34,77 +34,48 @@ import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Arrays;
 
+/** @noinspection CStyleArrayDeclaration*/
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
 @Threads(1)
 @State(Scope.Thread)
 public class LoadCVREPack {
-    private final static FloatVector.FloatSpecies PFS;
+    private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();;
+    private final static int EPV = PFS.length();
+    private final static int EPV2 = PFS.length() / 2;
+
+    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST = FloatVector.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
+    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST = FloatVector.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
+    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND = FloatVector.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
+    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND = FloatVector.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1 : 0);
 
     private final static int[] LOAD_CV_TO_CV_PACK_RE;
    	private final static int[] LOAD_CV_TO_CV_PACK_IM;
 
-    private final static FloatVector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST;
-    private final static FloatVector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST;
-
-    private final static FloatVector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND;
-    private final static FloatVector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND;
-
-   	private final static FloatVector.Mask<Float> MASK_SECOND_HALF;
+   	private final static Vector.Mask<Float> MASK_SECOND_HALF;
 
     static {
-        PFS = FloatVector.preferredSpecies();
+        boolean[] sh = new boolean[EPV];
+        Arrays.fill(sh, EPV / 2, sh.length, true);
+        MASK_SECOND_HALF = FloatVector.maskFromArray(PFS, sh, 0);
 
-        LOAD_CV_TO_CV_PACK_RE = new int[PFS.length()];
-        LOAD_CV_TO_CV_PACK_IM = new int[PFS.length()];
-
-        int[] re1 = new int[PFS.length()];
-        int[] im1 = new int[PFS.length()];
-        int[] re2 = new int[PFS.length()];
-        int[] im2 = new int[PFS.length()];
-
-        for (int i = 0; i < PFS.length(); i++) {
-            // Vector complex to vector of twice as much real parts
-            // [(re1, im1), (re2, im2), ...] -> [re1, re2, ...]
+        LOAD_CV_TO_CV_PACK_RE = new int[EPV];
+        LOAD_CV_TO_CV_PACK_IM = new int[EPV];
+        for (int i = 0; i < EPV; i++) {
             LOAD_CV_TO_CV_PACK_RE[i] = i * 2;
-
-            // Vector complex to vector of twice as much imaginary parts
-            // [(re1, im1), (re2, im2), ...] -> [im1, im2, ...]
             LOAD_CV_TO_CV_PACK_IM[i] = i * 2 + 1;
-
-            // [(re1, im1), (re2, im2), ...] -> [re1, re2, ...]
-            if (i < PFS.length() / 2) {
-                re1[i] = i * 2;
-                im1[i] = i * 2 + 1;
-            }
-            // Second
-            // [(re1, im1), (re2, im2), ...] -> [..., re1, re2, ...]
-            if (i >= PFS.length() / 2) {
-                re2[i] = i * 2 - PFS.length();
-                im2[i] = i * 2 + 1 - PFS.length();
-            }
         }
-
-        SHUFFLE_CV_TO_CV_PACK_RE_FIRST = FloatVector.shuffleFromArray(PFS, re1, 0);
-        SHUFFLE_CV_TO_CV_PACK_IM_FIRST = FloatVector.shuffleFromArray(PFS, im1, 0);
-
-        SHUFFLE_CV_TO_CV_PACK_RE_SECOND = FloatVector.shuffleFromArray(PFS, re2, 0);
-        SHUFFLE_CV_TO_CV_PACK_IM_SECOND = FloatVector.shuffleFromArray(PFS, im2, 0);
-
-        boolean[] mask = new boolean[PFS.length()];
-        Arrays.fill(mask, PFS.length() / 2, mask.length, true);
-        MASK_SECOND_HALF = FloatVector.maskFromArray(PFS, mask, 0);
     }
 
     private float x[];
 
     @Setup(Level.Trial)
     public void Setup() {
-        x = new float[PFS.length() * 2];
+        x = new float[EPV * 2];
 
         for (int i = 0; i < x.length; i++) {
-            x[i] = (float) (Math.random() * 2.0 - 1.0);
+            x[i] = (float)(Math.random() * 2.0 - 1.0);
         }
     }
 
@@ -120,7 +91,7 @@ public class LoadCVREPack {
     @Benchmark
     public void loadAndReshuffle(Blackhole bh) {
         final FloatVector vx1 = FloatVector.fromArray(PFS, x, 0);
-        final FloatVector vx2 = FloatVector.fromArray(PFS, x, PFS.length());
+        final FloatVector vx2 = FloatVector.fromArray(PFS, x, EPV);
 
         final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
         final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);

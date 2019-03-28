@@ -33,6 +33,7 @@ import org.openjdk.jmh.annotations.*;
 
 import java.util.Arrays;
 
+/** @noinspection CStyleArrayDeclaration, PointlessArithmeticExpression, WeakerAccess */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
@@ -50,19 +51,18 @@ public class CVR2P {
     private final static FloatVector.FloatSpecies PFS2 = FloatVector.species(Vector.Shape.forBitSize(PFS.bitSize() / 2));
     private final static int EPV2 = PFS2.length();
 
+    private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_IM = FloatVector.shuffle(PFS, i -> i - i % 2 + 1);
+    private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_RE = FloatVector.shuffle(PFS, i -> i - i % 2);
+    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST = FloatVector.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
+    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST = FloatVector.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
+    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND = FloatVector.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
+    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND = FloatVector.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1: 0);
+    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? i / 2 : 0);
+    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST = FloatVector.shuffle(PFS, i -> (i % 2 == 1) ? i / 2 : 0);
+    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? i / 2 + EPV2 : 0);
+    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND = FloatVector.shuffle(PFS, i -> (i % 2 == 1) ? i / 2 + EPV2 : 0);
+
     private final static Vector.Mask<Float> MASK_SECOND_HALF;
-
-    private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_IM;
-   	private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_RE;
-    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST;
-   	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST;
-   	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND;
-   	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND;
-    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST;
-   	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST;
-   	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND;
-   	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND;
-
     private final static Vector.Mask<Float> MASK_C_IM;
 
     static {
@@ -72,33 +72,9 @@ public class CVR2P {
             alter[i] = !alter[i-1];
         MASK_C_IM = FloatVector.maskFromArray(PFS, alter, 1);
 
-        boolean[] secondhalf = new boolean[EPV];
-        Arrays.fill(secondhalf, PFS.length() / 2, secondhalf.length, true);
-        MASK_SECOND_HALF = FloatVector.maskFromArray(PFS, secondhalf, 0);
-
-        // [(re0, im0), (re1, im1), ...] -> [(re0, re0), (re1, re1), ...]
-   		SHUFFLE_CV_SPREAD_RE = FloatVector.shuffle(PFS, i -> i - i % 2);
-   		// [(re0, im0), (re1, im1), ...] -> [(im0, im0), (im1, im1), ...]
-   		SHUFFLE_CV_SPREAD_IM = FloatVector.shuffle(PFS, i -> i - i % 2 + 1);
-
-        // [(re0, im0), (re1, im1), ...] -> [re0, re1, ..., re_len, ?, ...]
-        SHUFFLE_CV_TO_CV_PACK_RE_FIRST = FloatVector.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
-        // [(re0, im0), (re1, im1), ...] -> [im0, im1, ..., im_len, ?, ...]
-        SHUFFLE_CV_TO_CV_PACK_IM_FIRST = FloatVector.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
-
-        // [(re0, im0), (re1, im1), ...] -> [?, ..., re0, re1, ..., re_len]
-        SHUFFLE_CV_TO_CV_PACK_RE_SECOND = FloatVector.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
-        // [(re0, im0), (re1, im1), ...] -> [?, ..., im0, im1, ..., im_len]
-        SHUFFLE_CV_TO_CV_PACK_IM_SECOND = FloatVector.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1: 0);
-
-        // [re0, re1, re2, ...] -> [(re0, ?), (re1, ?), ..., (re_{len/2}, ?)]
-        SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? i / 2 : 0);
-        // [im0, im1, im2, ...] -> [(?, im0), (?, im1), ..., (?, im_{len/2})]
-        SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST = FloatVector.shuffle(PFS, i -> (i % 2 == 1) ? i / 2 : 0);
-        // [..., re_{len/2}, ..., re_len] -> [(re_{len/2}, ?), ..., (re_len, ?)]
-        SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? i / 2 + EPV2 : 0);
-        // [..., im_{len/2}, ..., im_len] -> [(?, im_{len/2}), ..., (?, im_len)]
-        SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND = FloatVector.shuffle(PFS, i -> (i % 2 == 1) ? i / 2 + EPV2 : 0);
+        boolean[] sh = new boolean[EPV];
+        Arrays.fill(sh, EPV / 2, sh.length, true);
+        MASK_SECOND_HALF = FloatVector.maskFromArray(PFS, sh, 0);
     }
 
     private float z[];
@@ -152,8 +128,8 @@ public class CVR2P {
 
         float abs, arg;
         while (count-- > 0) {
-            abs = (float) Math.hypot(z[zOffset + 0], z[zOffset + 1]);
-            arg = (float) Math.atan2(z[zOffset + 1], z[zOffset + 0]);
+            abs = (float)Math.hypot(z[zOffset + 0], z[zOffset + 1]);
+            arg = (float)Math.atan2(z[zOffset + 1], z[zOffset + 0]);
             z[zOffset + 0] = abs;
             z[zOffset + 1] = arg;
             zOffset += 2;
@@ -192,8 +168,8 @@ public class CVR2P {
 
         float abs, arg;
         while (count-- > 0) {
-            abs = (float) Math.hypot(z[zOffset + 0], z[zOffset + 1]);
-            arg = (float) Math.atan2(z[zOffset + 1], z[zOffset + 0]);
+            abs = (float)Math.hypot(z[zOffset + 0], z[zOffset + 1]);
+            arg = (float)Math.atan2(z[zOffset + 1], z[zOffset + 0]);
             z[zOffset + 0] = abs;
             z[zOffset + 1] = arg;
             zOffset += 2;
@@ -251,8 +227,8 @@ public class CVR2P {
 
         float abs, arg;
         while (count-- > 0) {
-            abs = (float) Math.hypot(z[zOffset + 0], z[zOffset + 1]);
-            arg = (float) Math.atan2(z[zOffset + 1], z[zOffset + 0]);
+            abs = (float)Math.hypot(z[zOffset + 0], z[zOffset + 1]);
+            arg = (float)Math.atan2(z[zOffset + 1], z[zOffset + 0]);
             z[zOffset + 0] = abs;
             z[zOffset + 1] = arg;
             zOffset += 2;

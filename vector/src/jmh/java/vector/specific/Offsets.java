@@ -31,6 +31,7 @@ import jdk.incubator.vector.FloatVector;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
+/** @noinspection CStyleArrayDeclaration, WeakerAccess */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
@@ -38,21 +39,21 @@ import org.openjdk.jmh.infra.Blackhole;
 @State(org.openjdk.jmh.annotations.Scope.Thread)
 public class Offsets {
     private final static int MAX_OFFSET = 3;
+
     @Param({"0", "1", "2", "3"})
     public int offset;
 
-    private FloatVector.FloatSpecies PFS;
+    private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
+    private final static int EPV = PFS.length();
+
     private FloatVector zero;
-    private int EPV;
     private float x[];
     private float y[];
     
     
     @Setup(Level.Trial)
     public void Setup() {
-        PFS = FloatVector.preferredSpecies();
         zero = PFS.zero();
-        EPV = PFS.length();
         x = new float[EPV + MAX_OFFSET];
         y = new float[EPV + MAX_OFFSET];
         

@@ -31,6 +31,7 @@ import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.Vector;
 import org.openjdk.jmh.annotations.*;
 
+/** @noinspection PointlessArithmeticExpression, WeakerAccess, CStyleArrayDeclaration */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
@@ -47,43 +48,21 @@ public class RVExpi {
     private final static int EPV = PFS.length();
     private final static FloatVector.FloatSpecies PFS2 = FloatVector.species(Vector.Shape.forBitSize(PFS.bitSize() / 2));
     private final static int EPV2 = PFS2.length();
-    private final static FloatVector.Shuffle<Float> SHUFFLE_RV_TO_CV_BOTH;
+
+    private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_BOTH = FloatVector.shuffle(PFS, i -> i / 2);;
+    private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE_LOW = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2) : 0);
+    private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_IM_LOW = FloatVector.shuffle(PFS, i-> (i % 2 == 0) ? 0 : (i / 2));
+    private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE_HIGH = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2 + EPV / 2) : 0);
+    private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_IM_HIGH = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? 0 : (i / 2 + EPV / 2));
 
     private final static Vector.Mask<Float> MASK_C_IM;
-    private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE_LOW;
-    private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_IM_LOW;
-    private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE_HIGH;
-    private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_IM_HIGH;
 
     static {
         boolean[] alter = new boolean[EPV + 1];
-
         alter[0] = true;
         for (int i = 1; i < alter.length; i++)
             alter[i] = !alter[i-1];
         MASK_C_IM = FloatVector.maskFromArray(PFS, alter, 1);
-
-        int[] rv2cv_both = new int[EPV];
-        int[] rv2cv_re_low = new int[EPV];
-        int[] rv2cv_im_low = new int[EPV];
-        int[] rv2cv_re_high = new int[EPV];
-        int[] rv2cv_im_high = new int[EPV];
-        for (int i = 0; i < EPV; i++) {
-            rv2cv_both[i] = i / 2;
-            // [0, ?, 1, ?, 2, ?, 3, ?]
-            rv2cv_re_low[i] = (i % 2 == 0) ? (i / 2) : 0;
-            // [?, 0, ?, 1, ?, 2, ?, 3]
-            rv2cv_im_low[i] = (i % 2 == 0) ? 0 : (i / 2);
-            // [4, ?, 5, ?, 6, ?, 7, ?]
-            rv2cv_re_high[i] = (i % 2 == 0) ? (i / 2 + EPV / 2) : 0;
-            // [?, 4, ?, 5, ?, 6, ?, 7]
-            rv2cv_im_high[i] = (i % 2 == 0) ? 0 : (i / 2 + EPV / 2);
-        }
-        SHUFFLE_RV_TO_CV_BOTH = FloatVector.shuffleFromArray(PFS, rv2cv_both, 0);
-        SHUFFLE_RV_TO_CV_RE_LOW = FloatVector.shuffleFromArray(PFS, rv2cv_re_low, 0);
-        SHUFFLE_RV_TO_CV_IM_LOW = FloatVector.shuffleFromArray(PFS, rv2cv_im_low, 0);
-        SHUFFLE_RV_TO_CV_RE_HIGH = FloatVector.shuffleFromArray(PFS, rv2cv_re_high, 0);
-        SHUFFLE_RV_TO_CV_IM_HIGH = FloatVector.shuffleFromArray(PFS, rv2cv_im_high, 0);
     }
 
     private float x[];
@@ -95,7 +74,7 @@ public class RVExpi {
         z = new float[MAX_SIZE * 2];
 
         for (int i = 0; i < x.length; i++) {
-            x[i] = (float) (Math.random() * 2.0 - 1.0);
+            x[i] = (float)(Math.random() * 2.0 - 1.0);
         }
     }
 

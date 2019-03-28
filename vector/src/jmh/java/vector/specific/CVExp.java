@@ -33,6 +33,7 @@ import org.openjdk.jmh.annotations.*;
 
 import java.util.Arrays;
 
+/** @noinspection CStyleArrayDeclaration, WeakerAccess, PointlessArithmeticExpression */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
@@ -52,16 +53,16 @@ public class CVExp {
 
     private final static Vector.Mask<Float> MASK_SECOND_HALF;
 
-    private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_IM;
-   	private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_RE;
-    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST;
-   	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST;
-   	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND;
-   	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND;
-    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST;
-   	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST;
-   	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND;
-   	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND;
+	private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_IM = FloatVector.shuffle(PFS, i -> i - i % 2 + 1);
+	private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_RE = FloatVector.shuffle(PFS, i -> i - i % 2);
+	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST = FloatVector.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
+	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST = FloatVector.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
+	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND = FloatVector.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
+	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND = FloatVector.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1: 0);
+	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? i / 2 : 0);
+	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST = FloatVector.shuffle(PFS, i -> (i % 2 == 1) ? i / 2 : 0);
+	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? i / 2 + EPV2 : 0);
+	private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND = FloatVector.shuffle(PFS, i -> (i % 2 == 1) ? i / 2 + EPV2 : 0);
 
     private final static Vector.Mask<Float> MASK_C_IM;
 
@@ -72,34 +73,10 @@ public class CVExp {
             alter[i] = !alter[i-1];
         MASK_C_IM = FloatVector.maskFromArray(PFS, alter, 1);
 
-        boolean[] secondhalf = new boolean[EPV];
-        Arrays.fill(secondhalf, PFS.length() / 2, secondhalf.length, true);
-        MASK_SECOND_HALF = FloatVector.maskFromArray(PFS, secondhalf, 0);
-
-        // [(re0, im0), (re1, im1), ...] -> [(re0, re0), (re1, re1), ...]
-   		SHUFFLE_CV_SPREAD_RE = FloatVector.shuffle(PFS, i -> i - i % 2);
-   		// [(re0, im0), (re1, im1), ...] -> [(im0, im0), (im1, im1), ...]
-   		SHUFFLE_CV_SPREAD_IM = FloatVector.shuffle(PFS, i -> i - i % 2 + 1);
-
-        // [(re0, im0), (re1, im1), ...] -> [re0, re1, ..., re_len, ?, ...]
-        SHUFFLE_CV_TO_CV_PACK_RE_FIRST = FloatVector.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
-        // [(re0, im0), (re1, im1), ...] -> [im0, im1, ..., im_len, ?, ...]
-        SHUFFLE_CV_TO_CV_PACK_IM_FIRST = FloatVector.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
-
-        // [(re0, im0), (re1, im1), ...] -> [?, ..., re0, re1, ..., re_len]
-        SHUFFLE_CV_TO_CV_PACK_RE_SECOND = FloatVector.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
-        // [(re0, im0), (re1, im1), ...] -> [?, ..., im0, im1, ..., im_len]
-        SHUFFLE_CV_TO_CV_PACK_IM_SECOND = FloatVector.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1: 0);
-
-        // [re0, re1, re2, ...] -> [(re0, ?), (re1, ?), ..., (re_{len/2}, ?)]
-        SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? i / 2 : 0);
-        // [im0, im1, im2, ...] -> [(?, im0), (?, im1), ..., (?, im_{len/2})]
-        SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST = FloatVector.shuffle(PFS, i -> (i % 2 == 1) ? i / 2 : 0);
-        // [..., re_{len/2}, ..., re_len] -> [(re_{len/2}, ?), ..., (re_len, ?)]
-        SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? i / 2 + EPV2 : 0);
-        // [..., im_{len/2}, ..., im_len] -> [(?, im_{len/2}), ..., (?, im_len)]
-        SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND = FloatVector.shuffle(PFS, i -> (i % 2 == 1) ? i / 2 + EPV2 : 0);
-    }
+        boolean[] sh = new boolean[EPV];
+        Arrays.fill(sh, EPV / 2, sh.length, true);
+        MASK_SECOND_HALF = FloatVector.maskFromArray(PFS, sh, 0);
+	}
 
     private float z[];
 
@@ -113,21 +90,21 @@ public class CVExp {
     }
 
     @Benchmark
-    public void pfs() {
-        cv_exp_i(z, 0, size);
+    public void epv2() {
+        cv_exp_i1(z, 0, size);
     }
 
     @Benchmark
-    public void pfs_pfs() {
+    public void epv() {
         cv_exp_i2(z, 0, size);
     }
 
     @Benchmark
-    public void pfs_pfs_pfs2() {
+    public void epv_epv2() {
         cv_exp_i3(z, 0, size);
     }
 
-    public static void cv_exp_i(float z[], int zOffset, int count) {
+    public static void cv_exp_i1(float z[], int zOffset, int count) {
    		zOffset <<= 1;
 
    		while (count >= EPV2) {

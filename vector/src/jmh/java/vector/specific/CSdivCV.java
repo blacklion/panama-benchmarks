@@ -30,10 +30,8 @@ package vector.specific;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.Vector;
 import org.openjdk.jmh.annotations.*;
-import org.openjdk.jmh.infra.Blackhole;
 
-import java.util.Arrays;
-
+/** @noinspection PointlessArithmeticExpression, CStyleArrayDeclaration */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
@@ -45,73 +43,35 @@ public class CSdivCV {
     private final static int EPV2 = EPV / 2;
     private final static FloatVector.FloatSpecies FS64 = FloatVector.species(Vector.Shape.S_64_BIT);
 
-    private final static Vector.Mask<Float> MASK_C_RE;
     private final static Vector.Mask<Float> MASK_C_IM;
-    private final static Vector.Shuffle<Float> SHUFFLE_CS_TO_CV_SPREAD;
-    private final static Vector.Shuffle<Float> SHUFFLE_CV_SWAP_RE_IM;
-    private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_RE;
-    private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_IM;
-    private final static int[] LOAD_CS_TO_CV_SPREAD;
-    private final static int[] LOAD_CV_TO_CV_SPREAD_RE;
-    private final static int[] LOAD_CV_TO_CV_SPREAD_IM;
+
+    private final static Vector.Shuffle<Float> SHUFFLE_CS_TO_CV_SPREAD = FloatVector.shuffle(PFS, i -> i % 2);
+    private final static Vector.Shuffle<Float> SHUFFLE_CV_SWAP_RE_IM = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? i + 1 : i - 1);
+    private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_RE = FloatVector.shuffle(PFS, i -> i - i % 2);
+    private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_IM = FloatVector.shuffle(PFS, i -> i - i % 2 + 1);
+
+    private final static int[] LOAD_CS_TO_CV_SPREAD = SHUFFLE_CS_TO_CV_SPREAD.toArray();
+    private final static int[] LOAD_CV_TO_CV_SPREAD_RE = SHUFFLE_CV_SPREAD_RE.toArray();
+    private final static int[] LOAD_CV_TO_CV_SPREAD_IM = SHUFFLE_CV_SPREAD_IM.toArray();
 
     static {
         boolean[] alter = new boolean[EPV + 1];
-
         alter[0] = true;
         for (int i = 1; i < alter.length; i++)
             alter[i] = !alter[i-1];
-        MASK_C_RE = FloatVector.maskFromArray(PFS, alter, 0);
         MASK_C_IM = FloatVector.maskFromArray(PFS, alter, 1);
-
-
-        int[] load_cs2cv_spread = new int[EPV];
-        int[] load_cv2cv_spread_re = new int[EPV];
-        int[] load_cv2cv_spread_im = new int[EPV];
-
-        LOAD_CS_TO_CV_SPREAD = load_cs2cv_spread;
-        LOAD_CV_TO_CV_SPREAD_RE = load_cv2cv_spread_re;
-        LOAD_CV_TO_CV_SPREAD_IM = load_cv2cv_spread_im;
-
-        for (int i = 0; i < EPV; i++) {
-            // Complex scalar complex to complex vector with spread to each element
-            // [re, im] -> [re, im, re, im, re, im, ...]
-            if (i % 2 == 0)
-                load_cs2cv_spread[i] = 0;
-            else
-                load_cs2cv_spread[i] = 1;
-
-            // Complex vector to complex vector of duplicated real parts:
-            // [(re1, im1), (re2, im2), ...] -> [re1, re1, re2, re2, ...]
-            load_cv2cv_spread_re[i] = (i / 2) * 2;
-
-            // Complex vector to complex vector of duplicated image parts:
-            // [(re1, im1), (re2, im2), ...] -> [im1, im1, im2, im2, ...]
-            load_cv2cv_spread_im[i] = (i / 2) * 2 + 1;
-        }
-        SHUFFLE_CS_TO_CV_SPREAD = FloatVector.shuffleFromArray(PFS, load_cs2cv_spread, 0);
-        SHUFFLE_CV_SPREAD_RE = FloatVector.shuffleFromArray(PFS, load_cv2cv_spread_re, 0);
-        SHUFFLE_CV_SPREAD_IM = FloatVector.shuffleFromArray(PFS, load_cv2cv_spread_im, 0);
-
-        int[] shuffle_c_swap_re_im = new int[EPV];
-        for (int i = 0; i < shuffle_c_swap_re_im.length; i += 2) {
-            shuffle_c_swap_re_im[i + 0] = i + 1;
-            shuffle_c_swap_re_im[i + 1] = i + 0;
-        }
-
-        SHUFFLE_CV_SWAP_RE_IM = FloatVector.shuffleFromArray(PFS, shuffle_c_swap_re_im, 0);
     }
 
-    private float[] z;
-    private float[] x;
-    private float[] y;
+    private float z[];
+    private float x[];
+    private float y[];
     private int count = 16;
 
     @Setup
     public void Setup() {
-        z = new float[65536 * 2];
         x = new float[2];
         y = new float[65536 * 2];
+        z = new float[65536 * 2];
 
         for (int i = 0; i < y.length; i++)
             y[i] = (float)(Math.random() * 2.0 - 1.0);
@@ -120,22 +80,22 @@ public class CSdivCV {
     }
 
     @Benchmark
-    public void CSLongLoad_CVOneLoadReshuffle() {
+    public void loadepv_load1() {
         cs_div_cv_long_load_one_load(z, 0, x, y, 0, count);
     }
 
     @Benchmark
-    public void CSLongLoad_CVTwoLoads() {
+    public void loadepv_load2() {
         cs_div_cv_long_load_two_loads(z, 0, x, y, 0, count);
     }
 
     @Benchmark
-    public void CS64bitLoadReshape_CVOneLoadReshuffle() {
+    public void load64_load1() {
         cs_div_cv_short_load_one_load(z, 0, x, y, 0, count);
     }
 
     @Benchmark
-    public void CS64bitLoadReshape_CVTwoLoads() {
+    public void load64_load2() {
         cs_div_cv_short_load_two_loads(z, 0, x, y, 0, count);
     }
 

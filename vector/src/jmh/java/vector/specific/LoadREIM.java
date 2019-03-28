@@ -32,44 +32,28 @@ import jdk.incubator.vector.Vector;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
+/** @noinspection CStyleArrayDeclaration*/
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
 @Threads(1)
 @State(org.openjdk.jmh.annotations.Scope.Thread)
 public class LoadREIM {
-    private final static FloatVector.FloatSpecies PFS;
-    private final static int[] LOAD_CV_TO_CV_SPREAD_RE;
-    private final static int[] LOAD_CV_TO_CV_SPREAD_IM;
-    private static final Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_RE;
-    private static final Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_IM;
+    private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
+    private final static int EPV = PFS.length();
 
-    static {
-        PFS = FloatVector.preferredSpecies();
-        LOAD_CV_TO_CV_SPREAD_RE = new int[PFS.length()];
-        LOAD_CV_TO_CV_SPREAD_IM = new int[PFS.length()];
-
-        for (int i = 0; i < PFS.length(); i++) {
-            // Complex vector to complex vector of duplicated real parts:
-            // [(re1, im1), (re2, im2), ...] -> [re1, re1, re2, re2, ...]
-            LOAD_CV_TO_CV_SPREAD_RE[i] = (i / 2) * 2;
-
-            // Complex vector to complex vector of duplicated image parts:
-            // [(re1, im1), (re2, im2), ...] -> [im1, im1, im2, im2, ...]
-            LOAD_CV_TO_CV_SPREAD_IM[i] = (i / 2) * 2 + 1;
-        }
-        SHUFFLE_CV_SPREAD_RE = FloatVector.shuffleFromArray(PFS, LOAD_CV_TO_CV_SPREAD_RE, 0);
-        SHUFFLE_CV_SPREAD_IM = FloatVector.shuffleFromArray(PFS, LOAD_CV_TO_CV_SPREAD_IM, 0);
-    }
+    private static final Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_RE = FloatVector.shuffle(PFS, i -> i - i % 2);
+    private static final Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_IM = FloatVector.shuffle(PFS, i -> i - i % 2 + 1);
+    private final static int[] LOAD_CV_TO_CV_SPREAD_RE = SHUFFLE_CV_SPREAD_RE.toArray();
+    private final static int[] LOAD_CV_TO_CV_SPREAD_IM = SHUFFLE_CV_SPREAD_IM.toArray();
 
     private float x[];
 
     @Setup(Level.Trial)
     public void Setup() {
-        x = new float[PFS.length() * 2];
-
+        x = new float[EPV * 2];
         for (int i = 0; i < x.length; i++) {
-            x[i] = (float) (Math.random() * 2.0 - 1.0);
+            x[i] = (float)(Math.random() * 2.0 - 1.0);
         }
     }
 
