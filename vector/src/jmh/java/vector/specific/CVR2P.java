@@ -89,6 +89,11 @@ public class CVR2P {
     }
 
     @Benchmark
+    public void nv() {
+        cv_r2p_i0(z, 0, size);
+    }
+
+    @Benchmark
     public void epv2() {
         cv_r2p_i1(z, 0, size);
     }
@@ -103,6 +108,18 @@ public class CVR2P {
         cv_r2p_i3(z, 0, size);
     }
 
+
+    public static void cv_r2p_i0(float z[], int zOffset, int count) {
+   		float abs, arg;
+   		zOffset <<= 1;
+   		while (count-- > 0) {
+   			abs = (float)Math.hypot(z[zOffset + 0], z[zOffset + 1]);
+   			arg = (float)Math.atan2(z[zOffset + 1], z[zOffset + 0]);
+   			z[zOffset + 0] = abs;
+   			z[zOffset + 1] = arg;
+   			zOffset += 2;
+   		}
+   	}
 
     public static void cv_r2p_i1(float z[], int zOffset, int count) {
         zOffset <<= 1;

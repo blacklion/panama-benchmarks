@@ -89,6 +89,11 @@ public class CVP2R {
     }
 
     @Benchmark
+    public void nv() {
+        cv_p2r_i0(z, 0, size);
+    }
+
+    @Benchmark
     public void epv2() {
         cv_p2r_i1(z, 0, size);
     }
@@ -103,6 +108,18 @@ public class CVP2R {
         cv_p2r_i3(z, 0, size);
     }
 
+
+    public static void cv_p2r_i0(float z[], int zOffset, int count) {
+   		float re, im;
+   		zOffset <<= 1;
+   		while (count-- > 0) {
+   			re = z[zOffset + 0] * (float)Math.cos(z[zOffset + 1]);
+   			im = z[zOffset + 0] * (float)Math.sin(z[zOffset + 1]);
+   			z[zOffset + 0] = re;
+   			z[zOffset + 1] = im;
+   			zOffset += 2;
+   		}
+   	}
 
     public static void cv_p2r_i1(float z[], int zOffset, int count) {
    		zOffset <<= 1;
