@@ -110,49 +110,49 @@ public class CVP2R {
 
 
     public static void cv_p2r_i0(float z[], int zOffset, int count) {
-   		float re, im;
-   		zOffset <<= 1;
-   		while (count-- > 0) {
-   			re = z[zOffset + 0] * (float)Math.cos(z[zOffset + 1]);
-   			im = z[zOffset + 0] * (float)Math.sin(z[zOffset + 1]);
-   			z[zOffset + 0] = re;
-   			z[zOffset + 1] = im;
-   			zOffset += 2;
-   		}
-   	}
+        float re, im;
+        zOffset <<= 1;
+        while (count-- > 0) {
+             re = z[zOffset + 0] * (float)Math.cos(z[zOffset + 1]);
+             im = z[zOffset + 0] * (float)Math.sin(z[zOffset + 1]);
+             z[zOffset + 0] = re;
+             z[zOffset + 1] = im;
+             zOffset += 2;
+        }
+    }
 
     public static void cv_p2r_i1(float z[], int zOffset, int count) {
-   		zOffset <<= 1;
+        zOffset <<= 1;
 
-   		while (count >= EPV2) {
-   			//@DONE: one load & two reshuffles are faster
-   			//@TODO: check, do we need pack and process twice elements, and save result twice
-   			// vz is [(z[0].re, z[0].im), (z[1].re, z[1].im), ...]
-   			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-   			// vzreezp is [(z[0].re, z[0].re), (z[1].re, z[1].re), ...]
-   			final FloatVector vzre = vz.rearrange(SHUFFLE_CV_SPREAD_RE);
-   			// vzim is [(z[0].im, z[0].im), (z[1].im, z[1].im), ...]
-   			final FloatVector vzim = vz.rearrange(SHUFFLE_CV_SPREAD_IM);
+        while (count >= EPV2) {
+            //@DONE: one load & two reshuffles are faster
+            //@TODO: check, do we need pack and process twice elements, and save result twice
+            // vz is [(z[0].re, z[0].im), (z[1].re, z[1].im), ...]
+            final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
+            // vzreezp is [(z[0].re, z[0].re), (z[1].re, z[1].re), ...]
+            final FloatVector vzre = vz.rearrange(SHUFFLE_CV_SPREAD_RE);
+            // vzim is [(z[0].im, z[0].im), (z[1].im, z[1].im), ...]
+            final FloatVector vzim = vz.rearrange(SHUFFLE_CV_SPREAD_IM);
 
-   			//@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
-   			final FloatVector vrre = vzre.mul(vzim.cos());
-   			final FloatVector vrim = vzre.mul(vzim.sin());
+            //@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
+            final FloatVector vrre = vzre.mul(vzim.cos());
+            final FloatVector vrim = vzre.mul(vzim.sin());
 
-   			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
+            vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
 
-   			zOffset += EPV;
-   			count -= EPV2;
-   		}
+            zOffset += EPV;
+            count -= EPV2;
+        }
 
-   		float re, im;
-   		while (count-- > 0) {
-   			re = z[zOffset + 0] * (float)Math.cos(z[zOffset + 1]);
-   			im = z[zOffset + 0] * (float)Math.sin(z[zOffset + 1]);
-   			z[zOffset + 0] = re;
-   			z[zOffset + 1] = im;
-   			zOffset += 2;
-   		}
-   	}
+        float re, im;
+        while (count-- > 0) {
+             re = z[zOffset + 0] * (float)Math.cos(z[zOffset + 1]);
+             im = z[zOffset + 0] * (float)Math.sin(z[zOffset + 1]);
+             z[zOffset + 0] = re;
+             z[zOffset + 1] = im;
+             zOffset += 2;
+        }
+    }
 
     public static void cv_p2r_i2(float z[], int zOffset, int count) {
         zOffset <<= 1;
@@ -174,7 +174,7 @@ public class CVP2R {
             final FloatVector vzim = vz1im.blend(vz2im, MASK_SECOND_HALF);
 
             final FloatVector vrre = vzre.mul(vzim.cos());
-   			final FloatVector vrim = vzre.mul(vzim.sin());
+            final FloatVector vrim = vzre.mul(vzim.sin());
 
             // And combine & store twice
             vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST), MASK_C_IM).intoArray(z, zOffset);
@@ -184,13 +184,13 @@ public class CVP2R {
             count -= EPV;
         }
 
-        float abs, arg;
+        float re, im;
         while (count-- > 0) {
-            abs = (float)Math.hypot(z[zOffset + 0], z[zOffset + 1]);
-            arg = (float)Math.atan2(z[zOffset + 1], z[zOffset + 0]);
-            z[zOffset + 0] = abs;
-            z[zOffset + 1] = arg;
-            zOffset += 2;
+             re = z[zOffset + 0] * (float)Math.cos(z[zOffset + 1]);
+             im = z[zOffset + 0] * (float)Math.sin(z[zOffset + 1]);
+             z[zOffset + 0] = re;
+             z[zOffset + 1] = im;
+             zOffset += 2;
         }
     }
 
