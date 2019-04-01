@@ -323,6 +323,20 @@ public class VectorBenchmarks {
     }
 
     @Benchmark
+    public void VO_cv_cpy() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_cpy(cvz, i, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_cpy() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_cpy(cvz, i, cvx, i, callSize);
+        }
+    }
+
+    @Benchmark
     public void VO_cv_div_cs() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
             VO.cv_div_cs(cvz, i, cvx, i, csy, callSize);
@@ -479,14 +493,14 @@ public class VectorBenchmarks {
     @Benchmark
     public void VO_cv_im() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
-            VO.cv_im(cvz, i, cvx, i, callSize);
+            VO.cv_im(rvz, i, cvx, i, callSize);
         }
     }
 
     @Benchmark
     public void VOVec_cv_im() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
-            VOVec.cv_im(cvz, i, cvx, i, callSize);
+            VOVec.cv_im(rvz, i, cvx, i, callSize);
         }
     }
 
@@ -717,14 +731,14 @@ public class VectorBenchmarks {
     @Benchmark
     public void VO_cv_re() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
-            VO.cv_re(cvz, i, cvx, i, callSize);
+            VO.cv_re(rvz, i, cvx, i, callSize);
         }
     }
 
     @Benchmark
     public void VOVec_cv_re() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
-            VOVec.cv_re(cvz, i, cvx, i, callSize);
+            VOVec.cv_re(rvz, i, cvx, i, callSize);
         }
     }
 
@@ -911,16 +925,30 @@ public class VectorBenchmarks {
     }
 
     @Benchmark
+    public void VO_rv_cpy() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.rv_cpy(rvz, i, rvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_rv_cpy() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.rv_cpy(rvz, i, rvx, i, callSize);
+        }
+    }
+
+    @Benchmark
     public void VO_rv_cvt() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
-            VO.rv_cvt(rvz, i, rvx, i, callSize);
+            VO.rv_cvt(cvz, i, rvx, i, callSize);
         }
     }
 
     @Benchmark
     public void VOVec_rv_cvt() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
-            VOVec.rv_cvt(rvz, i, rvx, i, callSize);
+            VOVec.rv_cvt(cvz, i, rvx, i, callSize);
         }
     }
 
@@ -1053,14 +1081,14 @@ public class VectorBenchmarks {
     @Benchmark
     public void VO_rv_expi() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
-            VO.rv_expi(rvz, i, rvx, i, callSize);
+            VO.rv_expi(cvz, i, rvx, i, callSize);
         }
     }
 
     @Benchmark
     public void VOVec_rv_expi() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
-            VOVec.rv_expi(rvz, i, rvx, i, callSize);
+            VOVec.rv_expi(cvz, i, rvx, i, callSize);
         }
     }
 

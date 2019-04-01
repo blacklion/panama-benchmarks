@@ -28,6 +28,12 @@
 use warnings;
 use strict;
 
+use Cwd qw(abs_path);
+use FindBin;
+use lib abs_path("$FindBin::Bin/../../main/perl");
+
+use OpAnalyzer;
+
 my $SKIPPED_OPS = {
   'sub'     => 'add',
   '20log10' => '10log10',
@@ -38,8 +44,8 @@ my $SKIPPED_OPS = {
 
 die "Syntax: $0 <BaseImpl.java> <VectorImpl.java>\n" unless @ARGV == 2;
 
-my $BASE = &loadFile($ARGV[0], 1);
-my $VEC  = &loadFile($ARGV[1], 0);
+my $BASE = &OpAnalyzer::loadFile($ARGV[0], 1);
+my $VEC  = &OpAnalyzer::loadFile($ARGV[1], 0);
 
 # Check all methods
 for my $name (sort keys %{$BASE}) {
@@ -159,46 +165,40 @@ __HEADER
 for my $name (sort keys %{$VEC}) {
 	next unless exists $BASE->{$name};
 
-	# Parse name
-	my $inplace = $name =~ /_i$/;
-	if      ($name =~ /^(rs|rv|cs|cv)_([a-z0-9]{3,})_(rs|rv|cs|cv)(_i)?$/) {
-		my $l  = $1;
-		my $op = $2;
-		my $r  = $3;
-		
-		if (exists $SKIPPED_OPS->{$op}) {
-			print STDERR "Skip \"$name\" as it is not interesting, same as \"".$SKIPPED_OPS->{$op}."\"\n";
-			next;
-		}
+	# Parse this op
+	my $op;
+	eval { $op = &OpAnalyzer::parseOp($name, $VEC->{$name}); };
+	if ($@) {
+		print STDERR $@;
+		next;
+	}
 
-		if ($inplace) {
-			&generateBenchmark2i($name, $VEC->{$name}, $l, $op, $r, 'VO');
-			&generateBenchmark2i($name, $VEC->{$name}, $l, $op, $r, 'VOVec');
-		} else {
-			&generateBenchmark2o($name, $VEC->{$name}, $l, $op, $r, 'VO');
-			&generateBenchmark2o($name, $VEC->{$name}, $l, $op, $r, 'VOVec');
-		}
-	} elsif ($name =~ /^(rs|rv|cs|cv)_([a-z0-9]{2,})(_i)?$/) {
-		my $l  = $1;
-		my $op = $2;
+	if (exists $SKIPPED_OPS->{$op->{'op'}}) {
+		print STDERR "Skip \"$name\" as it is not interesting, because \"".$SKIPPED_OPS->{$op->{'op'}}."\"\n";
+		next;
+	}
 
-		if (exists $SKIPPED_OPS->{$op}) {
-			print STDERR "Skip \"$name\" as it is not interesting, same as \"".$SKIPPED_OPS->{$op}."\"\n";
-			next;
-		}
-
-		if ($inplace) {
-			&generateBenchmark1i($name, $VEC->{$name}, $l, $op, 'VO');
-			&generateBenchmark1i($name, $VEC->{$name}, $l, $op, 'VOVec');
-		} else {
-			&generateBenchmark1o($name, $VEC->{$name}, $l, $op, 'VO');
-			&generateBenchmark1o($name, $VEC->{$name}, $l, $op, 'VOVec');
-		}
-	} elsif ($name =~ /^rv_rs_lin_rv_rs(_i)?$/) {
-		&generateBenchmarkRVRSLinRVRS($name, $VEC->{$name}, $inplace, 'VO');
-		&generateBenchmarkRVRSLinRVRS($name, $VEC->{$name}, $inplace, 'VOVec');
+	# Call generators
+	if      ($op->{'type'} eq 'u' &&  $op->{'ip'}) {
+		&generateBenchmark1i($op, 'VO');
+		&generateBenchmark1i($op, 'VOVec');
+	} elsif ($op->{'type'} eq 'u' && !$op->{'ip'}) {
+		&generateBenchmark1o($op, 'VO');
+		&generateBenchmark1o($op, 'VOVec');
+	} elsif ($op->{'type'} eq 'b' &&  $op->{'ip'}) {
+		&generateBenchmark2i($op, 'VO');
+		&generateBenchmark2i($op, 'VOVec');
+	} elsif ($op->{'type'} eq 'b' && !$op->{'ip'}) {
+		&generateBenchmark2o($op, 'VO');
+		&generateBenchmark2o($op, 'VOVec');
+	} elsif ($op->{'type'} eq 'q' &&  $op->{'ip'}) {
+		&generateBenchmark4i($op, 'VO');
+		&generateBenchmark4i($op, 'VOVec');
+	} elsif ($op->{'type'} eq 'q' && !$op->{'ip'}) {
+		&generateBenchmark4o($op, 'VO');
+		&generateBenchmark4o($op, 'VOVec');
 	} else {
-		print STDERR "Unknown name: \"$name\"\n";
+		print STDERR 'Unknown ', ($op->{'ip'} ? 'in-place' : 'out-of-place'), " operation '$name' type '", $op->{'type'}, "'\n";
 	}
 }
 
@@ -206,214 +206,168 @@ print "}";
 
 exit 0;
 
-sub generateBenchmark2i {
-	my ($name, $rtype, $l, $op, $r, $imp) = (@_);
-	
-	# Return type for this could be only void
-	if ($rtype ne 'void') {
-		print STDERR "Bad return type \"$rtype\" for \"$name\"\n";
-		return;
-	}
-	
-	# Make args
-	my @args = ();
-	if      ($l eq 'rv' || $l eq 'cv') {
-		push @args, $l.'z', 'i';
-	} else {
-		print STDERR "Function \"$name\" has wrong first argument\n";
-		return;
-	}
-
-	if      ($r eq 'rs' || $r eq 'cs') {
-		push @args, $r.'x';
-	} elsif ($r eq 'rv' || $r eq 'cv') {
-		push @args, $r.'x', 'i';
-	} else {
-		print STDERR "Function \"$name\" has wrong second argument\n";
-		return;
-	}
-	push @args, 'callSize';
-
-	&generateBenchmarkHeader($name, $imp);
-	print $CODE_INDENT, "$imp.$name(", join(', ', @args), ");\n";
-	&generateBenchmarkFooter();
-}
-
-sub generateBenchmark2o {
-	my ($name, $rtype, $l, $op, $r, $imp) = (@_);
-
-	# Make args
-	my @args = ();
+sub generateBenchmark1i {
+	my ($op, $imp) = (@_);
 
 	my $out;
-	if (($l eq 'cv' || $r eq 'cv') && $op eq 'dot') {
-		# Special case: not a vector
-		$out = 'cs';
-	} else {
-		my $c = $l =~ /^c/ || $r =~ /^c/;
-		my $v = $l =~ /v$/ || $r =~ /v$/;
-
-		if ($c && $rtype ne 'void') {
-			print STDERR "Function \"$name\" has wrong combination of ($l, $r) -> $rtype\n";
-			return;
-		}
-		if (!$v && !$c && $rtype eq 'void') {
-			print STDERR "Function \"$name\" has wrong combination of ($l, $r) -> $rtype\n";
-			return;
-		}
-
-		if ($rtype ne 'void') {
-			$out = 'rs';
-		} else {
-			$out = ($c ? 'c' : 'r') . ($v ? 'v' : 's');
-		}
-	}
-	if      ($out eq 'rs') {
-		# Do nothing, need BH
-	} elsif ($out eq 'cs') {
-		push @args, 'csz';
-	} else {
-		push @args, $out.'z', 'i';
-	}
-
-	if      ($l eq 'rs' || $l eq 'cs') {
-		push @args, $l.'x';
-	} elsif ($l eq 'rv' || $l eq 'cv') {
-		push @args, $l.'x', 'i';
-	} else {
-		print STDERR "Function \"$name\" has wrong first argument\n";
-		return;
-	}
-	if      ($r eq 'rs' || $r eq 'cs') {
-		push @args, $r.'y';
-	} elsif ($r eq 'rv' || $r eq 'cv') {
-		push @args, $r.'y', 'i';
-	} else {
-		print STDERR "Function \"$name\" has wrong second argument\n";
+	my @args = ();
+	eval {
+		$out = &OpAnalyzer::getOutType($op);
+		push @args, &generateArg($out, 'z', 'i', $op->{'name'}, 'first argument');
+	};
+	if ($@) {
+		print STDERR $@;
 		return;
 	}
 	push @args, 'callSize';
-
-	# Return type for this could be only void
-	if      ($rtype eq 'float' || $rtype eq 'int') {
-		if ($out ne 'rs') {
-			print STDERR "Function \"$name\": Internal error ($l, $r) -> ($out, $rtype)\n";
-			return;
-		}
-		&generateBenchmarkHeaderTyped($name, $imp, $rtype);
-	} elsif ($rtype eq 'void') {
-		&generateBenchmarkHeader($name, $imp);
-	} else {
-		print STDERR "Bad return type \"$rtype\" for \"$name\"\n";
-		return;
-	}
-
-	if ($rtype eq 'void') {
-		print $CODE_INDENT, "$imp.$name(", join(', ', @args), ");\n";
-	} else {
-		print $CODE_INDENT, "bh.consume($imp.$name(", join(', ', @args), "));\n";
-	}
-	&generateBenchmarkFooter();
-}
-
-sub generateBenchmark1i {
-	my ($name, $rtype, $l, $op, $imp) = (@_);
-
-	# Return type for this could be only void
-	if ($rtype ne 'void') {
-		print STDERR "Bad return type \"$rtype\" for \"$name\"\n";
-		return;
-	}
-	if ($l ne 'rv' && $l ne 'cv') {
-		print STDERR "Function \"$name\" has wrong first argument\n";
-		return;
-	}
 		
-	&generateBenchmarkHeader($name, $imp);
-	print $CODE_INDENT, "$imp.$name(${l}z, i, callSize);\n";
+	&generateBenchmarkHeader($op->{'name'}, $imp, $out);
+	print $CODE_INDENT, "$imp.", $op->{'name'}, '(', join(', ', @args), ");\n";
 	&generateBenchmarkFooter();
 }
 
 sub generateBenchmark1o {
-	my ($name, $rtype, $l, $op, $imp) = (@_);
+	my ($op, $imp) = (@_);
 	
-	my @args;
-	
-	my $c = $l =~ /^c/;
-	my $v = $l =~ /v$/;
-	if ($c && ($rtype ne 'void' && $rtype ne 'int')) {
-		print STDERR "Function \"$name\" has wrong combination of ($l) -> $rtype\n";
-		return;
-	}
-	if (!$v && !$c && $rtype eq 'void') {
-		print STDERR "Function \"$name\" has wrong combination of ($l) -> $rtype\n";
-		return;
-	}
-	if      ($rtype ne 'void') {
-		# Don't add to @args anything
-	} elsif ($l eq 'cv' && ($op eq 'max' || $op eq 'min' || $op eq 'sum')) {
-		push @args, 'csz';
-	} elsif ($v) {
-		push @args, ($c?'cv':'rv').'z', 'i';
-	} else {
-		# Not vector, not real
-		push @args, 'csz';
-	}
-
-	if      ($l eq 'rs' || $l eq 'cs') {
-		push @args, $l.'x';
-	} elsif ($l eq 'rv' || $l eq 'cv') {
-		push @args, $l.'x', 'i';
-	} else {
-		print STDERR "Function \"$name\" has wrong first argument\n";
+	my $out;
+	my @args = ();
+	eval {
+		$out = &OpAnalyzer::getOutType($op);
+		push @args, &generateArg($out,       'z', 'i', $op->{'name'}, 'output') unless $out eq 'rs' || $out eq 'int';
+		push @args, &generateArg($op->{'l'}, 'x', 'i', $op->{'name'}, 'first argument');
+	};
+	if ($@) {
+		print STDERR $@;
 		return;
 	}
 	push @args, 'callSize';
 
-	# Return type for this could be only void, int or float
-	if      ($rtype eq 'int' || $rtype eq 'float') {
-		&generateBenchmarkHeaderTyped($name, $imp, $rtype);
-	} elsif ($rtype eq 'void') {
-		&generateBenchmarkHeader($name, $imp);
+	&generateBenchmarkHeader($op->{'name'}, $imp, $out);
+	if ($out eq 'rs' || $out eq 'int') {
+		print $CODE_INDENT, "bh.consume($imp.", $op->{'name'}, '(', join(', ', @args), "));\n";
 	} else {
-		print STDERR "Bad return type \"$rtype\" for \"$name\"\n";
-		return;
+		print $CODE_INDENT, "$imp.", $op->{'name'}, '(', join(', ', @args), ");\n";
 	}
-
-	if ($rtype eq 'void') {
-		print $CODE_INDENT, "$imp.$name(", join(', ', @args), ");\n";
-	} else {
-		print $CODE_INDENT, "bh.consume($imp.$name(", join(', ', @args), "));\n";
-	}
-
 	&generateBenchmarkFooter();
 }
 
-sub generateBenchmarkRVRSLinRVRS {
-	my ($name, $rtype, $inplace, $imp) = @_;
+sub generateBenchmark2i {
+	my ($op, $imp) = (@_);
+	
+	my $out;
+	my @args = ();
+	eval {
+		$out = &OpAnalyzer::getOutType($op);
+		push @args, &generateArg($op->{'l'}, 'z', 'i', $op->{'name'}, 'first argument');
+		push @args, &generateArg($op->{'r'}, 'x', 'i', $op->{'name'}, 'second argument');
+	};
+	if ($@) {
+		print STDERR $@;
+		return;
+	}
+	push @args, 'callSize';
 
-	&generateBenchmarkHeader($name, $imp);
-	if ($inplace) {
-		print $CODE_INDENT, "$imp.$name(rvz, i, rsz, rvx, i, rsx, callSize);\n";
+	&generateBenchmarkHeader($op->{'name'}, $imp, $out);
+	print $CODE_INDENT, "$imp.", $op->{'name'}, '(', join(', ', @args), ");\n";
+	&generateBenchmarkFooter();
+}
+
+sub generateBenchmark2o {
+	my ($op, $imp) = (@_);
+	
+	my $out;
+	my @args = ();
+	eval {
+		$out = &OpAnalyzer::getOutType($op);
+		push @args, &generateArg($out,       'z', 'i', $op->{'name'}, 'output') unless $out eq 'rs' || $out eq 'int';
+		push @args, &generateArg($op->{'l'}, 'x', 'i', $op->{'name'}, 'first argument');
+		push @args, &generateArg($op->{'r'}, 'y', 'i', $op->{'name'}, 'second argument');
+	};
+	if ($@) {
+		print STDERR $@;
+		return;
+	}
+	push @args, 'callSize';
+
+	&generateBenchmarkHeader($op->{'name'}, $imp, $out);
+	if ($out eq 'rs' || $out eq 'int') {
+		print $CODE_INDENT, "bh.consume($imp.", $op->{'name'}, '(', join(', ', @args), "));\n";
 	} else {
-		print $CODE_INDENT, "$imp.$name(rvz, i, rvx, i, rsx, rvy, i, rsy, callSize);\n";
+		print $CODE_INDENT, "$imp.", $op->{'name'}, '(', join(', ', @args), ");\n";
+	}
+	&generateBenchmarkFooter();
+}
+
+sub generateBenchmark4i {
+	my ($op, $imp) = (@_);
+
+	if ($op->{'op'} ne 'lin' || $op->{'l1'} ne 'rv' || $op->{'l2'} ne 'rs' || $op->{'r1'} ne 'rv' || $op->{'r2'} ne 'rs') {
+		print STDERR "Can not generate benchmark for \"", $op->{'name'}, "\" yet\n";
+		return;
+	}
+
+	my $out;
+	my @args = ();
+	eval {
+		$out = &OpAnalyzer::getOutType($op);
+		push @args, &generateArg($op->{'l1'}, 'z', 'i', $op->{'name'}, 'first argument');
+		push @args, &generateArg($op->{'l2'}, 'z', 'i', $op->{'name'}, 'second argument');
+		push @args, &generateArg($op->{'r1'}, 'x', 'i', $op->{'name'}, 'third argument');
+		push @args, &generateArg($op->{'r2'}, 'x', 'i', $op->{'name'}, 'fourth argument');
+	};
+	if ($@) {
+		print STDERR $@;
+		return;
+	}
+	push @args, 'callSize';
+
+	&generateBenchmarkHeader($op->{'name'}, $imp, $out);
+	print $CODE_INDENT, "$imp.", $op->{'name'}, '(', join(', ', @args), ");\n";
+	&generateBenchmarkFooter();
+}
+
+sub generateBenchmark4o {
+	my ($op, $imp) = (@_);
+
+	if ($op->{'op'} ne 'lin' || $op->{'l1'} ne 'rv' || $op->{'l2'} ne 'rs' || $op->{'r1'} ne 'rv' || $op->{'r2'} ne 'rs') {
+		print STDERR "Can not generate benchmark for \"", $op->{'name'}, "\" yet\n";
+		return;
+	}
+
+	my $out;
+	my @args = ();
+	eval {
+		$out = &OpAnalyzer::getOutType($op);
+		push @args, &generateArg($out,        'z', 'i', $op->{'name'}, 'output') unless $out eq 'rs' || $out eq 'int';
+		push @args, &generateArg($op->{'l1'}, 'x', 'i', $op->{'name'}, 'first argument');
+		push @args, &generateArg($op->{'l2'}, 'x', 'i', $op->{'name'}, 'second argument');
+		push @args, &generateArg($op->{'r1'}, 'y', 'i', $op->{'name'}, 'third argument');
+		push @args, &generateArg($op->{'r2'}, 'y', 'i', $op->{'name'}, 'fourth argument');
+	};
+	if ($@) {
+		print STDERR $@;
+		return;
+	}
+	push @args, 'callSize';
+
+	&generateBenchmarkHeader($op->{'name'}, $imp, $out);
+	if ($out eq 'rs' || $out eq 'int') {
+		print $CODE_INDENT, "bh.consume($imp.", $op->{'name'}, '(', join(', ', @args), "));\n";
+	} else {
+		print $CODE_INDENT, "$imp.", $op->{'name'}, '(', join(', ', @args), ");\n";
 	}
 	&generateBenchmarkFooter();
 }
 
 sub generateBenchmarkHeader {
-	my ($name, $imp) = @_;
+	my ($name, $imp, $out) = @_;
 	print "\n";
 	print "    \@Benchmark\n";
-	print "    public void ${imp}_${name}() {\n";
-	print "        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {\n";
-}
-
-sub generateBenchmarkHeaderTyped {
-	my ($name, $imp, $rtype) = @_;
-	print "\n";
-	print "    \@Benchmark\n";
-	print "    public void ${imp}_${name}(Blackhole bh) {\n";
+	if ($out eq 'rs' || $out eq 'int') {
+		print "    public void ${imp}_${name}(Blackhole bh) {\n";
+	} else {
+		print "    public void ${imp}_${name}() {\n";
+	}
 	print "        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {\n";
 }
 
@@ -422,68 +376,13 @@ sub generateBenchmarkFooter {
 	print "    }\n";
 }
 
-sub calcReturnType {
-	my ($name, $l, $r, $rt, $op) = @_;
-	if      ($l eq 'rs') {
-		return () if $rt ne 'void';
-		if      ($r eq 'rs') {
-			die "Function \"$name\" has wrong combination of rt \"$rt\" and first argument\n" unless $rt ne 'void';
-		} elsif ($r eq 'rv') {
-			return ('rvz', 'i');
-		} elsif ($r eq 'cs') {
-			return ('csz');
-		} elsif ($r eq 'cv') {
-			return ('cvz', 'i');
-		} else {
-			die "Function \"$name\" has wrong combination of first and second argument\n";
-		}
-	} elsif ($l eq 'rv') {
-		return () if $rt ne 'void';
-		# Special case
-		if ($r eq 'cv' && $op eq 'dot') {
-			return ('csz');
-		}
-		
-		if ($r eq 'cv' || $r eq 'cs')  {
-			return ('cvz', 'i');
-		} else {
-			return ('rvz', 'i');
-		}
-	} elsif ($l eq 'cs') {
-		if      ($rt eq 'float') {
-			return ();
-		} elsif ($rt eq 'void') {
-			return ('csz');
-		} else {
-			die "Function \"$name\" has wrong combination of rt \"$rt\" and first argument\n" unless $rt eq 'void';
-		}
-	} elsif ($l eq 'cv') {
-		return ('cvz', 'i');
+sub generateArg {
+	my ($t, $sfx, $cnt, $name, $obj) = @_;
+	if      ($t eq 'rs' || $t eq 'cs') {
+		return ($t.$sfx);
+	} elsif ($t eq 'rv' || $t eq 'cv') {
+		return ($t.$sfx, $cnt);
 	} else {
-		die "Function \"$name\" has wrong first argument\n";
+		die "Internal consistency error: Function \"$name\" has wrong $obj type \"$t\"\n";
 	}
-}
-
-sub loadFile {
-	my ($name, $base) = @_;
-	open(my $fh, '<', $name) or die "Can npot open \"$name\"\n";
-
-	my $RV = {};
-	my $total = 0;
-	while (<$fh>) {
-		s/^\s+//; s/\s+$//;
-		next unless /^public static (\S+) ([a-z0-9_]+)\(.+?\) \{$/;
-		my $rt = $1;
-		my $name = $2;
-		# Check if $name is or _w or _iw or _f or _fw
-		$total++;
-		if ($name =~ /_[fi]*w$/) {
-			print STDERR "Vectorized version implements strange method: \"$name\"\n" unless $base;
-			next;
-		}
-		$RV->{$name} = $rt;
-	}
-	print STDERR "\"$name\": loaded ", scalar(keys %{$RV}) + 1, " out of $total methods\n";
-	close($fh);
-	return $RV;
 }
