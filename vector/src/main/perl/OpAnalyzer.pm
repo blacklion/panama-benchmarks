@@ -155,6 +155,18 @@ sub _isComplex {
 	die "Internal error: Invalid type '$t'\n";
 }
 
+
+sub generateArg {
+	my ($t, $sfx, $cnt, $name, $obj) = @_;
+	if      ($t eq 'rs' || $t eq 'cs') {
+		return ($t.$sfx);
+	} elsif ($t eq 'rv' || $t eq 'cv') {
+		return ($t.$sfx, $cnt);
+	} else {
+		die "Internal consistency error: Function \"$name\" has wrong $obj type \"$t\"\n";
+	}
+}
+
 sub loadFile {
 	my ($name, $base) = @_;
 	open(my $fh, '<', $name) or die "Can npot open \"$name\"\n";

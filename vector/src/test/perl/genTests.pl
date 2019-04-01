@@ -229,17 +229,25 @@ sub generateTest1i {
 	my $op = shift;
 
 	my $out;
-	eval { $out = &OpAnalyzer::getOutType($op); };
+	my @args1 = ();
+	my @args2 = ();
+	eval {
+		$out = &OpAnalyzer::getOutType($op);
+		push @args1, &OpAnalyzer::generateArg($out, 'z1', 'offset', $op->{'name'}, 'first argument');
+		push @args2, &OpAnalyzer::generateArg($out, 'z2', 'offset', $op->{'name'}, 'first argument');
+	};
 	if ($@) {
 		print STDERR $@;
 		return;
 	}
+	push @args1, 'size';
+	push @args2, 'size';
 
 	&generateTestHeader($op->{'name'});
 	print $CODE_INDENT, 'float ', $op->{'l'}.'z1[] = Arrays.copyOf(', $op->{'l'}.'z, ', $op->{'l'}."z.length);\n";
 	print $CODE_INDENT, 'float ', $op->{'l'}.'z2[] = Arrays.copyOf(', $op->{'l'}.'z, ', $op->{'l'}."z.length);\n";
-	print $CODE_INDENT, 'VO.',    $op->{'name'}, '(', $op->{'l'}."z1, offset, size);\n";
-	print $CODE_INDENT, 'VOVec.', $op->{'name'}, '(', $op->{'l'}."z2, offset, size);\n";
+	print $CODE_INDENT, 'VO.',    $op->{'name'}, '(', join(', ', @args1), ");\n";
+	print $CODE_INDENT, 'VOVec.', $op->{'name'}, '(', join(', ', @args2), ");\n";
 	print $CODE_INDENT, "assertArrayEquals(", $op->{'l'}.'z1, ', $op->{'l'}.'z2, ', &getEpsilon($op->{'op'}), ");\n";
 	&generateTestFooter();
 }
@@ -248,44 +256,39 @@ sub generateTest1o {
 	my $op = shift;
 	
 	my $out;
-	eval { $out = &OpAnalyzer::getOutType($op); };
+	my @args1 = ();
+	my @args2 = ();
+	my @argsc = ();
+	eval {
+		$out = &OpAnalyzer::getOutType($op);
+		push @args1, &OpAnalyzer::generateArg($out,       'z1', '0',      $op->{'name'}, 'output') unless $out eq 'rs' || $out eq 'int';
+		push @args2, &OpAnalyzer::generateArg($out,       'z2', '0',      $op->{'name'}, 'output') unless $out eq 'rs' || $out eq 'int';
+		push @argsc, &OpAnalyzer::generateArg($op->{'l'}, 'x',  'offset', $op->{'name'}, 'first argument');
+	};
 	if ($@) {
 		print STDERR $@;
 		return;
 	}
-
-	# Make args
-	my @args = ();
-	if      ($op->{'l'} eq 'rs' || $op->{'l'} eq 'cs') {
-		push @args, $op->{'l'}.'x';
-	} elsif ($op->{'l'} eq 'rv' || $op->{'l'} eq 'cv') {
-		push @args, $op->{'l'}.'x', 'offset';
-	} else {
-		die "Internal consistency error: Function \"".$op->{'name'}."\" has wrong first argument\n";
-	}
-	push @args, 'size';
+	push @argsc, 'size';
+	push @args1, @argsc;
+	push @args2, @argsc;
 
 	&generateTestHeader($op->{'name'});
 
 	if      ($out eq 'rs' || $out eq 'int') {
-		print $CODE_INDENT, $op->{'rt'}, " ${out}z1 = VO.",    $op->{'name'}, '(', join(', ', @args), ");\n";
-		print $CODE_INDENT, $op->{'rt'}, " ${out}z2 = VOVec.", $op->{'name'}, '(', join(', ', @args), ");\n";
+		print $CODE_INDENT, $op->{'rt'}, " ${out}z1 = VO.",    $op->{'name'}, '(', join(', ', @args1), ");\n";
+		print $CODE_INDENT, $op->{'rt'}, " ${out}z2 = VOVec.", $op->{'name'}, '(', join(', ', @args2), ");\n";
 		if ($op->{'rt'} eq 'float') {
 			print $CODE_INDENT, "assertEquals(${out}z1, ${out}z2, ", &getEpsilon($op->{'op'}), ");\n";
 		} else {
 			print $CODE_INDENT, "assertEquals(${out}z1, ${out}z2);\n";
 		}
-	} elsif ($out eq 'cs') {
-		print $CODE_INDENT, "float ${out}z1[] = new float[2];\n";
-		print $CODE_INDENT, "float ${out}z2[] = new float[2];\n";
-		print $CODE_INDENT, 'VO.'    ,$op->{'name'}, '(', join(', ', ("${out}z1", @args)), ");\n";
-		print $CODE_INDENT, 'VOVec.', $op->{'name'}, '(', join(', ', ("${out}z2", @args)), ");\n";
-		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op->{'op'}), ");\n";
-	} elsif ($out eq 'rv' || $out eq 'cv') {
-		print $CODE_INDENT, "float ${out}z1[] = new float[${out}z.length];\n";
-		print $CODE_INDENT, "float ${out}z2[] = new float[${out}z.length];\n";
-		print $CODE_INDENT, 'VO.',    $op->{'name'}, '(', join(', ', ("${out}z1", "0", @args)), ");\n";
-		print $CODE_INDENT, 'VOVec.', $op->{'name'}, '(', join(', ', ("${out}z2", "0", @args)), ");\n";
+	} elsif ($out eq 'cs' || $out eq 'rv' || $out eq 'cv') {
+	 	my $zlen = ($out eq 'cs') ? '2' : "${out}z.length";
+		print $CODE_INDENT, "float ${out}z1[] = new float[$zlen];\n";
+		print $CODE_INDENT, "float ${out}z2[] = new float[$zlen];\n";
+		print $CODE_INDENT, 'VO.'    ,$op->{'name'}, '(', join(', ', @args1), ");\n";
+		print $CODE_INDENT, 'VOVec.', $op->{'name'}, '(', join(', ', @args2), ");\n";
 		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op->{'op'}), ");\n";
 	} else {
 		die "Internal consistency error: Function \"".$op->{'name'}."\" has wrong output type \"$out\"\n";
@@ -299,21 +302,22 @@ sub generateTest2i {
 	my $op = shift;
 
 	my $out;
-	eval { $out = &OpAnalyzer::getOutType($op); };
+	my @args1 = ();
+	my @args2 = ();
+	my @argsc = ();
+	eval {
+		$out = &OpAnalyzer::getOutType($op);
+		push @args1, &OpAnalyzer::generateArg($op->{'l'}, 'z1', 'offset', $op->{'name'}, 'first argument');
+		push @args2, &OpAnalyzer::generateArg($op->{'l'}, 'z2', 'offset', $op->{'name'}, 'first argument');
+		push @argsc, &OpAnalyzer::generateArg($op->{'r'}, 'x',  'offset', $op->{'name'}, 'second argument');
+	};
 	if ($@) {
 		print STDERR $@;
 		return;
 	}
-
-	my @args = ();
-	if      ($op->{'r'} eq 'rs' || $op->{'r'} eq 'cs') {
-		push @args, $op->{'r'}.'x';
-	} elsif ($op->{'r'} eq 'rv' || $op->{'r'} eq 'cv') {
-		push @args, $op->{'r'}.'x', 'offset';
-	} else {
-		die "Internal consistency error: Function \"".$op->{'name'}."\" has wrong second argument\n";
-	}
-	push @args, 'size';
+	push @argsc, 'size';
+	push @args1, @argsc;
+	push @args2, @argsc;
 
 	&generateTestHeader($op->{'name'});
 
@@ -321,8 +325,8 @@ sub generateTest2i {
 	print $CODE_INDENT, "float ${out}z2[] = Arrays.copyOf(${out}z, ${out}z.length);\n";
 	print "\n";
 
-	print $CODE_INDENT, 'VO.',    $op->{'name'}, '(', join(', ', ($out.'z1', 'offset', @args)), ");\n";
-	print $CODE_INDENT, 'VOVec.', $op->{'name'}, '(', join(', ', ($out.'z2', 'offset', @args)), ");\n";
+	print $CODE_INDENT, 'VO.',    $op->{'name'}, '(', join(', ', @args1), ");\n";
+	print $CODE_INDENT, 'VOVec.', $op->{'name'}, '(', join(', ', @args2), ");\n";
 	print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op->{'op'}), ");\n";
 
 	&generateTestFooter();
@@ -332,38 +336,29 @@ sub generateTest2o {
 	my $op = shift;
 
 	my $out;
-	eval { $out = &OpAnalyzer::getOutType($op); };
+	my @args1 = ();
+	my @args2 = ();
+	my @argsc = ();
+	eval {
+		$out = &OpAnalyzer::getOutType($op);
+		push @args1, &OpAnalyzer::generateArg($out,       'z1', '0',      $op->{'name'}, 'output') unless $out eq 'rs' || $out eq 'int';
+		push @args2, &OpAnalyzer::generateArg($out,       'z2', '0',      $op->{'name'}, 'output') unless $out eq 'rs' || $out eq 'int';
+		push @argsc, &OpAnalyzer::generateArg($op->{'l'}, 'x',  'offset', $op->{'name'}, 'first argument');
+		push @argsc, &OpAnalyzer::generateArg($op->{'r'}, 'y',  'offset', $op->{'name'}, 'second argument');
+	};
 	if ($@) {
 		print STDERR $@;
 		return;
 	}
+	push @argsc, 'size';
+	push @args1, @argsc;
+	push @args2, @argsc;
 
-	# Make args
-	my @args = ();
-	if      ($op->{'l'} eq 'rs' || $op->{'l'} eq 'cs') {
-		push @args, $op->{'l'}.'x';
-	} elsif ($op->{'l'} eq 'rv' || $op->{'l'} eq 'cv') {
-		push @args, $op->{'l'}.'x', 'offset';
-	} else {
-		die "Internal consistency error: Function \"".$op->{'name'}."\" has wrong first argument\n";
-	}
-
-	if      ($op->{'r'} eq 'rs' || $op->{'r'} eq 'cs') {
-		push @args, $op->{'r'}.'y';
-	} elsif ($op->{'r'} eq 'rv' || $op->{'r'} eq 'cv') {
-		push @args, $op->{'r'}.'y', 'offset';
-	} else {
-		die "Internal consistency error: Function \"".$op->{'name'}."\" has wrong second argument\n";
-	}
-
-	push @args, 'size';
-
-	# Return type for this could be only float or void
 	&generateTestHeader($op->{'name'});
 
 	if      ($out eq 'rs' || $out eq 'int') {
-		print $CODE_INDENT, $op->{'rt'}, " ${out}z1 = VO.",    $op->{'name'}, '(', join(', ', @args), ");\n";
-		print $CODE_INDENT, $op->{'rt'}, " ${out}z2 = VOVec.", $op->{'name'}, '(', join(', ', @args), ");\n";
+		print $CODE_INDENT, $op->{'rt'}, " ${out}z1 = VO.",    $op->{'name'}, '(', join(', ', @args1), ");\n";
+		print $CODE_INDENT, $op->{'rt'}, " ${out}z2 = VOVec.", $op->{'name'}, '(', join(', ', @args2), ");\n";
 		if ($op->{'rt'} eq 'float') {
 			print $CODE_INDENT, "assertEquals(${out}z1, ${out}z2, ", &getEpsilon($op->{'op'}), ");\n";
 		} else {
@@ -372,23 +367,27 @@ sub generateTest2o {
 	} elsif ($out eq 'cs') {
 		print $CODE_INDENT, "float ${out}z1[] = new float[2];\n";
 		print $CODE_INDENT, "float ${out}z2[] = new float[2];\n";
-		print $CODE_INDENT, 'VO.',    $op->{'name'}, '(', join(', ', ("${out}z1", @args)), ");\n";
-		print $CODE_INDENT, 'VOVec.', $op->{'name'}, '(', join(', ', ("${out}z2", @args)), ");\n";
+		print $CODE_INDENT, 'VO.',    $op->{'name'}, '(', join(', ', @args1), ");\n";
+		print $CODE_INDENT, 'VOVec.', $op->{'name'}, '(', join(', ', @args2), ");\n";
 		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op->{'op'}), ");\n";
 
 		# And second one!
 		&generateTestFooter();
+
 		&generateTestHeader($op->{'name'}.'_zoffset');
+		# Add second argument "1" to mark output offset
+		splice @args1, 1, 0, "1";
+		splice @args2, 1, 0, "1";
 		print $CODE_INDENT, "float ${out}z1[] = new float[6];\n";
 		print $CODE_INDENT, "float ${out}z2[] = new float[6];\n";
-		print $CODE_INDENT, 'VO.',    $op->{'name'}, '(', join(', ', ("${out}z1", "1", @args)), ");\n";
-		print $CODE_INDENT, 'VOVec.', $op->{'name'}. '(', join(', ', ("${out}z2", "1", @args)), ");\n";
+		print $CODE_INDENT, 'VO.',    $op->{'name'}, '(', join(', ', @args1), ");\n";
+		print $CODE_INDENT, 'VOVec.', $op->{'name'}. '(', join(', ', @args2), ");\n";
 		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op->{'op'}), ");\n";
 	} elsif ($out eq 'rv' || $out eq 'cv') {
 		print $CODE_INDENT, "float ${out}z1[] = new float[${out}z.length];\n";
 		print $CODE_INDENT, "float ${out}z2[] = new float[${out}z.length];\n";
-		print $CODE_INDENT, 'VO.',    $op->{'name'}, '(', join(', ', ("${out}z1", "0", @args)), ");\n";
-		print $CODE_INDENT, 'VOVec.', $op->{'name'}, '(', join(', ', ("${out}z2", "0", @args)), ");\n";
+		print $CODE_INDENT, 'VO.',    $op->{'name'}, '(', join(', ', @args1), ");\n";
+		print $CODE_INDENT, 'VOVec.', $op->{'name'}, '(', join(', ', @args2), ");\n";
 		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op->{'op'}), ");\n";
 	} else {
 		die "Internal consistency error: Function \"".$op->{'name'}."\" has wrong output type \"$out\"\n";
@@ -406,21 +405,31 @@ sub generateTest4i {
 	}
 
 	my $out;
-	eval { $out = &OpAnalyzer::getOutType($op); };
+	my @args1 = ();
+	my @args2 = ();
+	my @argsc = ();
+	eval {
+		$out = &OpAnalyzer::getOutType($op);
+		push @args1, &OpAnalyzer::generateArg($op->{'l1'}, 'z1', 'offset', $op->{'name'}, 'first argument');
+		push @args2, &OpAnalyzer::generateArg($op->{'l1'}, 'z2', 'offset', $op->{'name'}, 'first argument');
+		push @argsc, &OpAnalyzer::generateArg($op->{'l2'}, 'z',  'offset', $op->{'name'}, 'second argument');
+		push @argsc, &OpAnalyzer::generateArg($op->{'r1'}, 'x',  'offset', $op->{'name'}, 'third argument');
+		push @argsc, &OpAnalyzer::generateArg($op->{'r2'}, 'x',  'offset', $op->{'name'}, 'fourth argument');
+	};
 	if ($@) {
 		print STDERR $@;
 		return;
 	}
-	if ($out ne 'rv') {
-		die "Internal consistency error: Function \"".$op->{'name'}."\" has wrong output type \"$out\"\n";
-	}
+	push @argsc, 'size';
+	push @args1, @argsc;
+	push @args2, @argsc;
 
 	&generateTestHeader($op->{'name'});
 	print $CODE_INDENT, "float ${out}z1[] = Arrays.copyOf(${out}z, ${out}z.length);\n";
 	print $CODE_INDENT, "float ${out}z2[] = Arrays.copyOf(${out}z, ${out}z.length);\n";
-	print $CODE_INDENT, 'VO.',    $op->{'name'}, "(${out}z1, offset, rsz, rvx, offset, rsx, size);\n";
-	print $CODE_INDENT, 'VOVec.', $op->{'name'}, "(${out}z2, offset, rsz, rvx, offset, rsx, size);\n";
-	print $CODE_INDENT, "assertArrayEquals(${out}z2, ${out}z2, ", &getEpsilon('lin'), ");\n";
+	print $CODE_INDENT, 'VO.',    $op->{'name'}, '(', join(', ', @args1), ");\n";
+	print $CODE_INDENT, 'VOVec.', $op->{'name'}, '(', join(', ', @args2), ");\n";
+	print $CODE_INDENT, "assertArrayEquals(${out}z2, ${out}z2, ", &getEpsilon($op->{'op'}), ");\n";
 	&generateTestFooter();
 }
 
@@ -433,21 +442,32 @@ sub generateTest4o {
 	}
 
 	my $out;
-	eval { $out = &OpAnalyzer::getOutType($op); };
+	my @args1 = ();
+	my @args2 = ();
+	my @argsc = ();
+	eval {
+		$out = &OpAnalyzer::getOutType($op);
+		push @args1, &OpAnalyzer::generateArg($out,        'z1', '0',      $op->{'name'}, 'output') unless $out eq 'rs' || $out eq 'int';
+		push @args2, &OpAnalyzer::generateArg($out,        'z2', '0',      $op->{'name'}, 'output') unless $out eq 'rs' || $out eq 'int';
+		push @argsc, &OpAnalyzer::generateArg($op->{'l1'}, 'x',  'offset', $op->{'name'}, 'second argument');
+		push @argsc, &OpAnalyzer::generateArg($op->{'l2'}, 'x',  'offset', $op->{'name'}, 'third argument');
+		push @argsc, &OpAnalyzer::generateArg($op->{'r1'}, 'y',  'offset', $op->{'name'}, 'fourth argument');
+		push @argsc, &OpAnalyzer::generateArg($op->{'r2'}, 'y',  'offset', $op->{'name'}, 'fourth argument');
+	};
 	if ($@) {
 		print STDERR $@;
 		return;
 	}
-	if ($out ne 'rv') {
-		die "Internal consistency error: Function \"".$op->{'name'}."\" has wrong output type \"$out\"\n";
-	}
+	push @argsc, 'size';
+	push @args1, @argsc;
+	push @args2, @argsc;
 
 	&generateTestHeader($op->{'name'});
 	print $CODE_INDENT, "float ${out}z1[] = new float[${out}z.length];\n";
 	print $CODE_INDENT, "float ${out}z2[] = new float[${out}z.length];\n";
-	print $CODE_INDENT, 'VO.',    $op->{'name'}, "(${out}z1, 0, rvx, offset, rsx, rvy, offset, rsy, size);\n";
-	print $CODE_INDENT, 'VOVec.', $op->{'name'}, "(${out}z2, 0, rvx, offset, rsx, rvy, offset, rsy, size);\n";
-	print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon('lin'), ");\n";
+	print $CODE_INDENT, 'VO.',    $op->{'name'}, '(', join(', ', @args1), ");\n";
+	print $CODE_INDENT, 'VOVec.', $op->{'name'}, '(', join(', ', @args2), ");\n";
+	print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op->{'op'}), ");\n";
 	&generateTestFooter();
 }
 

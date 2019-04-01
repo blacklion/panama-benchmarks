@@ -213,7 +213,7 @@ sub generateBenchmark1i {
 	my @args = ();
 	eval {
 		$out = &OpAnalyzer::getOutType($op);
-		push @args, &generateArg($out, 'z', 'i', $op->{'name'}, 'first argument');
+		push @args, &OpAnalyzer::generateArg($out, 'z', 'i', $op->{'name'}, 'first argument');
 	};
 	if ($@) {
 		print STDERR $@;
@@ -233,8 +233,8 @@ sub generateBenchmark1o {
 	my @args = ();
 	eval {
 		$out = &OpAnalyzer::getOutType($op);
-		push @args, &generateArg($out,       'z', 'i', $op->{'name'}, 'output') unless $out eq 'rs' || $out eq 'int';
-		push @args, &generateArg($op->{'l'}, 'x', 'i', $op->{'name'}, 'first argument');
+		push @args, &OpAnalyzer::generateArg($out,       'z', 'i', $op->{'name'}, 'output') unless $out eq 'rs' || $out eq 'int';
+		push @args, &OpAnalyzer::generateArg($op->{'l'}, 'x', 'i', $op->{'name'}, 'first argument');
 	};
 	if ($@) {
 		print STDERR $@;
@@ -258,8 +258,8 @@ sub generateBenchmark2i {
 	my @args = ();
 	eval {
 		$out = &OpAnalyzer::getOutType($op);
-		push @args, &generateArg($op->{'l'}, 'z', 'i', $op->{'name'}, 'first argument');
-		push @args, &generateArg($op->{'r'}, 'x', 'i', $op->{'name'}, 'second argument');
+		push @args, &OpAnalyzer::generateArg($op->{'l'}, 'z', 'i', $op->{'name'}, 'first argument');
+		push @args, &OpAnalyzer::generateArg($op->{'r'}, 'x', 'i', $op->{'name'}, 'second argument');
 	};
 	if ($@) {
 		print STDERR $@;
@@ -279,9 +279,9 @@ sub generateBenchmark2o {
 	my @args = ();
 	eval {
 		$out = &OpAnalyzer::getOutType($op);
-		push @args, &generateArg($out,       'z', 'i', $op->{'name'}, 'output') unless $out eq 'rs' || $out eq 'int';
-		push @args, &generateArg($op->{'l'}, 'x', 'i', $op->{'name'}, 'first argument');
-		push @args, &generateArg($op->{'r'}, 'y', 'i', $op->{'name'}, 'second argument');
+		push @args, &OpAnalyzer::generateArg($out,       'z', 'i', $op->{'name'}, 'output') unless $out eq 'rs' || $out eq 'int';
+		push @args, &OpAnalyzer::generateArg($op->{'l'}, 'x', 'i', $op->{'name'}, 'first argument');
+		push @args, &OpAnalyzer::generateArg($op->{'r'}, 'y', 'i', $op->{'name'}, 'second argument');
 	};
 	if ($@) {
 		print STDERR $@;
@@ -310,10 +310,10 @@ sub generateBenchmark4i {
 	my @args = ();
 	eval {
 		$out = &OpAnalyzer::getOutType($op);
-		push @args, &generateArg($op->{'l1'}, 'z', 'i', $op->{'name'}, 'first argument');
-		push @args, &generateArg($op->{'l2'}, 'z', 'i', $op->{'name'}, 'second argument');
-		push @args, &generateArg($op->{'r1'}, 'x', 'i', $op->{'name'}, 'third argument');
-		push @args, &generateArg($op->{'r2'}, 'x', 'i', $op->{'name'}, 'fourth argument');
+		push @args, &OpAnalyzer::generateArg($op->{'l1'}, 'z', 'i', $op->{'name'}, 'first argument');
+		push @args, &OpAnalyzer::generateArg($op->{'l2'}, 'z', 'i', $op->{'name'}, 'second argument');
+		push @args, &OpAnalyzer::generateArg($op->{'r1'}, 'x', 'i', $op->{'name'}, 'third argument');
+		push @args, &OpAnalyzer::generateArg($op->{'r2'}, 'x', 'i', $op->{'name'}, 'fourth argument');
 	};
 	if ($@) {
 		print STDERR $@;
@@ -338,11 +338,11 @@ sub generateBenchmark4o {
 	my @args = ();
 	eval {
 		$out = &OpAnalyzer::getOutType($op);
-		push @args, &generateArg($out,        'z', 'i', $op->{'name'}, 'output') unless $out eq 'rs' || $out eq 'int';
-		push @args, &generateArg($op->{'l1'}, 'x', 'i', $op->{'name'}, 'first argument');
-		push @args, &generateArg($op->{'l2'}, 'x', 'i', $op->{'name'}, 'second argument');
-		push @args, &generateArg($op->{'r1'}, 'y', 'i', $op->{'name'}, 'third argument');
-		push @args, &generateArg($op->{'r2'}, 'y', 'i', $op->{'name'}, 'fourth argument');
+		push @args, &OpAnalyzer::generateArg($out,        'z', 'i', $op->{'name'}, 'output') unless $out eq 'rs' || $out eq 'int';
+		push @args, &OpAnalyzer::generateArg($op->{'l1'}, 'x', 'i', $op->{'name'}, 'first argument');
+		push @args, &OpAnalyzer::generateArg($op->{'l2'}, 'x', 'i', $op->{'name'}, 'second argument');
+		push @args, &OpAnalyzer::generateArg($op->{'r1'}, 'y', 'i', $op->{'name'}, 'third argument');
+		push @args, &OpAnalyzer::generateArg($op->{'r2'}, 'y', 'i', $op->{'name'}, 'fourth argument');
 	};
 	if ($@) {
 		print STDERR $@;
@@ -374,15 +374,4 @@ sub generateBenchmarkHeader {
 sub generateBenchmarkFooter {
 	print "        }\n";
 	print "    }\n";
-}
-
-sub generateArg {
-	my ($t, $sfx, $cnt, $name, $obj) = @_;
-	if      ($t eq 'rs' || $t eq 'cs') {
-		return ($t.$sfx);
-	} elsif ($t eq 'rv' || $t eq 'cv') {
-		return ($t.$sfx, $cnt);
-	} else {
-		die "Internal consistency error: Function \"$name\" has wrong $obj type \"$t\"\n";
-	}
 }
