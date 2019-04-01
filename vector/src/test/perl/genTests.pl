@@ -28,6 +28,12 @@
 use warnings;
 use strict;
 
+use Cwd qw(abs_path);
+use FindBin;
+use lib abs_path("$FindBin::Bin/../../main/perl");
+
+use OpAnalyzer;
+
 my $HORIZONTAL = {
 	'dot' => 1,
 	'sum' => 1
@@ -40,8 +46,8 @@ my $APPROX = {
 
 die "Syntax: $0 <BaseImpl.java> <VectorImpl.java>\n" unless @ARGV == 2;
 
-my $BASE = &loadFile($ARGV[0], 1);
-my $VEC  = &loadFile($ARGV[1], 0);
+my $BASE = &OpAnalyzer::loadFile($ARGV[0], 1);
+my $VEC  = &OpAnalyzer::loadFile($ARGV[1], 0);
 
 # Check all methods
 for my $name (sort keys %{$BASE}) {
@@ -188,31 +194,30 @@ __HEADER
 for my $name (sort keys %{$VEC}) {
 	next unless exists $BASE->{$name};
 
-	# Parse name
-	my $inplace = $name =~ /_i$/;
-	if      ($name =~ /^(rs|rv|cs|cv)_([a-z0-9]{2,})_(rs|rv|cs|cv)(_i)?$/) {
-		my $l  = $1;
-		my $op = $2;
-		my $r  = $3;
+	# Parse this op
+	my $op;
+	
+	eval { $op = &OpAnalyzer::parseOp($name, $VEC->{$name}); };
+	if ($@) {
+		print STDERR $@;
+		next;
+	}
 
-		if ($inplace) {
-			&generateTest2i($name, $VEC->{$name}, $l, $op, $r);
-		} else {
-			&generateTest2o($name, $VEC->{$name}, $l, $op, $r);
-		}
-	} elsif ($name =~ /^(rs|rv|cs|cv)_([a-z0-9]{2,})(_i)?$/) {
-		my $l  = $1;
-		my $op = $2;
-
-		if ($inplace) {
-			&generateTest1i($name, $VEC->{$name}, $l, $op);
-		} else {
-			&generateTest1o($name, $VEC->{$name}, $l, $op);
-		}
-	} elsif ($name =~ /^rv_rs_lin_rv_rs(_i)?$/) {
-		&generateTestRVRSLinRVRS($name, $VEC->{$name}, $inplace);
+	# Call generators
+	if      ($op->{'type'} eq 'u' &&  $op->{'ip'}) {
+		&generateTest1i($op);
+	} elsif ($op->{'type'} eq 'u' && !$op->{'ip'}) {
+		&generateTest1o($op);
+	} elsif ($op->{'type'} eq 'b' &&  $op->{'ip'}) {
+		&generateTest2i($op);
+	} elsif ($op->{'type'} eq 'b' && !$op->{'ip'}) {
+		&generateTest2o($op);
+	} elsif ($op->{'type'} eq 'q' &&  $op->{'ip'}) {
+		&generateTest4i($op);
+	} elsif ($op->{'type'} eq 'q' && !$op->{'ip'}) {
+		&generateTest4o($op);
 	} else {
-		print STDERR "Unknown name: \"$name\"\n";
+		print STDERR 'Unknown ', ($op->{'ip'} ? 'in-place' : 'out-of-place'), " operation '$name' type '", $op->{'type'}, "'\n";
 	}
 }
 
@@ -220,256 +225,229 @@ print "}";
 
 exit 0;
 
-sub generateTest2i {
-	my ($name, $rtype, $l, $op, $r) = (@_);
-	
-	# Return type for this could be only void
-	if ($rtype ne 'void') {
-		print STDERR "Bad return type \"$rtype\" for \"$name\"\n";
-		return;
-	}
-	
-	# Make args
-	my @args  = ();
-	my $out;
-
-	if      ($l eq 'rv' || $l eq 'cv') {
-		$out = $l;
-	} else {
-		print STDERR "Function \"$name\" has wrong first argument\n";
-		return;
-	}
-
-	if      ($r eq 'rs' || $r eq 'cs') {
-		push @args, $r.'x';
-	} elsif ($r eq 'rv' || $r eq 'cv') {
-		push @args, $r.'x', 'offset';
-	} else {
-		print STDERR "Function \"$name\" has wrong second argument\n";
-		return;
-	}
-	push @args, 'size';
-
-	&generateTestHeader($name);
-	# Generatr data preparation
-		# Prepare destructive data
-	print $CODE_INDENT, "float ${out}z1[] = Arrays.copyOf(${out}z, ${out}z.length);\n";
-	print $CODE_INDENT, "float ${out}z2[] = Arrays.copyOf(${out}z, ${out}z.length);\n";
-	print "\n";
-	print $CODE_INDENT, "VO.$name(",    join(', ', ($out.'z1', 'offset', @args)), ");\n";
-	print $CODE_INDENT, "VOVec.$name(", join(', ', ($out.'z2', 'offset', @args)), ");\n";
-	print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op), ");\n";
-	&generateTestFooter();
-}
-
-sub generateTest2o {
-	my ($name, $rtype, $l, $op, $r) = (@_);
-
-	# Make args
-	my @args = ();
-	my $out;
-
-	if (($l eq 'cv' || $r eq 'cv') && $op eq 'dot') {
-		# Special case: not a vector
-		$out = 'cs';
-	} else {
-		my $c = $l =~ /^c/ || $r =~ /^c/;
-		my $v = $l =~ /v$/ || $r =~ /v$/;
-
-		if ($c && $rtype ne 'void') {
-			print STDERR "Function \"$name\" has wrong combination of ($l, $r) -> $rtype\n";
-			return;
-		}
-		if (!$v && !$c && $rtype eq 'void') {
-			print STDERR "Function \"$name\" has wrong combination of ($l, $r) -> $rtype\n";
-			return;
-		}
-
-		if ($rtype ne 'void') {
-			$out = 'rs';
-		} else {
-			$out = ($c ? 'c' : 'r') . ($v ? 'v' : 's');
-		}
-	}
-
-	if      ($l eq 'rs' || $l eq 'cs') {
-		push @args, $l.'x';
-	} elsif ($l eq 'rv' || $l eq 'cv') {
-		push @args, $l.'x', 'offset';
-	} else {
-		print STDERR "Function \"$name\" has wrong first argument\n";
-		return;
-	}
-	if      ($r eq 'rs' || $r eq 'cs') {
-		push @args, $r.'y';
-	} elsif ($r eq 'rv' || $r eq 'cv') {
-		push @args, $r.'y', 'offset';
-	} else {
-		print STDERR "Function \"$name\" has wrong second argument\n";
-		return;
-	}
-	push @args, 'size';
-
-	# Return type for this could be only float or void
-	if      ($rtype eq 'float' || $rtype eq 'void') {
-		&generateTestHeader($name);
-	} else {
-		print STDERR "Bad return type \"$rtype\" for \"$name\"\n";
-		return;
-	}
-
-	if      ($out eq 'rs') {
-		print $CODE_INDENT, "$rtype ${out}z1 = VO.$name(", join(', ', @args), ");\n";
-		print $CODE_INDENT, "$rtype ${out}z2 = VOVec.$name(", join(', ', @args), ");\n";
-		if ($rtype eq 'float') {
-			print $CODE_INDENT, "assertEquals(${out}z1, ${out}z2, ", &getEpsilon($op), ");\n";
-		} else {
-			print $CODE_INDENT, "assertEquals(${out}z1, ${out}z2);\n";
-		}
-	} elsif ($out eq 'cs') {
-		print $CODE_INDENT, "float ${out}z1[] = new float[2];\n";
-		print $CODE_INDENT, "float ${out}z2[] = new float[2];\n";
-		print $CODE_INDENT, "VO.$name(",    join(', ', ("${out}z1", @args)), ");\n";
-		print $CODE_INDENT, "VOVec.$name(", join(', ', ("${out}z2", @args)), ");\n";
-		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op), ");\n";
-
-		# And second one!
-		&generateTestFooter();
-		&generateTestHeader($name.'_zoffset');
-		print $CODE_INDENT, "float ${out}z1[] = new float[6];\n";
-		print $CODE_INDENT, "float ${out}z2[] = new float[6];\n";
-		print $CODE_INDENT, "VO.$name(",    join(', ', ("${out}z1", "1", @args)), ");\n";
-		print $CODE_INDENT, "VOVec.$name(", join(', ', ("${out}z2", "1", @args)), ");\n";
-		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op), ");\n";
-	} elsif ($out eq 'rv' || $out eq 'cv') {
-		print $CODE_INDENT, "float ${out}z1[] = new float[${out}z.length];\n";
-		print $CODE_INDENT, "float ${out}z2[] = new float[${out}z.length];\n";
-		print $CODE_INDENT, "VO.$name(",    join(', ', ("${out}z1", "0", @args)), ");\n";
-		print $CODE_INDENT, "VOVec.$name(", join(', ', ("${out}z2", "0", @args)), ");\n";
-		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op), ");\n";
-	} else {
-		die "Internal error\n";
-	}
-
-	&generateTestFooter();
-}
-
 sub generateTest1i {
-	my ($name, $rtype, $l, $op) = (@_);
+	my $op = shift;
 
-	# Return type for this could be only void
-	if ($rtype ne 'void') {
-		print STDERR "Bad return type \"$rtype\" for \"$name\"\n";
+	my $out;
+	eval { $out = &OpAnalyzer::getOutType($op); };
+	if ($@) {
+		print STDERR $@;
 		return;
 	}
-	if ($l ne 'rv' && $l ne 'cv') {
-		print STDERR "Function \"$name\" has wrong first argument\n";
-		return;
-	}
-		
-	&generateTestHeader($name);
-	print $CODE_INDENT, "float ${l}z1[] = Arrays.copyOf(${l}z, ${l}z.length);\n";
-	print $CODE_INDENT, "float ${l}z2[] = Arrays.copyOf(${l}z, ${l}z.length);\n";
-	print $CODE_INDENT, "VO.$name(${l}z1, offset, size);\n";
-	print $CODE_INDENT, "VOVec.$name(${l}z2, offset, size);\n";
-	print $CODE_INDENT, "assertArrayEquals(${l}z1, ${l}z2, ", &getEpsilon($op), ");\n";
+
+	&generateTestHeader($op->{'name'});
+	print $CODE_INDENT, 'float ', $op->{'l'}.'z1[] = Arrays.copyOf(', $op->{'l'}.'z, ', $op->{'l'}."z.length);\n";
+	print $CODE_INDENT, 'float ', $op->{'l'}.'z2[] = Arrays.copyOf(', $op->{'l'}.'z, ', $op->{'l'}."z.length);\n";
+	print $CODE_INDENT, 'VO.',    $op->{'name'}, '(', $op->{'l'}."z1, offset, size);\n";
+	print $CODE_INDENT, 'VOVec.', $op->{'name'}, '(', $op->{'l'}."z2, offset, size);\n";
+	print $CODE_INDENT, "assertArrayEquals(", $op->{'l'}.'z1, ', $op->{'l'}.'z2, ', &getEpsilon($op->{'op'}), ");\n";
 	&generateTestFooter();
 }
 
 sub generateTest1o {
-	my ($name, $rtype, $l, $op) = (@_);
+	my $op = shift;
 	
-	
+	my $out;
+	eval { $out = &OpAnalyzer::getOutType($op); };
+	if ($@) {
+		print STDERR $@;
+		return;
+	}
+
 	# Make args
 	my @args = ();
-	my $out;
-
-	my $c = $l =~ /^c/;
-	my $v = $l =~ /v$/;
-	if ($c && ($rtype ne 'void' && $rtype ne 'int')) {
-		print STDERR "Function \"$name\" has wrong combination of ($l) -> $rtype\n";
-		return;
-	}
-	if (!$v && !$c && $rtype eq 'void') {
-		print STDERR "Function \"$name\" has wrong combination of ($l) -> $rtype\n";
-		return;
-	}
-	if      ($rtype ne 'void') {
-		$out = 'rs';
-	} elsif ($l eq 'cv' && ($op eq 'max' || $op eq 'min' || $op eq 'sum')) {
-		$out = 'cs';
-	} elsif ($l eq 'cv' && ($op eq 'im' || $op eq 're')) {
-		$out = 'rv';
-	} elsif ($l eq 'rv' && ($op eq 'cvt' || $op eq 'expi')) {
-		$out = 'cv';
+	if      ($op->{'l'} eq 'rs' || $op->{'l'} eq 'cs') {
+		push @args, $op->{'l'}.'x';
+	} elsif ($op->{'l'} eq 'rv' || $op->{'l'} eq 'cv') {
+		push @args, $op->{'l'}.'x', 'offset';
 	} else {
-		$out = ($c ? 'c' : 'r') . ($v ? 'v' : 's');
-	}
-
-	if      ($l eq 'rs' || $l eq 'cs') {
-		push @args, $l.'x';
-	} elsif ($l eq 'rv' || $l eq 'cv') {
-		push @args, $l.'x', 'offset';
-	} else {
-		print STDERR "Function \"$name\" has wrong first argument\n";
-		return;
+		die "Internal consistency error: Function \"".$op->{'name'}."\" has wrong first argument\n";
 	}
 	push @args, 'size';
 
-	# Return type for this could be only float or void
-	if      ($rtype eq 'float' || $rtype eq 'int' || $rtype eq 'void') {
-		&generateTestHeader($name);
-	} else {
-		print STDERR "Bad return type \"$rtype\" for \"$name\"\n";
-		return;
-	}
+	&generateTestHeader($op->{'name'});
 
-	if      ($out eq 'rs') {
-		print $CODE_INDENT, "$rtype ${out}z1 = VO.$name(", join(', ', @args), ");\n";
-		print $CODE_INDENT, "$rtype ${out}z2 = VOVec.$name(", join(', ', @args), ");\n";
-		if ($rtype eq 'float') {
-			print $CODE_INDENT, "assertEquals(${out}z1, ${out}z2, ", &getEpsilon($op), ");\n";
+	if      ($out eq 'rs' || $out eq 'int') {
+		print $CODE_INDENT, $op->{'rt'}, " ${out}z1 = VO.",    $op->{'name'}, '(', join(', ', @args), ");\n";
+		print $CODE_INDENT, $op->{'rt'}, " ${out}z2 = VOVec.", $op->{'name'}, '(', join(', ', @args), ");\n";
+		if ($op->{'rt'} eq 'float') {
+			print $CODE_INDENT, "assertEquals(${out}z1, ${out}z2, ", &getEpsilon($op->{'op'}), ");\n";
 		} else {
 			print $CODE_INDENT, "assertEquals(${out}z1, ${out}z2);\n";
 		}
 	} elsif ($out eq 'cs') {
 		print $CODE_INDENT, "float ${out}z1[] = new float[2];\n";
 		print $CODE_INDENT, "float ${out}z2[] = new float[2];\n";
-		print $CODE_INDENT, "VO.$name(",    join(', ', ("${out}z1", @args)), ");\n";
-		print $CODE_INDENT, "VOVec.$name(", join(', ', ("${out}z2", @args)), ");\n";
-		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op), ");\n";
+		print $CODE_INDENT, 'VO.'    ,$op->{'name'}, '(', join(', ', ("${out}z1", @args)), ");\n";
+		print $CODE_INDENT, 'VOVec.', $op->{'name'}, '(', join(', ', ("${out}z2", @args)), ");\n";
+		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op->{'op'}), ");\n";
 	} elsif ($out eq 'rv' || $out eq 'cv') {
 		print $CODE_INDENT, "float ${out}z1[] = new float[${out}z.length];\n";
 		print $CODE_INDENT, "float ${out}z2[] = new float[${out}z.length];\n";
-		print $CODE_INDENT, "VO.$name(",    join(', ', ("${out}z1", "0", @args)), ");\n";
-		print $CODE_INDENT, "VOVec.$name(", join(', ', ("${out}z2", "0", @args)), ");\n";
-		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op), ");\n";
+		print $CODE_INDENT, 'VO.',    $op->{'name'}, '(', join(', ', ("${out}z1", "0", @args)), ");\n";
+		print $CODE_INDENT, 'VOVec.', $op->{'name'}, '(', join(', ', ("${out}z2", "0", @args)), ");\n";
+		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op->{'op'}), ");\n";
 	} else {
-		die "Internal error\n";
+		die "Internal consistency error: Function \"".$op->{'name'}."\" has wrong output type \"$out\"\n";
 	}
 
 	&generateTestFooter();
 
 }
 
-sub generateTestRVRSLinRVRS {
-	my ($name, $rtype, $inplace) = @_;
+sub generateTest2i {
+	my $op = shift;
 
-	&generateTestHeader($name);
-	my $out = 'rv';
-	if ($inplace) {
-		print $CODE_INDENT, "float ${out}z1[] = Arrays.copyOf(${out}z, ${out}z.length);\n";
-		print $CODE_INDENT, "float ${out}z2[] = Arrays.copyOf(${out}z, ${out}z.length);\n";
-		print $CODE_INDENT, "VO.$name(${out}z1, offset, rsz, rvx, offset, rsx, size);\n";
-		print $CODE_INDENT, "VOVec.$name(${out}z2, offset, rsz, rvx, offset, rsx, size);\n";
-		print $CODE_INDENT, "assertArrayEquals(${out}z2, ${out}z2, ", &getEpsilon('lin'), ");\n";
+	my $out;
+	eval { $out = &OpAnalyzer::getOutType($op); };
+	if ($@) {
+		print STDERR $@;
+		return;
+	}
+
+	my @args = ();
+	if      ($op->{'r'} eq 'rs' || $op->{'r'} eq 'cs') {
+		push @args, $op->{'r'}.'x';
+	} elsif ($op->{'r'} eq 'rv' || $op->{'r'} eq 'cv') {
+		push @args, $op->{'r'}.'x', 'offset';
 	} else {
+		die "Internal consistency error: Function \"".$op->{'name'}."\" has wrong second argument\n";
+	}
+	push @args, 'size';
+
+	&generateTestHeader($op->{'name'});
+
+	print $CODE_INDENT, "float ${out}z1[] = Arrays.copyOf(${out}z, ${out}z.length);\n";
+	print $CODE_INDENT, "float ${out}z2[] = Arrays.copyOf(${out}z, ${out}z.length);\n";
+	print "\n";
+
+	print $CODE_INDENT, 'VO.',    $op->{'name'}, '(', join(', ', ($out.'z1', 'offset', @args)), ");\n";
+	print $CODE_INDENT, 'VOVec.', $op->{'name'}, '(', join(', ', ($out.'z2', 'offset', @args)), ");\n";
+	print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op->{'op'}), ");\n";
+
+	&generateTestFooter();
+}
+
+sub generateTest2o {
+	my $op = shift;
+
+	my $out;
+	eval { $out = &OpAnalyzer::getOutType($op); };
+	if ($@) {
+		print STDERR $@;
+		return;
+	}
+
+	# Make args
+	my @args = ();
+	if      ($op->{'l'} eq 'rs' || $op->{'l'} eq 'cs') {
+		push @args, $op->{'l'}.'x';
+	} elsif ($op->{'l'} eq 'rv' || $op->{'l'} eq 'cv') {
+		push @args, $op->{'l'}.'x', 'offset';
+	} else {
+		die "Internal consistency error: Function \"".$op->{'name'}."\" has wrong first argument\n";
+	}
+
+	if      ($op->{'r'} eq 'rs' || $op->{'r'} eq 'cs') {
+		push @args, $op->{'r'}.'y';
+	} elsif ($op->{'r'} eq 'rv' || $op->{'r'} eq 'cv') {
+		push @args, $op->{'r'}.'y', 'offset';
+	} else {
+		die "Internal consistency error: Function \"".$op->{'name'}."\" has wrong second argument\n";
+	}
+
+	push @args, 'size';
+
+	# Return type for this could be only float or void
+	&generateTestHeader($op->{'name'});
+
+	if      ($out eq 'rs' || $out eq 'int') {
+		print $CODE_INDENT, $op->{'rt'}, " ${out}z1 = VO.",    $op->{'name'}, '(', join(', ', @args), ");\n";
+		print $CODE_INDENT, $op->{'rt'}, " ${out}z2 = VOVec.", $op->{'name'}, '(', join(', ', @args), ");\n";
+		if ($op->{'rt'} eq 'float') {
+			print $CODE_INDENT, "assertEquals(${out}z1, ${out}z2, ", &getEpsilon($op->{'op'}), ");\n";
+		} else {
+			print $CODE_INDENT, "assertEquals(${out}z1, ${out}z2);\n";
+		}
+	} elsif ($out eq 'cs') {
+		print $CODE_INDENT, "float ${out}z1[] = new float[2];\n";
+		print $CODE_INDENT, "float ${out}z2[] = new float[2];\n";
+		print $CODE_INDENT, 'VO.',    $op->{'name'}, '(', join(', ', ("${out}z1", @args)), ");\n";
+		print $CODE_INDENT, 'VOVec.', $op->{'name'}, '(', join(', ', ("${out}z2", @args)), ");\n";
+		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op->{'op'}), ");\n";
+
+		# And second one!
+		&generateTestFooter();
+		&generateTestHeader($op->{'name'}.'_zoffset');
+		print $CODE_INDENT, "float ${out}z1[] = new float[6];\n";
+		print $CODE_INDENT, "float ${out}z2[] = new float[6];\n";
+		print $CODE_INDENT, 'VO.',    $op->{'name'}, '(', join(', ', ("${out}z1", "1", @args)), ");\n";
+		print $CODE_INDENT, 'VOVec.', $op->{'name'}. '(', join(', ', ("${out}z2", "1", @args)), ");\n";
+		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op->{'op'}), ");\n";
+	} elsif ($out eq 'rv' || $out eq 'cv') {
 		print $CODE_INDENT, "float ${out}z1[] = new float[${out}z.length];\n";
 		print $CODE_INDENT, "float ${out}z2[] = new float[${out}z.length];\n";
-		print $CODE_INDENT, "VO.$name(${out}z1, 0, rvx, offset, rsx, rvy, offset, rsy, size);\n";
-		print $CODE_INDENT, "VOVec.$name(${out}z2, 0, rvx, offset, rsx, rvy, offset, rsy, size);\n";
-		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon('lin'), ");\n";
+		print $CODE_INDENT, 'VO.',    $op->{'name'}, '(', join(', ', ("${out}z1", "0", @args)), ");\n";
+		print $CODE_INDENT, 'VOVec.', $op->{'name'}, '(', join(', ', ("${out}z2", "0", @args)), ");\n";
+		print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon($op->{'op'}), ");\n";
+	} else {
+		die "Internal consistency error: Function \"".$op->{'name'}."\" has wrong output type \"$out\"\n";
 	}
+
+	&generateTestFooter();
+}
+
+sub generateTest4i {
+	my $op = shift;
+
+	if ($op->{'op'} ne 'lin' || $op->{'l1'} ne 'rv' || $op->{'l2'} ne 'rs' || $op->{'r1'} ne 'rv' || $op->{'r2'} ne 'rs') {
+		print STDERR "Can not generate test for \"", $op->{'name'}, "\" yet\n";
+		return;
+	}
+
+	my $out;
+	eval { $out = &OpAnalyzer::getOutType($op); };
+	if ($@) {
+		print STDERR $@;
+		return;
+	}
+	if ($out ne 'rv') {
+		die "Internal consistency error: Function \"".$op->{'name'}."\" has wrong output type \"$out\"\n";
+	}
+
+	&generateTestHeader($op->{'name'});
+	print $CODE_INDENT, "float ${out}z1[] = Arrays.copyOf(${out}z, ${out}z.length);\n";
+	print $CODE_INDENT, "float ${out}z2[] = Arrays.copyOf(${out}z, ${out}z.length);\n";
+	print $CODE_INDENT, 'VO.',    $op->{'name'}, "(${out}z1, offset, rsz, rvx, offset, rsx, size);\n";
+	print $CODE_INDENT, 'VOVec.', $op->{'name'}, "(${out}z2, offset, rsz, rvx, offset, rsx, size);\n";
+	print $CODE_INDENT, "assertArrayEquals(${out}z2, ${out}z2, ", &getEpsilon('lin'), ");\n";
+	&generateTestFooter();
+}
+
+sub generateTest4o {
+	my $op = shift;
+
+	if ($op->{'op'} ne 'lin' || $op->{'l1'} ne 'rv' || $op->{'l2'} ne 'rs' || $op->{'r1'} ne 'rv' || $op->{'r2'} ne 'rs') {
+		print STDERR "Can not generate test for \"", $op->{'name'}, "\" yet\n";
+		return;
+	}
+
+	my $out;
+	eval { $out = &OpAnalyzer::getOutType($op); };
+	if ($@) {
+		print STDERR $@;
+		return;
+	}
+	if ($out ne 'rv') {
+		die "Internal consistency error: Function \"".$op->{'name'}."\" has wrong output type \"$out\"\n";
+	}
+
+	&generateTestHeader($op->{'name'});
+	print $CODE_INDENT, "float ${out}z1[] = new float[${out}z.length];\n";
+	print $CODE_INDENT, "float ${out}z2[] = new float[${out}z.length];\n";
+	print $CODE_INDENT, 'VO.',    $op->{'name'}, "(${out}z1, 0, rvx, offset, rsx, rvy, offset, rsy, size);\n";
+	print $CODE_INDENT, 'VOVec.', $op->{'name'}, "(${out}z2, 0, rvx, offset, rsx, rvy, offset, rsy, size);\n";
+	print $CODE_INDENT, "assertArrayEquals(${out}z1, ${out}z2, ", &getEpsilon('lin'), ");\n";
 	&generateTestFooter();
 }
 
@@ -494,28 +472,4 @@ sub getEpsilon {
 	} else {
 		return 'EPSILON';
 	}
-}
-
-sub loadFile {
-	my ($name, $base) = @_;
-	open(my $fh, '<', $name) or die "Can npot open \"$name\"\n";
-
-	my $RV = {};
-	my $total = 0;
-	while (<$fh>) {
-		s/^\s+//; s/\s+$//;
-		next unless /^public static (\S+) ([a-z0-9_]+)\(.+?\) \{$/;
-		my $rt = $1;
-		my $name = $2;
-		# Check if $name is or _w or _iw or _f or _fw
-		$total++;
-		if ($name =~ /_[fi]*w$/ || $name =~ /_i?f$/) {
-			print STDERR "Vectorized version implements strange method: \"$name\"\n" unless $base;
-			next;
-		}
-		$RV->{$name} = $rt;
-	}
-	print STDERR "\"$name\": loaded ", scalar(keys %{$RV}) + 1, " out of $total methods\n";
-	close($fh);
-	return $RV;
 }

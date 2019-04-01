@@ -517,9 +517,9 @@ public class VectorTests {
     @ParameterizedTest(name = "cv_maxarg({0}, {1})")
     @MethodSource("params")
     public void Test_cv_maxarg(int size, int offset) {
-        int rsz1 = VO.cv_maxarg(cvx, offset, size);
-        int rsz2 = VOVec.cv_maxarg(cvx, offset, size);
-        assertEquals(rsz1, rsz2);
+        int intz1 = VO.cv_maxarg(cvx, offset, size);
+        int intz2 = VOVec.cv_maxarg(cvx, offset, size);
+        assertEquals(intz1, intz2);
     }
 
     @ParameterizedTest(name = "cv_min({0}, {1})")
@@ -556,9 +556,9 @@ public class VectorTests {
     @ParameterizedTest(name = "cv_minarg({0}, {1})")
     @MethodSource("params")
     public void Test_cv_minarg(int size, int offset) {
-        int rsz1 = VO.cv_minarg(cvx, offset, size);
-        int rsz2 = VOVec.cv_minarg(cvx, offset, size);
-        assertEquals(rsz1, rsz2);
+        int intz1 = VO.cv_minarg(cvx, offset, size);
+        int intz2 = VOVec.cv_minarg(cvx, offset, size);
+        assertEquals(intz1, intz2);
     }
 
     @ParameterizedTest(name = "cv_mul_cs({0}, {1})")
@@ -1145,9 +1145,9 @@ public class VectorTests {
     @ParameterizedTest(name = "rv_maxarg({0}, {1})")
     @MethodSource("params")
     public void Test_rv_maxarg(int size, int offset) {
-        int rsz1 = VO.rv_maxarg(rvx, offset, size);
-        int rsz2 = VOVec.rv_maxarg(rvx, offset, size);
-        assertEquals(rsz1, rsz2);
+        int intz1 = VO.rv_maxarg(rvx, offset, size);
+        int intz2 = VOVec.rv_maxarg(rvx, offset, size);
+        assertEquals(intz1, intz2);
     }
 
     @ParameterizedTest(name = "rv_min({0}, {1})")
@@ -1182,9 +1182,9 @@ public class VectorTests {
     @ParameterizedTest(name = "rv_minarg({0}, {1})")
     @MethodSource("params")
     public void Test_rv_minarg(int size, int offset) {
-        int rsz1 = VO.rv_minarg(rvx, offset, size);
-        int rsz2 = VOVec.rv_minarg(rvx, offset, size);
-        assertEquals(rsz1, rsz2);
+        int intz1 = VO.rv_minarg(rvx, offset, size);
+        int intz2 = VOVec.rv_minarg(rvx, offset, size);
+        assertEquals(intz1, intz2);
     }
 
     @ParameterizedTest(name = "rv_mul_rs({0}, {1})")
