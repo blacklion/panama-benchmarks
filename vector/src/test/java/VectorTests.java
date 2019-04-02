@@ -695,6 +695,26 @@ public class VectorTests {
         assertArrayEquals(rvz1, rvz2, EPSILON);
     }
 
+    @ParameterizedTest(name = "cv_rs_lin_rv_rs({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_rs_lin_rv_rs(int size, int offset) {
+        float cvz1[] = new float[cvz.length];
+        float cvz2[] = new float[cvz.length];
+        VO.cv_rs_lin_rv_rs(cvz1, 0, cvx, offset, rsx, rvy, offset, rsy, size);
+        VOVec.cv_rs_lin_rv_rs(cvz2, 0, cvx, offset, rsx, rvy, offset, rsy, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
+    @ParameterizedTest(name = "cv_rs_lin_rv_rs_i({0}, {1})")
+    @MethodSource("params")
+    public void Test_cv_rs_lin_rv_rs_i(int size, int offset) {
+        float cvz1[] = Arrays.copyOf(cvz, cvz.length);
+        float cvz2[] = Arrays.copyOf(cvz, cvz.length);
+        VO.cv_rs_lin_rv_rs_i(cvz1, offset, rsz, rvx, offset, rsx, size);
+        VOVec.cv_rs_lin_rv_rs_i(cvz2, offset, rsz, rvx, offset, rsx, size);
+        assertArrayEquals(cvz2, cvz2, EPSILON);
+    }
+
     @ParameterizedTest(name = "cv_sub_cs({0}, {1})")
     @MethodSource("params")
     public void Test_cv_sub_cs(int size, int offset) {

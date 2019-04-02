@@ -3352,6 +3352,69 @@ public final class VOVec {
 		}
 	}
 
+	public static void cv_rs_lin_rv_rs_i(float z[], int zOffset, float a1, float x[], int xOffset, float a2, int count) {
+		FloatVector va1 = null;
+		FloatVector va2 = null;
+		if (count >= EPV2) {
+			va1 = PFS.broadcast(a1);
+			va2 = PFS2.broadcast(a2);
+		}
+
+		zOffset <<= 1;
+
+		while (count >= EPV2) {
+			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset);
+			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
+
+			// Rearrange of vx gives zeroes in im-parts and it could be added without any masks or blends
+			vz.mul(va1).add(vx.mul(va2).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE)).intoArray(z, zOffset);
+
+			xOffset += EPV2;
+			zOffset += EPV;
+			count -= EPV2;
+		}
+
+		while (count-- > 0) {
+			z[zOffset + 0] = z[zOffset + 0] * a1 + x[xOffset] * a2;
+			z[zOffset + 1] = z[zOffset + 1] * a1;
+			xOffset += 1;
+			zOffset += 2;
+		}
+	}
+
+	public static void cv_rs_lin_rv_rs(float z[], int zOffset, float x[], int xOffset, float a1, float y[], int yOffset, float a2, int count) {
+		FloatVector va1 = null;
+		FloatVector va2 = null;
+		if (count >= EPV2) {
+			va1 = PFS.broadcast(a1);
+			va2 = PFS2.broadcast(a2);
+		}
+
+		xOffset <<= 1;
+		zOffset <<= 1;
+
+		while (count >= EPV2) {
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vy = FloatVector.fromArray(PFS2, y, yOffset);
+
+			// Rearrange of vy gives zeroes in im-parts and it could be added without any masks or blends
+			vx.mul(va1).add(vy.mul(va2).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE)).intoArray(z, zOffset);
+
+			xOffset += EPV;
+			yOffset += EPV2;
+			zOffset += EPV;
+			count -= EPV2;
+		}
+
+		while (count-- > 0) {
+			z[zOffset + 0] = x[xOffset + 0] * a1 + y[yOffset] * a2;
+			z[zOffset + 1] = x[xOffset + 1] * a1;
+			xOffset += 2;
+			yOffset += 1;
+			zOffset += 2;
+		}
+	}
+
 	public static void rv_10log10_i(float z[], int zOffset, int count) {
 		while (count >= EPV) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
