@@ -436,7 +436,7 @@ sub generateTest4i {
 sub generateTest4o {
 	my $op = shift;
 
-	if ($op->{'op'} ne 'lin' || $op->{'l1'} ne 'rv' || $op->{'l2'} ne 'rs' || $op->{'r1'} ne 'rv' || $op->{'r2'} ne 'rs') {
+	if ($op->{'op'} ne 'lin' || $op->{'l1'} ne 'rv' || $op->{'l2'} ne 'rs' || $op->{'r1'} ne 'rv' || ($op->{'r2'} ne 'rs' && $op->{'r2'} ne 'cs')) {
 		print STDERR "Can not generate test for \"", $op->{'name'}, "\" yet\n";
 		return;
 	}
