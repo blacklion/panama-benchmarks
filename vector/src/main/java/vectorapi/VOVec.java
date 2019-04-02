@@ -3312,6 +3312,46 @@ public final class VOVec {
 		}
 	}
 
+	public static void rv_cs_lin_rv_cs(float z[], int zOffset, float x[], int xOffset, float a1[], float y[], int yOffset, float a2[], int count) {
+		FloatVector va1re = null;
+		FloatVector va1im = null;
+		FloatVector va2re = null;
+		FloatVector va2im = null;
+		if (count >= EPV) {
+			va1re = PFS.broadcast(a1[0]);
+			va1im = PFS.broadcast(a1[1]);
+			va2re = PFS.broadcast(a2[0]);
+			va2im = PFS.broadcast(a2[1]);
+		}
+
+		zOffset <<= 1;
+
+		while (count >= EPV) {
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+
+			final FloatVector vrre = vx.mul(va1re).add(vy.mul(va2re));
+			final FloatVector vrim = vx.mul(va1im).add(vy.mul(va2im));
+
+			// Store twice
+			vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST), MASK_C_IM).intoArray(z, zOffset);
+			vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND), MASK_C_IM).intoArray(z, zOffset + EPV);
+
+			xOffset += EPV;
+			yOffset += EPV;
+			zOffset += EPV * 2;
+			count -= EPV;
+		}
+
+		while (count-- > 0) {
+			z[zOffset + 0] = x[xOffset] * a1[0] + y[yOffset] * a2[0];
+			z[zOffset + 1] = x[xOffset] * a1[1] + y[yOffset] * a2[1];
+			xOffset += 1;
+			yOffset += 1;
+			zOffset += 2;
+		}
+	}
+
 	public static void rv_10log10_i(float z[], int zOffset, int count) {
 		while (count >= EPV) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);

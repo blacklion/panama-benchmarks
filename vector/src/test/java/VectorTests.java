@@ -993,6 +993,16 @@ public class VectorTests {
         assertArrayEquals(rvz1, rvz2, EPSILON);
     }
 
+    @ParameterizedTest(name = "rv_cs_lin_rv_cs({0}, {1})")
+    @MethodSource("params")
+    public void Test_rv_cs_lin_rv_cs(int size, int offset) {
+        float cvz1[] = new float[cvz.length];
+        float cvz2[] = new float[cvz.length];
+        VO.rv_cs_lin_rv_cs(cvz1, 0, rvx, offset, csx, rvy, offset, csy, size);
+        VOVec.rv_cs_lin_rv_cs(cvz2, 0, rvx, offset, csx, rvy, offset, csy, size);
+        assertArrayEquals(cvz1, cvz2, EPSILON);
+    }
+
     @ParameterizedTest(name = "rv_cvt({0}, {1})")
     @MethodSource("params")
     public void Test_rv_cvt(int size, int offset) {
