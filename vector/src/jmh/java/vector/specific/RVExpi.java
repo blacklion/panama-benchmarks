@@ -85,32 +85,46 @@ public class RVExpi {
     }
 
     @Benchmark
+    public void nv() {
+        rv_expi_0(z, 0, x, 0, size);
+    }
+
+    @Benchmark
     public void pfs2_reshape_ops() {
-        rv_expi1(z, 0, x, 0, size);
+        rv_expi_1(z, 0, x, 0, size);
     }
 
     @Benchmark
     public void pfs2_ops_reshape() {
-        rv_expi1a(z, 0, x, 0, size);
+        rv_expi_1a(z, 0, x, 0, size);
     }
 
     @Benchmark
     public void pfs() {
-        rv_expi2(z, 0, x, 0, size);
+        rv_expi_2(z, 0, x, 0, size);
     }
 
     @Benchmark
     public void pfs_pfs2_reshape_ops() {
-        rv_expi3(z, 0, x, 0, size);
+        rv_expi_3(z, 0, x, 0, size);
     }
 
     @Benchmark
     public void pfs_pfs2_ops_reshape() {
-        rv_expi3a(z, 0, x, 0, size);
+        rv_expi_3a(z, 0, x, 0, size);
     }
 
+    public static void rv_expi_0(float z[], int zOffset, float x[], int xOffset, int count) {
+        zOffset <<= 1;
+        while (count-- > 0) {
+            z[zOffset + 0] = (float)Math.cos(x[xOffset]);
+            z[zOffset + 1] = (float)Math.sin(x[xOffset]);
+            zOffset += 2;
+            xOffset += 1;
+        }
+    }
 
-    public static void rv_expi1(float z[], int zOffset, float x[], int xOffset, int count) {
+    public static void rv_expi_1(float z[], int zOffset, float x[], int xOffset, int count) {
         zOffset <<= 1;
         while (count >= EPV2) {
             final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
@@ -130,7 +144,7 @@ public class RVExpi {
         }
     }
 
-    public static void rv_expi1a(float z[], int zOffset, float x[], int xOffset, int count) {
+    public static void rv_expi_1a(float z[], int zOffset, float x[], int xOffset, int count) {
         zOffset <<= 1;
         while (count >= EPV2) {
             final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset);
@@ -150,7 +164,7 @@ public class RVExpi {
         }
     }
 
-    public static void rv_expi2(float z[], int zOffset, float x[], int xOffset, int count) {
+    public static void rv_expi_2(float z[], int zOffset, float x[], int xOffset, int count) {
         zOffset <<= 1;
         while (count >= EPV) {
             final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
@@ -173,7 +187,7 @@ public class RVExpi {
         }
     }
 
-    public static void rv_expi3(float z[], int zOffset, float x[], int xOffset, int count) {
+    public static void rv_expi_3(float z[], int zOffset, float x[], int xOffset, int count) {
         zOffset <<= 1;
         while (count >= EPV) {
             final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
@@ -207,7 +221,7 @@ public class RVExpi {
         }
     }
 
-    public static void rv_expi3a(float z[], int zOffset, float x[], int xOffset, int count) {
+    public static void rv_expi_3a(float z[], int zOffset, float x[], int xOffset, int count) {
         zOffset <<= 1;
         while (count >= EPV) {
             final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
