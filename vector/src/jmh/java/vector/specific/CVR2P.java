@@ -32,6 +32,7 @@ import jdk.incubator.vector.Vector;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.Arrays;
+import java.util.Random;
 
 /** @noinspection CStyleArrayDeclaration, PointlessArithmeticExpression, WeakerAccess */
 @Fork(2)
@@ -40,6 +41,8 @@ import java.util.Arrays;
 @Threads(1)
 @State(Scope.Thread)
 public class CVR2P {
+    private final static int SEED = 42; // Carefully selected, pucked by hands random number
+
     private final static int MAX_SIZE = 1031;
 
     // EPV on my system is 8
@@ -81,10 +84,11 @@ public class CVR2P {
 
     @Setup(Level.Trial)
     public void Setup() {
-        z = new float[MAX_SIZE * 2];
+        Random r = new Random(SEED);
 
+        z = new float[MAX_SIZE * 2];
         for (int i = 0; i < z.length; i++) {
-            z[i] = (float)(Math.random() * 2.0 - 1.0);
+            z[i] = r.nextFloat() * 2.0f - 1.0f;
         }
     }
 

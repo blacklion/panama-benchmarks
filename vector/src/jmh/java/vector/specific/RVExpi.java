@@ -31,6 +31,8 @@ import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.Vector;
 import org.openjdk.jmh.annotations.*;
 
+import java.util.Random;
+
 /** @noinspection PointlessArithmeticExpression, WeakerAccess, CStyleArrayDeclaration */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
@@ -38,6 +40,8 @@ import org.openjdk.jmh.annotations.*;
 @Threads(1)
 @State(Scope.Thread)
 public class RVExpi {
+    private final static int SEED = 42; // Carefully selected, pucked by hands random number
+
     private final static int MAX_SIZE = 1031;
 
     // EPV on my system is 8
@@ -70,11 +74,13 @@ public class RVExpi {
 
     @Setup(Level.Trial)
     public void Setup() {
+        Random r = new Random(SEED);
+
         x = new float[MAX_SIZE];
         z = new float[MAX_SIZE * 2];
 
         for (int i = 0; i < x.length; i++) {
-            x[i] = (float)(Math.random() * 2.0 - 1.0);
+            x[i] = r.nextFloat() * 2.0f - 1.0f;
         }
     }
 

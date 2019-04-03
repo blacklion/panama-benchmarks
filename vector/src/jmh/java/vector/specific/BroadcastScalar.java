@@ -31,6 +31,8 @@ import jdk.incubator.vector.FloatVector;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
+import java.util.Random;
+
 /**
  * @noinspection CStyleArrayDeclaration
  */
@@ -40,6 +42,8 @@ import org.openjdk.jmh.infra.Blackhole;
 @Threads(1)
 @State(Scope.Thread)
 public class BroadcastScalar {
+	private final static int SEED = 42; // Carefully selected, pucked by hands random number
+
 	private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
 	private final static int EPV = PFS.length();
 
@@ -49,12 +53,14 @@ public class BroadcastScalar {
 
 	@Setup(Level.Trial)
 	public void Setup() {
+		Random r = new Random(SEED);
+
 		x = new float[EPV * 2];
 
 		for (int i = 0; i < x.length; i++) {
-			x[i] = (float)(Math.random() * 2.0 - 1.0);
+			x[i] = r.nextFloat() * 2.0f - 1.0f;
 		}
-		y = (float)(Math.random() * 2.0 - 1.0);
+		y = r.nextFloat() * 2.0f - 1.0f;
 		vy = PFS.broadcast(y);
 	}
 

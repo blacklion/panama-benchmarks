@@ -32,6 +32,8 @@ import jdk.incubator.vector.Vector;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
+import java.util.Random;
+
 /** @noinspection CStyleArrayDeclaration*/
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
@@ -39,6 +41,8 @@ import org.openjdk.jmh.infra.Blackhole;
 @Threads(1)
 @State(Scope.Thread)
 public class LoadRVtoCVRE {
+    private final static int SEED = 42; // Carefully selected, pucked by hands random number
+
     private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
     private final static int EPV = PFS.length();
     private final static FloatVector.FloatSpecies PFS2 = FloatVector.species(Vector.Shape.forBitSize(PFS.bitSize() / 2));
@@ -63,10 +67,12 @@ public class LoadRVtoCVRE {
 
     @Setup(Level.Trial)
     public void Setup() {
+        Random r = new Random(SEED);
+
         x = new float[EPV * 2];
 
         for (int i = 0; i < x.length; i++) {
-            x[i] = (float)(Math.random() * 2.0 - 1.0);
+            x[i] = r.nextFloat() * 2.0f - 1.0f;
         }
     }
 

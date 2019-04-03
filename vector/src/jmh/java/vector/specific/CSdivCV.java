@@ -31,6 +31,8 @@ import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.Vector;
 import org.openjdk.jmh.annotations.*;
 
+import java.util.Random;
+
 /** @noinspection PointlessArithmeticExpression, CStyleArrayDeclaration */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
@@ -38,6 +40,8 @@ import org.openjdk.jmh.annotations.*;
 @Threads(1)
 @State(Scope.Thread)
 public class CSdivCV {
+    private final static int SEED = 42; // Carefully selected, pucked by hands random number
+
     private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
     private final static int EPV = PFS.length();
     private final static int EPV2 = EPV / 2;
@@ -69,14 +73,16 @@ public class CSdivCV {
 
     @Setup
     public void Setup() {
+        Random r = new Random(SEED);
+
         x = new float[2];
         y = new float[65536 * 2];
         z = new float[65536 * 2];
 
         for (int i = 0; i < y.length; i++)
-            y[i] = (float)(Math.random() * 2.0 - 1.0);
-        x[0] = (float)(Math.random() * 2.0 - 1.0);
-        x[1] = (float)(Math.random() * 2.0 - 1.0);
+            y[i] = r.nextFloat() * 2.0f - 1.0f;
+        x[0] = r.nextFloat() * 2.0f - 1.0f;
+        x[1] = r.nextFloat() * 2.0f - 1.0f;
     }
 
     @Benchmark
