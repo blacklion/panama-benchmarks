@@ -40,7 +40,7 @@ import java.util.Random;
 @Threads(1)
 @State(org.openjdk.jmh.annotations.Scope.Thread)
 public class Offsets {
-    private final static int SEED = 42; // Carefully selected, pucked by hands random number
+    private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
     private final static int MAX_OFFSET = 3;
 

@@ -41,7 +41,7 @@ import java.util.Random;
 @Threads(1)
 @State(Scope.Thread)
 public class LoadRVtoCVBoth {
-    private final static int SEED = 42; // Carefully selected, pucked by hands random number
+    private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
     private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
     private final static int EPV = PFS.length();
