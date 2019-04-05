@@ -374,7 +374,7 @@ sub generateBenchmark2o {
 sub generateBenchmark4i {
 	my ($FH, $op, $imp) = (@_);
 
-	if ($op->{'op'} ne 'lin' || $op->{'l1'} ne 'rv' || $op->{'l2'} ne 'rs' || $op->{'r1'} ne 'rv' || $op->{'r2'} ne 'rs') {
+	if ($op->{'op'} ne 'lin') {
 		print STDERR "Can not generate benchmark for \"", $op->{'name'}, "\" yet\n";
 		return;
 	}
@@ -402,7 +402,7 @@ sub generateBenchmark4i {
 sub generateBenchmark4o {
 	my ($FH, $op, $imp) = (@_);
 
-	if ($op->{'op'} ne 'lin' || $op->{'l1'} ne 'rv' || $op->{'l2'} ne 'rs' || $op->{'r1'} ne 'rv' || $op->{'r2'} ne 'rs') {
+	if ($op->{'op'} ne 'lin') {
 		print STDERR "Can not generate benchmark for \"", $op->{'name'}, "\" yet\n";
 		return;
 	}

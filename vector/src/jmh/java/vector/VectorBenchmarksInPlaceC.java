@@ -350,4 +350,18 @@ public class VectorBenchmarksInPlaceC {
             VOVec.cv_r2p_i(cvz, i, callSize);
         }
     }
+
+    @Benchmark
+    public void VO_cv_rs_lin_rv_rs_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_rs_lin_rv_rs_i(cvz, i, rsz, rvx, i, rsx, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_rs_lin_rv_rs_i() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_rs_lin_rv_rs_i(cvz, i, rsz, rvx, i, rsx, callSize);
+        }
+    }
 }

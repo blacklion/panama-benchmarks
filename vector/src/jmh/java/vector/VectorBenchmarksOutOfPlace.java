@@ -515,6 +515,20 @@ public class VectorBenchmarksOutOfPlace {
     }
 
     @Benchmark
+    public void VO_cv_rs_lin_rv_rs() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.cv_rs_lin_rv_rs(cvz, i, cvx, i, rsx, rvy, i, rsy, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_cv_rs_lin_rv_rs() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.cv_rs_lin_rv_rs(cvz, i, cvx, i, rsx, rvy, i, rsy, callSize);
+        }
+    }
+
+    @Benchmark
     public void VO_cv_sum() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
             VO.cv_sum(csz, cvx, i, callSize);
@@ -637,6 +651,20 @@ public class VectorBenchmarksOutOfPlace {
     public void VOVec_rv_cpy() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
             VOVec.rv_cpy(rvz, i, rvx, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_rv_cs_lin_rv_cs() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.rv_cs_lin_rv_cs(cvz, i, rvx, i, csx, rvy, i, csy, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_rv_cs_lin_rv_cs() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.rv_cs_lin_rv_cs(cvz, i, rvx, i, csx, rvy, i, csy, callSize);
         }
     }
 
@@ -819,6 +847,20 @@ public class VectorBenchmarksOutOfPlace {
     public void VOVec_rv_mul_rv() {
         for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
             VOVec.rv_mul_rv(rvz, i, rvx, i, rvy, i, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VO_rv_rs_lin_rv_cs() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VO.rv_rs_lin_rv_cs(cvz, i, rvx, i, rsx, rvy, i, csy, callSize);
+        }
+    }
+
+    @Benchmark
+    public void VOVec_rv_rs_lin_rv_cs() {
+        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+            VOVec.rv_rs_lin_rv_cs(cvz, i, rvx, i, rsx, rvy, i, csy, callSize);
         }
     }
 
