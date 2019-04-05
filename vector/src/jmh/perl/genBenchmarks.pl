@@ -46,6 +46,7 @@ die "Syntax: $0 <BaseImpl.java> <VectorImpl.java>\n" unless @ARGV == 2;
 
 my $BASE = &OpAnalyzer::loadFile($ARGV[0], 1);
 my $VEC  = &OpAnalyzer::loadFile($ARGV[1], 0);
+my $GEN = {};
 
 # Check all methods
 for my $name (sort keys %{$BASE}) {
@@ -54,13 +55,105 @@ for my $name (sort keys %{$BASE}) {
 }
 
 for my $name (sort keys %{$VEC}) {
-	print STDERR "Can not find base $name\n" unless exists $BASE->{$name};
+	print STDERR "Can not find base \"$name\"\n" unless exists $BASE->{$name};
 }
 
 my $CODE_INDENT = "            ";
 
-# Generate benchmark
-print<<__HEADER;
+for my $mode ('OutOfPlace', 'InPlaceR', 'InPlaceC') {
+	my $className = 'VectorBenchmarks'.$mode;
+	my $FH;
+	open($FH, '>', $className.'.java') or die "Can not open output file \"$className.java\"\n";
+	&generateBenchmarks($FH, $className, $mode);
+	close($FH);
+}
+
+for my $name (sort keys %{$VEC}) {
+	print STDERR "Can not generated \"$name\"\n" unless exists $GEN->{$name};
+}
+
+exit 0;
+
+sub generateBenchmarks {
+	my ($FH, $class, $mode) = @_;
+	&generateHeader($FH, $class);
+
+	if      ($mode eq 'InPlaceR') {
+		&generateIterSetup($FH, 'r');
+	} elsif ($mode eq 'InPlaceC') {
+		&generateIterSetup($FH, 'c');
+	} elsif ($mode eq 'OutOfPlace') {
+		# Do nothing
+	} else {
+		die "Internal error: unknown mode $mode\n";
+	}
+
+	# Generate all not filtered benchmarks
+	for my $name (sort keys %{$VEC}) {
+		next unless exists $BASE->{$name};
+
+		# Parse this op
+		my $op;
+		my $out;
+		eval {
+			$op = &OpAnalyzer::parseOp($name, $VEC->{$name});
+			$out = &OpAnalyzer::getOutType($op);
+		};
+		if ($@) {
+			print STDERR $@;
+			next;
+		}
+
+		# Filter out by mode
+		if      ($mode eq 'InPlaceR') {
+			next unless $op->{'ip'} && $out eq 'rv';
+		} elsif ($mode eq 'InPlaceC') {
+			next unless $op->{'ip'} && $out eq 'cv';
+		} elsif ($mode eq 'OutOfPlace') {
+			next unless !$op->{'ip'};
+		}
+
+		# Next skip count as generated
+		$GEN->{$name} = 1;
+
+		if (exists $SKIPPED_OPS->{$op->{'op'}}) {
+			print STDERR "Skip \"$name\" as it is not interesting, because \"".$SKIPPED_OPS->{$op->{'op'}}."\"\n";
+			next;
+		}
+
+		# Call generators
+		if      ($op->{'type'} eq 'u' &&  $op->{'ip'}) {
+			&generateBenchmark1i($FH, $op, 'VO');
+			&generateBenchmark1i($FH, $op, 'VOVec');
+		} elsif ($op->{'type'} eq 'u' && !$op->{'ip'}) {
+			&generateBenchmark1o($FH, $op, 'VO');
+			&generateBenchmark1o($FH, $op, 'VOVec');
+		} elsif ($op->{'type'} eq 'b' &&  $op->{'ip'}) {
+			&generateBenchmark2i($FH, $op, 'VO');
+			&generateBenchmark2i($FH, $op, 'VOVec');
+		} elsif ($op->{'type'} eq 'b' && !$op->{'ip'}) {
+			&generateBenchmark2o($FH, $op, 'VO');
+			&generateBenchmark2o($FH, $op, 'VOVec');
+		} elsif ($op->{'type'} eq 'q' &&  $op->{'ip'}) {
+			&generateBenchmark4i($FH, $op, 'VO');
+			&generateBenchmark4i($FH, $op, 'VOVec');
+		} elsif ($op->{'type'} eq 'q' && !$op->{'ip'}) {
+			&generateBenchmark4o($FH, $op, 'VO');
+			&generateBenchmark4o($FH, $op, 'VOVec');
+		} else {
+			print STDERR 'Unknown ', ($op->{'ip'} ? 'in-place' : 'out-of-place'), " operation '$name' type '", $op->{'type'}, "'\n";
+		}
+	}
+
+	print $FH "}";
+}
+
+
+sub generateHeader {
+	my ($FH, $class) = @_;
+
+	# Generate file header
+	my $header =<<__HEADER;
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\\
 !! THIS FILE IS GENERATED WITH genBenchmarks.pl SCRIPT. DO NOT EDIT! !!
 \\!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
@@ -99,12 +192,16 @@ import vectorapi.VOVec;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
+import java.util.Random;
+
 \@Fork(2)
-\@Warmup(iterations = 5, time = 1)
-\@Measurement(iterations = 10, time = 2)
+\@Warmup(iterations = 5, time = 2)
+\@Measurement(iterations = 10, time = 5)
 \@Threads(1)
 \@State(org.openjdk.jmh.annotations.Scope.Thread)
-public class VectorBenchmarks {
+public class $class {
+    private final static int SEED = 42; // Carefully selected, plucked by hands random number
+
     private final static int DATA_SIZE = 65536;
 
     \@Param({"16", "1024", "65536"})
@@ -117,10 +214,12 @@ public class VectorBenchmarks {
     private float rvx[];
     private float rvy[];
     private float rvz[];
+    private float rvd[];
 
     private float cvx[];
     private float cvy[];
     private float cvz[];
+    private float cvd[];
     
     private float rsx;
     private float rsy;
@@ -133,81 +232,55 @@ public class VectorBenchmarks {
     
     \@Setup(Level.Trial)
     public void Setup() {
+        Random r = new Random(SEED);
+
         rvx = new float[DATA_SIZE + MAX_OFFSET];
         rvy = new float[DATA_SIZE + MAX_OFFSET];
         rvz = new float[DATA_SIZE + MAX_OFFSET];
+        rvd = new float[DATA_SIZE + MAX_OFFSET];
         for (int i = 0; i < rvx.length; i++) {
-            rvx[i] = (float)(Math.random() * 2.0 - 1.0);
-            rvy[i] = (float)(Math.random() * 2.0 - 1.0);
-            rvz[i] = (float)(Math.random() * 2.0 - 1.0);
+            rvx[i] = r.nextFloat() * 2.0f - 1.0f;
+            rvy[i] = r.nextFloat() * 2.0f - 1.0f;
+            rvd[i] = rvz[i] = r.nextFloat() * 2.0f - 1.0f;
         }
 
         cvx = new float[(DATA_SIZE + MAX_OFFSET) * 2];
         cvy = new float[(DATA_SIZE + MAX_OFFSET) * 2];
         cvz = new float[(DATA_SIZE + MAX_OFFSET) * 2];
+        cvd = new float[(DATA_SIZE + MAX_OFFSET) * 2];
         for (int i = 0; i < cvx.length; i++) {
-            cvx[i] = (float)(Math.random() * 2.0 - 1.0);
-            cvy[i] = (float)(Math.random() * 2.0 - 1.0);
-            cvz[i] = (float)(Math.random() * 2.0 - 1.0);
+            cvx[i] = r.nextFloat() * 2.0f - 1.0f;
+            cvy[i] = r.nextFloat() * 2.0f - 1.0f;
+            cvd[i] = cvz[i] = r.nextFloat() * 2.0f - 1.0f;
         }
         
-        rsx = (float)(Math.random() * 2.0 - 1.0);
-        rsy = (float)(Math.random() * 2.0 - 1.0);
-        rsz = (float)(Math.random() * 2.0 - 1.0);
+        rsx = r.nextFloat() * 2.0f - 1.0f;
+        rsy = r.nextFloat() * 2.0f - 1.0f;
+        rsz = r.nextFloat() * 2.0f - 1.0f;
         
-        csx = new float[] { (float)(Math.random() * 2.0 - 1.0), (float)(Math.random() * 2.0 - 1.0) };
-        csy = new float[] { (float)(Math.random() * 2.0 - 1.0), (float)(Math.random() * 2.0 - 1.0) };
-        csz = new float[] { (float)(Math.random() * 2.0 - 1.0), (float)(Math.random() * 2.0 - 1.0) };
+        csx = new float[] { r.nextFloat() * 2.0f - 1.0f, r.nextFloat() * 2.0f - 1.0f };
+        csy = new float[] { r.nextFloat() * 2.0f - 1.0f, r.nextFloat() * 2.0f - 1.0f };
+        csz = new float[] { r.nextFloat() * 2.0f - 1.0f, r.nextFloat() * 2.0f - 1.0f };
     }
 
 __HEADER
-
-for my $name (sort keys %{$VEC}) {
-	next unless exists $BASE->{$name};
-
-	# Parse this op
-	my $op;
-	eval { $op = &OpAnalyzer::parseOp($name, $VEC->{$name}); };
-	if ($@) {
-		print STDERR $@;
-		next;
-	}
-
-	if (exists $SKIPPED_OPS->{$op->{'op'}}) {
-		print STDERR "Skip \"$name\" as it is not interesting, because \"".$SKIPPED_OPS->{$op->{'op'}}."\"\n";
-		next;
-	}
-
-	# Call generators
-	if      ($op->{'type'} eq 'u' &&  $op->{'ip'}) {
-		&generateBenchmark1i($op, 'VO');
-		&generateBenchmark1i($op, 'VOVec');
-	} elsif ($op->{'type'} eq 'u' && !$op->{'ip'}) {
-		&generateBenchmark1o($op, 'VO');
-		&generateBenchmark1o($op, 'VOVec');
-	} elsif ($op->{'type'} eq 'b' &&  $op->{'ip'}) {
-		&generateBenchmark2i($op, 'VO');
-		&generateBenchmark2i($op, 'VOVec');
-	} elsif ($op->{'type'} eq 'b' && !$op->{'ip'}) {
-		&generateBenchmark2o($op, 'VO');
-		&generateBenchmark2o($op, 'VOVec');
-	} elsif ($op->{'type'} eq 'q' &&  $op->{'ip'}) {
-		&generateBenchmark4i($op, 'VO');
-		&generateBenchmark4i($op, 'VOVec');
-	} elsif ($op->{'type'} eq 'q' && !$op->{'ip'}) {
-		&generateBenchmark4o($op, 'VO');
-		&generateBenchmark4o($op, 'VOVec');
-	} else {
-		print STDERR 'Unknown ', ($op->{'ip'} ? 'in-place' : 'out-of-place'), " operation '$name' type '", $op->{'type'}, "'\n";
-	}
+	print $FH $header;
 }
 
-print "}";
+sub generateIterSetup {
+	my ($FH, $type) = @_;
+	my $setup = <<__SETUP;
+    \@Setup(Level.Invocation)
+    public void SetupInPlaceData() {
+        System.arraycopy(${type}vd, 0, ${type}vz, 0, ${type}vd.length);
+    }
 
-exit 0;
+__SETUP
+	print $FH $setup;
+}
 
 sub generateBenchmark1i {
-	my ($op, $imp) = (@_);
+	my ($FH, $op, $imp) = (@_);
 
 	my $out;
 	my @args = ();
@@ -221,13 +294,13 @@ sub generateBenchmark1i {
 	}
 	push @args, 'callSize';
 		
-	&generateBenchmarkHeader($op->{'name'}, $imp, $out);
-	print $CODE_INDENT, "$imp.", $op->{'name'}, '(', join(', ', @args), ");\n";
-	&generateBenchmarkFooter();
+	&generateBenchmarkHeader($FH, $op->{'name'}, $imp, $out);
+	print $FH $CODE_INDENT, "$imp.", $op->{'name'}, '(', join(', ', @args), ");\n";
+	&generateBenchmarkFooter($FH);
 }
 
 sub generateBenchmark1o {
-	my ($op, $imp) = (@_);
+	my ($FH, $op, $imp) = (@_);
 	
 	my $out;
 	my @args = ();
@@ -242,17 +315,17 @@ sub generateBenchmark1o {
 	}
 	push @args, 'callSize';
 
-	&generateBenchmarkHeader($op->{'name'}, $imp, $out);
+	&generateBenchmarkHeader($FH, $op->{'name'}, $imp, $out);
 	if ($out eq 'rs' || $out eq 'int') {
-		print $CODE_INDENT, "bh.consume($imp.", $op->{'name'}, '(', join(', ', @args), "));\n";
+		print $FH $CODE_INDENT, "bh.consume($imp.", $op->{'name'}, '(', join(', ', @args), "));\n";
 	} else {
-		print $CODE_INDENT, "$imp.", $op->{'name'}, '(', join(', ', @args), ");\n";
+		print $FH $CODE_INDENT, "$imp.", $op->{'name'}, '(', join(', ', @args), ");\n";
 	}
-	&generateBenchmarkFooter();
+	&generateBenchmarkFooter($FH);
 }
 
 sub generateBenchmark2i {
-	my ($op, $imp) = (@_);
+	my ($FH, $op, $imp) = (@_);
 	
 	my $out;
 	my @args = ();
@@ -267,13 +340,13 @@ sub generateBenchmark2i {
 	}
 	push @args, 'callSize';
 
-	&generateBenchmarkHeader($op->{'name'}, $imp, $out);
-	print $CODE_INDENT, "$imp.", $op->{'name'}, '(', join(', ', @args), ");\n";
-	&generateBenchmarkFooter();
+	&generateBenchmarkHeader($FH, $op->{'name'}, $imp, $out);
+	print $FH $CODE_INDENT, "$imp.", $op->{'name'}, '(', join(', ', @args), ");\n";
+	&generateBenchmarkFooter($FH);
 }
 
 sub generateBenchmark2o {
-	my ($op, $imp) = (@_);
+	my ($FH, $op, $imp) = (@_);
 	
 	my $out;
 	my @args = ();
@@ -289,17 +362,17 @@ sub generateBenchmark2o {
 	}
 	push @args, 'callSize';
 
-	&generateBenchmarkHeader($op->{'name'}, $imp, $out);
+	&generateBenchmarkHeader($FH, $op->{'name'}, $imp, $out);
 	if ($out eq 'rs' || $out eq 'int') {
-		print $CODE_INDENT, "bh.consume($imp.", $op->{'name'}, '(', join(', ', @args), "));\n";
+		print $FH $CODE_INDENT, "bh.consume($imp.", $op->{'name'}, '(', join(', ', @args), "));\n";
 	} else {
-		print $CODE_INDENT, "$imp.", $op->{'name'}, '(', join(', ', @args), ");\n";
+		print $FH $CODE_INDENT, "$imp.", $op->{'name'}, '(', join(', ', @args), ");\n";
 	}
-	&generateBenchmarkFooter();
+	&generateBenchmarkFooter($FH);
 }
 
 sub generateBenchmark4i {
-	my ($op, $imp) = (@_);
+	my ($FH, $op, $imp) = (@_);
 
 	if ($op->{'op'} ne 'lin' || $op->{'l1'} ne 'rv' || $op->{'l2'} ne 'rs' || $op->{'r1'} ne 'rv' || $op->{'r2'} ne 'rs') {
 		print STDERR "Can not generate benchmark for \"", $op->{'name'}, "\" yet\n";
@@ -321,13 +394,13 @@ sub generateBenchmark4i {
 	}
 	push @args, 'callSize';
 
-	&generateBenchmarkHeader($op->{'name'}, $imp, $out);
-	print $CODE_INDENT, "$imp.", $op->{'name'}, '(', join(', ', @args), ");\n";
-	&generateBenchmarkFooter();
+	&generateBenchmarkHeader($FH, $op->{'name'}, $imp, $out);
+	print $FH $CODE_INDENT, "$imp.", $op->{'name'}, '(', join(', ', @args), ");\n";
+	&generateBenchmarkFooter($FH);
 }
 
 sub generateBenchmark4o {
-	my ($op, $imp) = (@_);
+	my ($FH, $op, $imp) = (@_);
 
 	if ($op->{'op'} ne 'lin' || $op->{'l1'} ne 'rv' || $op->{'l2'} ne 'rs' || $op->{'r1'} ne 'rv' || $op->{'r2'} ne 'rs') {
 		print STDERR "Can not generate benchmark for \"", $op->{'name'}, "\" yet\n";
@@ -350,28 +423,29 @@ sub generateBenchmark4o {
 	}
 	push @args, 'callSize';
 
-	&generateBenchmarkHeader($op->{'name'}, $imp, $out);
+	&generateBenchmarkHeader($FH, $op->{'name'}, $imp, $out);
 	if ($out eq 'rs' || $out eq 'int') {
-		print $CODE_INDENT, "bh.consume($imp.", $op->{'name'}, '(', join(', ', @args), "));\n";
+		print $FH $CODE_INDENT, "bh.consume($imp.", $op->{'name'}, '(', join(', ', @args), "));\n";
 	} else {
-		print $CODE_INDENT, "$imp.", $op->{'name'}, '(', join(', ', @args), ");\n";
+		print $FH $CODE_INDENT, "$imp.", $op->{'name'}, '(', join(', ', @args), ");\n";
 	}
-	&generateBenchmarkFooter();
+	&generateBenchmarkFooter($FH);
 }
 
 sub generateBenchmarkHeader {
-	my ($name, $imp, $out) = @_;
-	print "\n";
-	print "    \@Benchmark\n";
+	my ($FH, $name, $imp, $out) = @_;
+	print $FH "\n";
+	print $FH "    \@Benchmark\n";
 	if ($out eq 'rs' || $out eq 'int') {
-		print "    public void ${imp}_${name}(Blackhole bh) {\n";
+		print $FH "    public void ${imp}_${name}(Blackhole bh) {\n";
 	} else {
-		print "    public void ${imp}_${name}() {\n";
+		print $FH "    public void ${imp}_${name}() {\n";
 	}
-	print "        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {\n";
+	print $FH "        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {\n";
 }
 
 sub generateBenchmarkFooter {
-	print "        }\n";
-	print "    }\n";
+	my ($FH) = @_;
+	print $FH "        }\n";
+	print $FH "    }\n";
 }
