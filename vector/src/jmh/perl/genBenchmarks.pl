@@ -441,7 +441,7 @@ sub generateBenchmarkHeader {
 	} else {
 		print $FH "    public void ${imp}_${name}() {\n";
 	}
-	print $FH "        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {\n";
+	print $FH "        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {\n";
 }
 
 sub generateBenchmarkFooter {

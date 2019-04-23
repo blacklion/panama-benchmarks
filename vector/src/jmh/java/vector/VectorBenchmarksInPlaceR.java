@@ -115,168 +115,168 @@ public class VectorBenchmarksInPlaceR {
 
     @Benchmark
     public void VO_rv_10log10_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VO.rv_10log10_i(rvz, i, callSize);
         }
     }
 
     @Benchmark
     public void VOVec_rv_10log10_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VOVec.rv_10log10_i(rvz, i, callSize);
         }
     }
 
     @Benchmark
     public void VO_rv_10log10_rs_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VO.rv_10log10_rs_i(rvz, i, rsx, callSize);
         }
     }
 
     @Benchmark
     public void VOVec_rv_10log10_rs_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VOVec.rv_10log10_rs_i(rvz, i, rsx, callSize);
         }
     }
 
     @Benchmark
     public void VO_rv_abs_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VO.rv_abs_i(rvz, i, callSize);
         }
     }
 
     @Benchmark
     public void VOVec_rv_abs_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VOVec.rv_abs_i(rvz, i, callSize);
         }
     }
 
     @Benchmark
     public void VO_rv_add_rs_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VO.rv_add_rs_i(rvz, i, rsx, callSize);
         }
     }
 
     @Benchmark
     public void VOVec_rv_add_rs_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VOVec.rv_add_rs_i(rvz, i, rsx, callSize);
         }
     }
 
     @Benchmark
     public void VO_rv_add_rv_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VO.rv_add_rv_i(rvz, i, rvx, i, callSize);
         }
     }
 
     @Benchmark
     public void VOVec_rv_add_rv_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VOVec.rv_add_rv_i(rvz, i, rvx, i, callSize);
         }
     }
 
     @Benchmark
     public void VO_rv_div_rs_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VO.rv_div_rs_i(rvz, i, rsx, callSize);
         }
     }
 
     @Benchmark
     public void VOVec_rv_div_rs_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VOVec.rv_div_rs_i(rvz, i, rsx, callSize);
         }
     }
 
     @Benchmark
     public void VO_rv_div_rv_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VO.rv_div_rv_i(rvz, i, rvx, i, callSize);
         }
     }
 
     @Benchmark
     public void VOVec_rv_div_rv_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VOVec.rv_div_rv_i(rvz, i, rvx, i, callSize);
         }
     }
 
     @Benchmark
     public void VO_rv_exp_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VO.rv_exp_i(rvz, i, callSize);
         }
     }
 
     @Benchmark
     public void VOVec_rv_exp_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VOVec.rv_exp_i(rvz, i, callSize);
         }
     }
 
     @Benchmark
     public void VO_rv_max_rv_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VO.rv_max_rv_i(rvz, i, rvx, i, callSize);
         }
     }
 
     @Benchmark
     public void VOVec_rv_max_rv_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VOVec.rv_max_rv_i(rvz, i, rvx, i, callSize);
         }
     }
 
     @Benchmark
     public void VO_rv_mul_rs_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VO.rv_mul_rs_i(rvz, i, rsx, callSize);
         }
     }
 
     @Benchmark
     public void VOVec_rv_mul_rs_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VOVec.rv_mul_rs_i(rvz, i, rsx, callSize);
         }
     }
 
     @Benchmark
     public void VO_rv_mul_rv_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VO.rv_mul_rv_i(rvz, i, rvx, i, callSize);
         }
     }
 
     @Benchmark
     public void VOVec_rv_mul_rv_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VOVec.rv_mul_rv_i(rvz, i, rvx, i, callSize);
         }
     }
 
     @Benchmark
     public void VO_rv_rs_lin_rv_rs_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VO.rv_rs_lin_rv_rs_i(rvz, i, rsz, rvx, i, rsx, callSize);
         }
     }
 
     @Benchmark
     public void VOVec_rv_rs_lin_rv_rs_i() {
-        for (int i = startOffset; i < DATA_SIZE + startOffset; i+= callSize) {
+        for (int i = startOffset; i <= DATA_SIZE + startOffset - callSize; i += callSize) {
             VOVec.rv_rs_lin_rv_rs_i(rvz, i, rsz, rvx, i, rsx, callSize);
         }
     }
