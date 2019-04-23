@@ -27,8 +27,7 @@
 
 package vector.specific;
 
-import jdk.incubator.vector.FloatVector;
-import jdk.incubator.vector.Vector;
+import jdk.incubator.vector.*;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.Random;
@@ -42,17 +41,17 @@ import java.util.Random;
 public class CSdivCV {
     private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-    private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
+    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
     private final static int EPV = PFS.length();
     private final static int EPV2 = EPV / 2;
-    private final static FloatVector.FloatSpecies FS64 = FloatVector.species(Vector.Shape.S_64_BIT);
+    private final static VectorSpecies<Float> FS64 = FloatVector.SPECIES_64;
 
-    private final static Vector.Mask<Float> MASK_C_IM;
+    private final static VectorMask<Float> MASK_C_IM;
 
-    private final static Vector.Shuffle<Float> SHUFFLE_CS_TO_CV_SPREAD = FloatVector.shuffle(PFS, i -> i % 2);
-    private final static Vector.Shuffle<Float> SHUFFLE_CV_SWAP_RE_IM = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? i + 1 : i - 1);
-    private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_RE = FloatVector.shuffle(PFS, i -> i - i % 2);
-    private final static Vector.Shuffle<Float> SHUFFLE_CV_SPREAD_IM = FloatVector.shuffle(PFS, i -> i - i % 2 + 1);
+    private final static VectorShuffle<Float> SHUFFLE_CS_TO_CV_SPREAD = VectorShuffle.shuffle(PFS, i -> i % 2);
+    private final static VectorShuffle<Float> SHUFFLE_CV_SWAP_RE_IM = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? i + 1 : i - 1);
+    private final static VectorShuffle<Float> SHUFFLE_CV_SPREAD_RE = VectorShuffle.shuffle(PFS, i -> i - i % 2);
+    private final static VectorShuffle<Float> SHUFFLE_CV_SPREAD_IM = VectorShuffle.shuffle(PFS, i -> i - i % 2 + 1);
 
     private final static int[] LOAD_CS_TO_CV_SPREAD = SHUFFLE_CS_TO_CV_SPREAD.toArray();
     private final static int[] LOAD_CV_TO_CV_SPREAD_RE = SHUFFLE_CV_SPREAD_RE.toArray();
@@ -63,7 +62,7 @@ public class CSdivCV {
         alter[0] = true;
         for (int i = 1; i < alter.length; i++)
             alter[i] = !alter[i-1];
-        MASK_C_IM = FloatVector.maskFromArray(PFS, alter, 1);
+        MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
     }
 
     private float z[];

@@ -27,8 +27,7 @@
 
 package vector.specific;
 
-import jdk.incubator.vector.FloatVector;
-import jdk.incubator.vector.Vector;
+import jdk.incubator.vector.*;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -44,24 +43,24 @@ import java.util.Random;
 public class LoadCVREPack {
     private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-    private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();;
+    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;;
     private final static int EPV = PFS.length();
     private final static int EPV2 = PFS.length() / 2;
 
-    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST = FloatVector.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
-    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST = FloatVector.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
-    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND = FloatVector.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
-    private final static Vector.Shuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND = FloatVector.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1 : 0);
+    private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
+    private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
+    private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
+    private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1 : 0);
 
     private final static int[] LOAD_CV_TO_CV_PACK_RE;
    	private final static int[] LOAD_CV_TO_CV_PACK_IM;
 
-   	private final static Vector.Mask<Float> MASK_SECOND_HALF;
+   	private final static VectorMask<Float> MASK_SECOND_HALF;
 
     static {
         boolean[] sh = new boolean[EPV];
         Arrays.fill(sh, EPV / 2, sh.length, true);
-        MASK_SECOND_HALF = FloatVector.maskFromArray(PFS, sh, 0);
+        MASK_SECOND_HALF = VectorMask.fromArray(PFS, sh, 0);
 
         LOAD_CV_TO_CV_PACK_RE = new int[EPV];
         LOAD_CV_TO_CV_PACK_IM = new int[EPV];

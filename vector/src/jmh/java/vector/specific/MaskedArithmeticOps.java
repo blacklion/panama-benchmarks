@@ -29,6 +29,8 @@ package vector.specific;
 
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.Vector;
+import jdk.incubator.vector.VectorMask;
+import jdk.incubator.vector.VectorSpecies;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -43,19 +45,19 @@ import java.util.Random;
 public class MaskedArithmeticOps {
     private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-    private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
+    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
     private final static int EPV = PFS.length();
 
-	private final static Vector.Mask<Float> MASK_C_RE;
-    private final static Vector.Mask<Float> MASK_C_IM;
+	private final static VectorMask<Float> MASK_C_RE;
+    private final static VectorMask<Float> MASK_C_IM;
 
     static {
         boolean[] alter = new boolean[EPV + 1];
 		alter[0] = true;
 		for (int i = 1; i < alter.length; i++)
 			alter[i] = !alter[i-1];
-		MASK_C_RE = FloatVector.maskFromArray(PFS, alter, 0);
-        MASK_C_IM = FloatVector.maskFromArray(PFS, alter, 1);
+		MASK_C_RE = VectorMask.fromArray(PFS, alter, 0);
+        MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
     }
 
     private FloatVector vx;

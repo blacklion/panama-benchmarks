@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Stream;
 import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.VectorSpecies;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,7 +56,7 @@ public class VectorTests {
     private static final int DATA_SIZE = 65536;
     private static final int MAX_OFFSET = 1;
 
-    private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
+    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
 
     static Stream<Arguments> params() {
         ArrayList<Arguments> rv = new ArrayList<>();

@@ -27,8 +27,7 @@
 
 package vector.specific;
 
-import jdk.incubator.vector.FloatVector;
-import jdk.incubator.vector.Vector;
+import jdk.incubator.vector.*;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.Random;
@@ -48,25 +47,25 @@ public class RVExpi {
     @Param({"3", "4", "7", "8", "16", "20", "23", "1024", "1031"})
     public int size;
 
-    private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
+    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
     private final static int EPV = PFS.length();
-    private final static FloatVector.FloatSpecies PFS2 = FloatVector.species(Vector.Shape.forBitSize(PFS.bitSize() / 2));
+    private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
     private final static int EPV2 = PFS2.length();
 
-    private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_BOTH = FloatVector.shuffle(PFS, i -> i / 2);;
-    private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE_LOW = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2) : 0);
-    private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_IM_LOW = FloatVector.shuffle(PFS, i-> (i % 2 == 0) ? 0 : (i / 2));
-    private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE_HIGH = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2 + EPV / 2) : 0);
-    private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_IM_HIGH = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? 0 : (i / 2 + EPV / 2));
+    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_BOTH = VectorShuffle.shuffle(PFS, i -> i / 2);;
+    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_RE_LOW = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2) : 0);
+    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_IM_LOW = VectorShuffle.shuffle(PFS, i-> (i % 2 == 0) ? 0 : (i / 2));
+    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_RE_HIGH = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2 + EPV / 2) : 0);
+    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_IM_HIGH = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? 0 : (i / 2 + EPV / 2));
 
-    private final static Vector.Mask<Float> MASK_C_IM;
+    private final static VectorMask<Float> MASK_C_IM;
 
     static {
         boolean[] alter = new boolean[EPV + 1];
         alter[0] = true;
         for (int i = 1; i < alter.length; i++)
             alter[i] = !alter[i-1];
-        MASK_C_IM = FloatVector.maskFromArray(PFS, alter, 1);
+        MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
     }
 
     private float x[];

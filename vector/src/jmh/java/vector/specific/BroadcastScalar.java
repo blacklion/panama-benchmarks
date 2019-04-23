@@ -28,6 +28,7 @@
 package vector.specific;
 
 import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.VectorSpecies;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -44,7 +45,7 @@ import java.util.Random;
 public class BroadcastScalar {
 	private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-	private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
+	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
 	private final static int EPV = PFS.length();
 
 	private float x[];
@@ -61,7 +62,7 @@ public class BroadcastScalar {
 			x[i] = r.nextFloat() * 2.0f - 1.0f;
 		}
 		y = r.nextFloat() * 2.0f - 1.0f;
-		vy = PFS.broadcast(y);
+		vy = FloatVector.broadcast(PFS, y);
 	}
 
 

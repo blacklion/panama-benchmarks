@@ -29,6 +29,8 @@ package vector.specific;
 
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.Vector;
+import jdk.incubator.vector.VectorShuffle;
+import jdk.incubator.vector.VectorSpecies;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -43,11 +45,11 @@ import java.util.Random;
 public class LoadCStoCV {
     private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-    private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
+    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
     private final static int EPV = PFS.length();
-    private final static FloatVector.FloatSpecies FS64 = FloatVector.species(Vector.Shape.S_64_BIT);
+    private final static VectorSpecies<Float> FS64 = FloatVector.SPECIES_64;
 
-    private final static Vector.Shuffle<Float> SHUFFLE_CS_TO_CV = FloatVector.shuffle(PFS, i -> i % 2);
+    private final static VectorShuffle<Float> SHUFFLE_CS_TO_CV = VectorShuffle.shuffle(PFS, i -> i % 2);
     private final static int[] LOAD_CS_TO_CV_SPREAD = SHUFFLE_CS_TO_CV.toArray();
 
     private float x[];

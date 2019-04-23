@@ -28,6 +28,7 @@
 package vector.specific;
 
 import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.VectorSpecies;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -47,7 +48,7 @@ public class Offsets {
     @Param({"0", "1", "2", "3"})
     public int offset;
 
-    private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
+    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
     private final static int EPV = PFS.length();
 
     private FloatVector zero;
@@ -59,7 +60,7 @@ public class Offsets {
     public void Setup() {
         Random r = new Random(SEED);
 
-        zero = PFS.zero();
+        zero = FloatVector.zero(PFS);
         x = new float[EPV + MAX_OFFSET];
         y = new float[EPV + MAX_OFFSET];
         

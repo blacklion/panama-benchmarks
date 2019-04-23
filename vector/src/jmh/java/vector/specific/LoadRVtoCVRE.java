@@ -27,8 +27,7 @@
 
 package vector.specific;
 
-import jdk.incubator.vector.FloatVector;
-import jdk.incubator.vector.Vector;
+import jdk.incubator.vector.*;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -43,24 +42,24 @@ import java.util.Random;
 public class LoadRVtoCVRE {
     private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-    private final static FloatVector.FloatSpecies PFS = FloatVector.preferredSpecies();
+    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
     private final static int EPV = PFS.length();
-    private final static FloatVector.FloatSpecies PFS2 = FloatVector.species(Vector.Shape.forBitSize(PFS.bitSize() / 2));
+    private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
 
-    private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE = FloatVector.shuffle(PFS, i -> i / 2);
-    private final static Vector.Shuffle<Float> SHUFFLE_RV_TO_CV_RE_ZERO = FloatVector.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2) : (EPV - 1));
+    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_RE = VectorShuffle.shuffle(PFS, i -> i / 2);
+    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_RE_ZERO = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2) : (EPV - 1));
     private final static int[] LOAD_RV_TO_CV_RE = SHUFFLE_RV_TO_CV_RE.toArray();
 
-    private final static Vector.Mask<Float> MASK_C_RE;
-    private final static Vector.Mask<Float> MASK_C_IM;
+    private final static VectorMask<Float> MASK_C_RE;
+    private final static VectorMask<Float> MASK_C_IM;
 
     static {
         boolean[] alter = new boolean[EPV + 1];
    		alter[0] = true;
    		for (int i = 1; i < alter.length; i++)
    			alter[i] = !alter[i-1];
-   		MASK_C_RE = FloatVector.maskFromArray(PFS, alter, 0);
-        MASK_C_IM = FloatVector.maskFromArray(PFS, alter, 1);
+   		MASK_C_RE = VectorMask.fromArray(PFS, alter, 0);
+        MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
     }
 
     private float x[];
@@ -85,7 +84,7 @@ public class LoadRVtoCVRE {
     @Benchmark
     public void loadAndReshuffleAndBlend(Blackhole bh) {
         final FloatVector vr = FloatVector.fromArray(PFS2, x, 0);
-        bh.consume(vr.reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE).blend(PFS.zero(), MASK_C_IM));
+        bh.consume(vr.reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE).blend(FloatVector.zero(PFS), MASK_C_IM));
     }
 
     @Benchmark
