@@ -2269,7 +2269,7 @@ public final class VOVec {
 		float sum = 0.0f;
 
 		while (count >= EPV) {
-			sum += FloatVector.fromArray(PFS, x, xOffset).addAll();
+			sum += FloatVector.fromArray(PFS, x, xOffset).addLanes();
 
 			xOffset += EPV;
 			count -= EPV;
@@ -2289,8 +2289,8 @@ public final class VOVec {
 			//@TODO Check, can we pack and process twice elements, and save result twice
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 
-			re += vx.addAll(MASK_C_RE);
-			im += vx.addAll(MASK_C_IM);
+			re += vx.addLanes(MASK_C_RE);
+			im += vx.addLanes(MASK_C_IM);
 
 			xOffset += EPV;
 			count -= EPV2;
@@ -2315,8 +2315,8 @@ public final class VOVec {
 			//@TODO Check, can we pack and process twice elements, and save result twice
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 
-			re += vx.addAll(MASK_C_RE);
-			im += vx.addAll(MASK_C_IM);
+			re += vx.addLanes(MASK_C_RE);
+			im += vx.addLanes(MASK_C_IM);
 
 			xOffset += EPV;
 			count -= EPV2;
@@ -2337,7 +2337,7 @@ public final class VOVec {
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
-			sum += vx.mul(vy).addAll();
+			sum += vx.mul(vy).addLanes();
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -2370,8 +2370,8 @@ public final class VOVec {
 			final FloatVector vyre = vy1re.blend(vy2re, MASK_SECOND_HALF);
 			final FloatVector vyim = vy1im.blend(vy2im, MASK_SECOND_HALF);
 
-			re += vx.mul(vyre).addAll();
-			im += vx.mul(vyim).addAll();
+			re += vx.mul(vyre).addLanes();
+			im += vx.mul(vyim).addLanes();
 
 			xOffset += EPV;
 			yOffset += EPV * 2; // We load twice as much complex numbers
@@ -2409,8 +2409,8 @@ public final class VOVec {
 			final FloatVector vyre = vy1re.blend(vy2re, MASK_SECOND_HALF);
 			final FloatVector vyim = vy1im.blend(vy2im, MASK_SECOND_HALF);
 
-			re += vx.mul(vyre).addAll();
-			im += vx.mul(vyim).addAll();
+			re += vx.mul(vyre).addLanes();
+			im += vx.mul(vyim).addLanes();
 
 			xOffset += EPV;
 			yOffset += EPV * 2; // We load twice as much complex numbers
@@ -2458,8 +2458,8 @@ public final class VOVec {
 			// vrim is ([?, x[0].im * y.re + x[0].re * y.im], ...)
 			final FloatVector vrim = vmulyre.add(vmulximswap);
 
-			re += vrre.addAll(MASK_C_RE);
-			im += vrim.addAll(MASK_C_IM);
+			re += vrre.addLanes(MASK_C_RE);
+			im += vrim.addLanes(MASK_C_IM);
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -2511,8 +2511,8 @@ public final class VOVec {
 			// vrim is ([?, x[0].im * y.re + x[0].re * y.im], ...)
 			final FloatVector vrim = vmulyre.add(vmulximswap);
 
-			re += vrre.addAll(MASK_C_RE);
-			im += vrim.addAll(MASK_C_IM);
+			re += vrre.addLanes(MASK_C_RE);
+			im += vrim.addLanes(MASK_C_IM);
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -2563,7 +2563,7 @@ public final class VOVec {
 		float max = Float.NEGATIVE_INFINITY;
 
 		while (count >= EPV) {
-			float localMax = FloatVector.fromArray(PFS, x, xOffset).maxAll();
+			float localMax = FloatVector.fromArray(PFS, x, xOffset).maxLanes();
 			if (max < localMax)
 				max = localMax;
 
@@ -2638,7 +2638,7 @@ public final class VOVec {
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
-			float localMax = vxabs.maxAll();
+			float localMax = vxabs.maxLanes();
 			if (max < localMax) {
 				// Find it now
 				for (int j = 0; j < EPV; j++) {
@@ -2687,7 +2687,7 @@ public final class VOVec {
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
-			float localMax = vxabs.maxAll();
+			float localMax = vxabs.maxLanes();
 			if (max < localMax) {
 				// Find it now
 				for (int j = 0; j < EPV; j++) {
@@ -2809,7 +2809,7 @@ public final class VOVec {
 		float min = Float.POSITIVE_INFINITY;
 
 		while (count >= EPV) {
-			float localMin = FloatVector.fromArray(PFS, x, xOffset).minAll();
+			float localMin = FloatVector.fromArray(PFS, x, xOffset).minLanes();
 			if (min > localMin)
 				min = localMin;
 			xOffset += EPV;
@@ -2883,7 +2883,7 @@ public final class VOVec {
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
-			float localMin = vxabs.minAll();
+			float localMin = vxabs.minLanes();
 			if (min > localMin) {
 				// Find it/ now
 				for (int j = 0; j < EPV; j++) {
@@ -2932,7 +2932,7 @@ public final class VOVec {
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
-			float localMin = vxabs.minAll();
+			float localMin = vxabs.minLanes();
 			if (min > localMin) {
 				// Find it/ now
 				for (int j = 0; j < EPV; j++) {
@@ -3055,7 +3055,7 @@ public final class VOVec {
 		int i = -1;
 
 		while (count >= EPV) {
-			float localMax = FloatVector.fromArray(PFS, x, xOffset).maxAll();
+			float localMax = FloatVector.fromArray(PFS, x, xOffset).maxLanes();
 			if (max < localMax) {
 				max = localMax;
 				i = xOffset;
@@ -3107,7 +3107,7 @@ public final class VOVec {
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
-			float localMax = vxabs.maxAll();
+			float localMax = vxabs.maxLanes();
 
 			if (max < localMax) {
 				// Find it now
@@ -3141,7 +3141,7 @@ public final class VOVec {
 		int i = -1;
 
 		while (count >= EPV) {
-			float localMin = FloatVector.fromArray(PFS, x, xOffset).minAll();
+			float localMin = FloatVector.fromArray(PFS, x, xOffset).minLanes();
 			if (min > localMin) {
 				min = localMin;
 				i = xOffset;
@@ -3194,7 +3194,7 @@ public final class VOVec {
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
-			float localMin = vxabs.minAll();
+			float localMin = vxabs.minLanes();
 
 			if (min > localMin) {
 				// Find it now

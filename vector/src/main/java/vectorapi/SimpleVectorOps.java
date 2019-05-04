@@ -35,7 +35,7 @@ public class SimpleVectorOps {
 
         VectorMask<Float> m = VectorMask.fromValues(PFS, true, false, true, false, true, false, true, false);
         FloatVector v = FloatVector.fromArray(PFS, new float[] { 1.0f, 10.0f, 2.0f, 20.0f, 3.0f, 30.0f, 4.0f, 40.0f }, 0);
-        float sum = v.mulAll(m);
+        float sum = v.mulLanes(m);
         System.out.println(sum);
 
         // One more test
