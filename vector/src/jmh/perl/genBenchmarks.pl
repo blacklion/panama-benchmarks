@@ -204,11 +204,11 @@ public class $class {
 
     private final static int DATA_SIZE = 65536;
 
-    \@Param({"16", "1024", "65536"})
+    \@Param({"3", "4", "7", "8", "15", "128", "1024", "65536"})
     public int callSize;
 
-    private final static int MAX_OFFSET = 1;
-    \@Param({"0", "1"})
+    private final static int MAX_OFFSET = 512 / 32 - 1; // Max vector size in `float`s;
+    \@Param({"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"})
     public int startOffset;
 
     private float rvx[];
