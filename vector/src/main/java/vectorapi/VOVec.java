@@ -2629,6 +2629,7 @@ public final class VOVec {
 	public static void cv_max(float z[], float x[], int xOffset, int count) {
 		float max = Float.NEGATIVE_INFINITY;
 		int i = -1;
+		FloatVector vmax = null;
 		xOffset <<= 1;
 
 		while (count >= EPV) {
@@ -2648,18 +2649,23 @@ public final class VOVec {
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
 			float localMax = vxabs.maxLanes();
 			if (max < localMax) {
-				// Find it now
-				for (int j = 0; j < EPV; j++) {
-					if (vxabs.lane(j) == localMax) {
-						i = xOffset + j * 2;
-						break;
-					}
-				}
+				vmax = vxabs;
+				i = xOffset;
 				max = localMax;
 			}
 
 			xOffset += EPV * 2;
 			count -= EPV;
+		}
+
+		// Find max in stored vector
+		if (i >= 0) {
+			for (int j = 0; j < EPV; j++) {
+				if (vmax.lane(j) == max) {
+					i += j << 1;
+					break;
+				}
+			}
 		}
 
 		while (count-- > 0) {
@@ -2677,6 +2683,7 @@ public final class VOVec {
 	public static void cv_max(float z[], int zOffset, float x[], int xOffset, int count) {
 		float max = Float.NEGATIVE_INFINITY;
 		int i = -1;
+		FloatVector vmax = null;
 		xOffset <<= 1;
 		zOffset <<= 1;
 
@@ -2697,18 +2704,23 @@ public final class VOVec {
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
 			float localMax = vxabs.maxLanes();
 			if (max < localMax) {
-				// Find it now
-				for (int j = 0; j < EPV; j++) {
-					if (vxabs.lane(j) == localMax) {
-						i = xOffset + j * 2;
-						break;
-					}
-				}
+				vmax = vxabs;
+				i = xOffset;
 				max = localMax;
 			}
 
 			xOffset += EPV * 2;
 			count -= EPV;
+		}
+
+		// Find max in stored vector
+		if (i >= 0) {
+			for (int j = 0; j < EPV; j++) {
+				if (vmax.lane(j) == max) {
+					i += j << 1;
+					break;
+				}
+			}
 		}
 
 		while (count-- > 0) {
@@ -2874,6 +2886,7 @@ public final class VOVec {
 	public static void cv_min(float z[], float x[], int xOffset, int count) {
 		float min = Float.POSITIVE_INFINITY;
 		int i = -1;
+		FloatVector vmin = null;
 		xOffset <<= 1;
 
 		while (count >= EPV) {
@@ -2893,18 +2906,23 @@ public final class VOVec {
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
 			float localMin = vxabs.minLanes();
 			if (min > localMin) {
-				// Find it/ now
-				for (int j = 0; j < EPV; j++) {
-					if (vxabs.lane(j) == localMin) {
-						i = xOffset + j * 2;
-						break;
-					}
-				}
+				vmin = vxabs;
+				i = xOffset;
 				min = localMin;
 			}
 
 			xOffset += EPV * 2;
 			count -= EPV;
+		}
+
+		// Find it now
+		if (i >= 0) {
+			for (int j = 0; j < EPV; j++) {
+				if (vmin.lane(j) == min) {
+					i += j << 1;
+					break;
+				}
+			}
 		}
 
 		while (count-- > 0) {
@@ -2922,6 +2940,7 @@ public final class VOVec {
 	public static void cv_min(float z[], int zOffset, float x[], int xOffset, int count) {
 		float min = Float.POSITIVE_INFINITY;
 		int i = -1;
+		FloatVector vmin = null;
 		xOffset <<= 1;
 		zOffset <<= 1;
 
@@ -2942,18 +2961,23 @@ public final class VOVec {
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
 			float localMin = vxabs.minLanes();
 			if (min > localMin) {
-				// Find it/ now
-				for (int j = 0; j < EPV; j++) {
-					if (vxabs.lane(j) == localMin) {
-						i = xOffset + j * 2;
-						break;
-					}
-				}
+				vmin = vxabs;
+				i = xOffset;
 				min = localMin;
 			}
 
 			xOffset += EPV * 2;
 			count -= EPV;
+		}
+
+		// Find it now
+		if (i >= 0) {
+			for (int j = 0; j < EPV; j++) {
+				if (vmin.lane(j) == min) {
+					i += j << 1;
+					break;
+				}
+			}
 		}
 
 		while (count-- > 0) {
@@ -3098,6 +3122,7 @@ public final class VOVec {
 	public static int cv_maxarg(float x[], int xOffset, int count) {
 		float max = Float.NEGATIVE_INFINITY;
 		int i = -1;
+		FloatVector vmax = null;
 		xOffset <<= 1;
 
 		while (count >= EPV) {
@@ -3118,18 +3143,23 @@ public final class VOVec {
 			float localMax = vxabs.maxLanes();
 
 			if (max < localMax) {
-				// Find it now
-				for (int j = 0; j < EPV; j++) {
-					if (vxabs.lane(j) == localMax) {
-						i = xOffset + j * 2;
-						break;
-					}
-				}
+				vmax = vxabs;
+				i = xOffset;
 				max = localMax;
 			}
 
 			xOffset += EPV * 2;
 			count -= EPV;
+		}
+
+		// Find max in stored vector
+		if (i >= 0) {
+			for (int j = 0; j < EPV; j++) {
+				if (vmax.lane(j) == max) {
+					i += j << 1;
+					break;
+				}
+			}
 		}
 
 		while (count-- > 0) {
@@ -3185,6 +3215,7 @@ public final class VOVec {
 	public static int cv_minarg(float x[], int xOffset, int count) {
 		float min = Float.POSITIVE_INFINITY;
 		int i = -1;
+		FloatVector vmin = null;
 		xOffset <<= 1;
 
 		while (count >= EPV) {
@@ -3205,18 +3236,23 @@ public final class VOVec {
 			float localMin = vxabs.minLanes();
 
 			if (min > localMin) {
-				// Find it now
-				for (int j = 0; j < EPV; j++) {
-					if (vxabs.lane(j) == localMin) {
-						i = xOffset + j * 2;
-						break;
-					}
-				}
+				vmin = vxabs;
+				i = xOffset;
 				min = localMin;
 			}
 
 			xOffset += EPV * 2;
 			count -= EPV;
+		}
+
+		if (i >= 0) {
+			// Find it now
+			for (int j = 0; j < EPV; j++) {
+				if (vmin.lane(j) == min) {
+					i += j << 1;
+					break;
+				}
+			}
 		}
 
 		while (count-- > 0) {
