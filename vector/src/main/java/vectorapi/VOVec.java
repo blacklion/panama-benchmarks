@@ -84,6 +84,9 @@ public final class VOVec {
  	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND;
  	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND;
 
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_FRONT_RE;
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_FRONT_IM;
+
 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST;
 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST;
 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND;
@@ -145,6 +148,12 @@ public final class VOVec {
 
 		// [(re0, im0), (re1, im1), ...] -> [(im0, re0), (im1, re1), ...]
 		SHUFFLE_CV_SWAP_RE_IM = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? i + 1 : i - 1);
+
+		// [(re0, im0), (re1, im1), ...] -> [re0, re1, ...]
+		SHUFFLE_CV_TO_CV_FRONT_RE = VectorShuffle.shuffle(PFS, i -> i * 2 < EPV ? i * 2 : i);
+
+		// [(re0, im0), (re1, im1), ...] -> [im0, im1, ...]
+		SHUFFLE_CV_TO_CV_FRONT_IM = VectorShuffle.shuffle(PFS, i -> i * 2 + 1 < EPV ? i * 2 + 1 : i);
 	}
 
 	public static void rv_add_rs_i(float z[], int zOffset, float x, int count) {
@@ -2290,9 +2299,8 @@ public final class VOVec {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 
 			// It is faster than addLanes(MASK)
-			// And it is same as reshuffle + reshape, but easier to understand
-			re += vx.blend(ZERO, MASK_C_IM).addLanes();
-			im += vx.blend(ZERO, MASK_C_RE).addLanes();
+			re += vx.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reshape(PFS2).addLanes();
+			im += vx.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reshape(PFS2).addLanes();
 
 			xOffset += EPV;
 			count -= EPV2;
@@ -2318,9 +2326,8 @@ public final class VOVec {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 
 			// It is faster than addLanes(MASK)
-			// And it is same as reshuffle + reshape, but easier to understand
-			re += vx.blend(ZERO, MASK_C_IM).addLanes();
-			im += vx.blend(ZERO, MASK_C_RE).addLanes();
+			re += vx.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reshape(PFS2).addLanes();
+			im += vx.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reshape(PFS2).addLanes();
 
 			xOffset += EPV;
 			count -= EPV2;
@@ -2464,8 +2471,8 @@ public final class VOVec {
 
 			// It is faster than addLanes(MASK)
 			// And it is same as reshuffle + reshape, but easier to understand
-			re += vrre.blend(ZERO, MASK_C_IM).addLanes();
-			im += vrim.blend(ZERO, MASK_C_RE).addLanes();
+			re += vrre.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reshape(PFS2).addLanes();
+			im += vrim.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reshape(PFS2).addLanes();
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -2518,9 +2525,8 @@ public final class VOVec {
 			final FloatVector vrim = vmulyre.add(vmulximswap);
 
 			// It is faster than addLanes(MASK)
-			// And it is same as reshuffle + reshape, but easier to understand
-			re += vrre.blend(ZERO, MASK_C_IM).addLanes();
-			im += vrim.blend(ZERO, MASK_C_RE).addLanes();
+			re += vrre.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reshape(PFS2).addLanes();
+			im += vrim.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reshape(PFS2).addLanes();
 
 			xOffset += EPV;
 			yOffset += EPV;
