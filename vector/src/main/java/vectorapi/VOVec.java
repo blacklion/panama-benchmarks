@@ -60,9 +60,12 @@ public final class VOVec {
 		And some one-complex-return function with "offset" result placement
 	 */
 	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
-	private final static int EPV = PFS.length();
 	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));;
+	private final static int EPV = PFS.length();
 	private final static int EPV2 = EPV / 2;
+	private final static int EPVx2 = EPV * 2;
+	private final static int EPVx3 = EPV * 3;
+	private final static int EPVx4 = EPV * 4;
 	private final static VectorSpecies<Float> FS64 = FloatVector.SPECIES_64;
 	private final static VectorMask<Float> MASK_C_RE;
 	private final static VectorMask<Float> MASK_C_IM;
@@ -91,6 +94,7 @@ public final class VOVec {
 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST;
 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND;
 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND;
+
 
 	static {
 		boolean[] alter = new boolean[EPV + 1];
@@ -2344,6 +2348,25 @@ public final class VOVec {
 
 	public static float rv_dot_rv(float x[], int xOffset, float y[], int yOffset, int count) {
 		float sum = 0.0f;
+
+		// Strange, but accumulating EPV-sized vector ad one addLines() at end is slower
+		// See specific.RVdotRV benchmark
+		while (count >= EPVx4) {
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vy1 = FloatVector.fromArray(PFS, y, yOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
+			final FloatVector vy2 = FloatVector.fromArray(PFS, y, yOffset + EPV);
+			final FloatVector vx3 = FloatVector.fromArray(PFS, x, xOffset + EPVx2);
+			final FloatVector vy3 = FloatVector.fromArray(PFS, y, yOffset + EPVx2);
+			final FloatVector vx4 = FloatVector.fromArray(PFS, x, xOffset + EPVx3);
+			final FloatVector vy4 = FloatVector.fromArray(PFS, y, yOffset + EPVx3);
+
+			sum += vx1.mul(vy1).add(vx2.mul(vy2)).add(vx3.mul(vy3)).add(vx4.mul(vy4)).addLanes();
+
+			xOffset += EPVx4;
+			yOffset += EPVx4;
+			count -= EPVx4;
+		}
 
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
