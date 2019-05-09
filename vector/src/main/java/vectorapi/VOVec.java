@@ -2289,8 +2289,10 @@ public final class VOVec {
 			//@TODO Check, can we pack and process twice elements, and save result twice
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 
-			re += vx.addLanes(MASK_C_RE);
-			im += vx.addLanes(MASK_C_IM);
+			// It is faster than addLanes(MASK)
+			// And it is same as reshuffle + reshape, but easier to understand
+			re += vx.blend(ZERO, MASK_C_IM).addLanes();
+			im += vx.blend(ZERO, MASK_C_RE).addLanes();
 
 			xOffset += EPV;
 			count -= EPV2;
@@ -2315,8 +2317,10 @@ public final class VOVec {
 			//@TODO Check, can we pack and process twice elements, and save result twice
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 
-			re += vx.addLanes(MASK_C_RE);
-			im += vx.addLanes(MASK_C_IM);
+			// It is faster than addLanes(MASK)
+			// And it is same as reshuffle + reshape, but easier to understand
+			re += vx.blend(ZERO, MASK_C_IM).addLanes();
+			im += vx.blend(ZERO, MASK_C_RE).addLanes();
 
 			xOffset += EPV;
 			count -= EPV2;
@@ -2458,8 +2462,10 @@ public final class VOVec {
 			// vrim is ([?, x[0].im * y.re + x[0].re * y.im], ...)
 			final FloatVector vrim = vmulyre.add(vmulximswap);
 
-			re += vrre.addLanes(MASK_C_RE);
-			im += vrim.addLanes(MASK_C_IM);
+			// It is faster than addLanes(MASK)
+			// And it is same as reshuffle + reshape, but easier to understand
+			re += vrre.blend(ZERO, MASK_C_IM).addLanes();
+			im += vrim.blend(ZERO, MASK_C_RE).addLanes();
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -2511,8 +2517,10 @@ public final class VOVec {
 			// vrim is ([?, x[0].im * y.re + x[0].re * y.im], ...)
 			final FloatVector vrim = vmulyre.add(vmulximswap);
 
-			re += vrre.addLanes(MASK_C_RE);
-			im += vrim.addLanes(MASK_C_IM);
+			// It is faster than addLanes(MASK)
+			// And it is same as reshuffle + reshape, but easier to understand
+			re += vrre.blend(ZERO, MASK_C_IM).addLanes();
+			im += vrim.blend(ZERO, MASK_C_RE).addLanes();
 
 			xOffset += EPV;
 			yOffset += EPV;
