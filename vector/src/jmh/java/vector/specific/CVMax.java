@@ -78,13 +78,21 @@ public class CVMax {
     }
 
 	@Benchmark
-	public void find_internal() {
-     cv_max_0(z, x, 0, MAX_SIZE);
- }
+	public void find_internal() { cv_max_0(z, x, 0, MAX_SIZE); }
 
     @Benchmark
 	public void find_external() {
 		cv_max_1(z, x, 0, MAX_SIZE);
+	}
+
+	@Benchmark
+	public void find_array() {
+		cv_max_3(z, x, 0, MAX_SIZE);
+	}
+
+	@Benchmark
+	public void find_nv() {
+		cv_max_4(z, x, 0, MAX_SIZE);
 	}
 
 	private static void cv_max_0(float z[], float x[], int xOffset, int count) {
@@ -177,6 +185,68 @@ public class CVMax {
 			}
 		}
 
+		while (count-- > 0) {
+			float abs = x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1];
+			if (max < abs) {
+				max = abs;
+				i = xOffset;
+			}
+			xOffset += 2;
+		}
+		z[0] = x[i + 0];
+		z[1] = x[i + 1];
+	}
+
+	private static void cv_max_3(float z[], float x[], int xOffset, int count) {
+		float max = Float.NEGATIVE_INFINITY;
+		int i = -1;
+		xOffset <<= 1;
+
+		float aabs[] = new float[EPV];
+
+		while (count >= EPV) {
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
+
+			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+
+			final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+
+			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
+			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+
+			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			vxabs.intoArray(aabs, 0);
+			for (int j = 0; j < EPV; j++) {
+				if (max < aabs[j]) {
+					max = aabs[j];
+					i = xOffset + j;
+				}
+			}
+
+			xOffset += EPV * 2;
+			count -= EPV;
+		}
+
+		while (count-- > 0) {
+			float abs = x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1];
+			if (max < abs) {
+				max = abs;
+				i = xOffset;
+			}
+			xOffset += 2;
+		}
+		z[0] = x[i + 0];
+		z[1] = x[i + 1];
+	}
+
+	private static void cv_max_4(float z[], float x[], int xOffset, int count) {
+		float max = Float.NEGATIVE_INFINITY;
+		int i = -1;
+		xOffset <<= 1;
 		while (count-- > 0) {
 			float abs = x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1];
 			if (max < abs) {

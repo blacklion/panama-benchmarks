@@ -2658,13 +2658,13 @@ public final class VOVec {
 	public static void cv_max(float z[], float x[], int xOffset, int count) {
 		float max = Float.NEGATIVE_INFINITY;
 		int i = -1;
-		FloatVector vmax = null;
+		final float aabs[] = count >= EPV ? new float[EPV] : null;
 		xOffset <<= 1;
 
 		while (count >= EPV) {
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
 			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
-			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
 
 			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
 			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
@@ -2676,25 +2676,17 @@ public final class VOVec {
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
-			float localMax = vxabs.maxLanes();
-			if (max < localMax) {
-				vmax = vxabs;
-				i = xOffset;
-				max = localMax;
-			}
 
-			xOffset += EPV * 2;
-			count -= EPV;
-		}
-
-		// Find max in stored vector
-		if (i >= 0) {
+			vxabs.intoArray(aabs, 0);
 			for (int j = 0; j < EPV; j++) {
-				if (vmax.lane(j) == max) {
-					i += j << 1;
-					break;
+				if (max < aabs[j]) {
+					max = aabs[j];
+					i = xOffset + (j << 1);
 				}
 			}
+
+			xOffset += EPVx2;
+			count -= EPV;
 		}
 
 		while (count-- > 0) {
@@ -2712,7 +2704,7 @@ public final class VOVec {
 	public static void cv_max(float z[], int zOffset, float x[], int xOffset, int count) {
 		float max = Float.NEGATIVE_INFINITY;
 		int i = -1;
-		FloatVector vmax = null;
+		final float aabs[] = count >= EPV ? new float[EPV] : null;
 		xOffset <<= 1;
 		zOffset <<= 1;
 
@@ -2731,25 +2723,16 @@ public final class VOVec {
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
-			float localMax = vxabs.maxLanes();
-			if (max < localMax) {
-				vmax = vxabs;
-				i = xOffset;
-				max = localMax;
-			}
-
-			xOffset += EPV * 2;
-			count -= EPV;
-		}
-
-		// Find max in stored vector
-		if (i >= 0) {
+			vxabs.intoArray(aabs, 0);
 			for (int j = 0; j < EPV; j++) {
-				if (vmax.lane(j) == max) {
-					i += j << 1;
-					break;
+				if (max < aabs[j]) {
+					max = aabs[j];
+					i = xOffset + (j << 1);
 				}
 			}
+
+			xOffset += EPVx2;
+			count -= EPV;
 		}
 
 		while (count-- > 0) {
@@ -2915,7 +2898,7 @@ public final class VOVec {
 	public static void cv_min(float z[], float x[], int xOffset, int count) {
 		float min = Float.POSITIVE_INFINITY;
 		int i = -1;
-		FloatVector vmin = null;
+		final float aabs[] = count >= EPV ? new float[EPV] : null;
 		xOffset <<= 1;
 
 		while (count >= EPV) {
@@ -2933,25 +2916,17 @@ public final class VOVec {
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
-			float localMin = vxabs.minLanes();
-			if (min > localMin) {
-				vmin = vxabs;
-				i = xOffset;
-				min = localMin;
+
+			vxabs.intoArray(aabs, 0);
+			for (int j = 0; j < EPV; j++) {
+				if (min > aabs[j]) {
+					min = aabs[j];
+					i = xOffset + (j << 1);
+				}
 			}
 
 			xOffset += EPV * 2;
 			count -= EPV;
-		}
-
-		// Find it now
-		if (i >= 0) {
-			for (int j = 0; j < EPV; j++) {
-				if (vmin.lane(j) == min) {
-					i += j << 1;
-					break;
-				}
-			}
 		}
 
 		while (count-- > 0) {
@@ -2969,7 +2944,7 @@ public final class VOVec {
 	public static void cv_min(float z[], int zOffset, float x[], int xOffset, int count) {
 		float min = Float.POSITIVE_INFINITY;
 		int i = -1;
-		FloatVector vmin = null;
+		final float aabs[] = count >= EPV ? new float[EPV] : null;
 		xOffset <<= 1;
 		zOffset <<= 1;
 
@@ -2989,24 +2964,17 @@ public final class VOVec {
 
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
 			float localMin = vxabs.minLanes();
-			if (min > localMin) {
-				vmin = vxabs;
-				i = xOffset;
-				min = localMin;
+
+			vxabs.intoArray(aabs, 0);
+			for (int j = 0; j < EPV; j++) {
+				if (min > aabs[j]) {
+					min = aabs[j];
+					i = xOffset + (j << 1);
+				}
 			}
 
 			xOffset += EPV * 2;
 			count -= EPV;
-		}
-
-		// Find it now
-		if (i >= 0) {
-			for (int j = 0; j < EPV; j++) {
-				if (vmin.lane(j) == min) {
-					i += j << 1;
-					break;
-				}
-			}
 		}
 
 		while (count-- > 0) {
@@ -3151,7 +3119,7 @@ public final class VOVec {
 	public static int cv_maxarg(float x[], int xOffset, int count) {
 		float max = Float.NEGATIVE_INFINITY;
 		int i = -1;
-		FloatVector vmax = null;
+		final float aabs[] = count >= EPV ? new float[EPV] : null;
 		xOffset <<= 1;
 
 		while (count >= EPV) {
@@ -3169,26 +3137,17 @@ public final class VOVec {
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
-			float localMax = vxabs.maxLanes();
 
-			if (max < localMax) {
-				vmax = vxabs;
-				i = xOffset;
-				max = localMax;
+			vxabs.intoArray(aabs, 0);
+			for (int j = 0; j < EPV; j++) {
+				if (max < aabs[j]) {
+					max = aabs[j];
+					i = xOffset + (j << 1);
+				}
 			}
 
 			xOffset += EPV * 2;
 			count -= EPV;
-		}
-
-		// Find max in stored vector
-		if (i >= 0) {
-			for (int j = 0; j < EPV; j++) {
-				if (vmax.lane(j) == max) {
-					i += j << 1;
-					break;
-				}
-			}
 		}
 
 		while (count-- > 0) {
@@ -3244,7 +3203,7 @@ public final class VOVec {
 	public static int cv_minarg(float x[], int xOffset, int count) {
 		float min = Float.POSITIVE_INFINITY;
 		int i = -1;
-		FloatVector vmin = null;
+		final float aabs[] = count >= EPV ? new float[EPV] : null;
 		xOffset <<= 1;
 
 		while (count >= EPV) {
@@ -3262,26 +3221,17 @@ public final class VOVec {
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
-			float localMin = vxabs.minLanes();
 
-			if (min > localMin) {
-				vmin = vxabs;
-				i = xOffset;
-				min = localMin;
+			vxabs.intoArray(aabs, 0);
+			for (int j = 0; j < EPV; j++) {
+				if (min > aabs[j]) {
+					min = aabs[j];
+					i = xOffset + (j << 1);
+				}
 			}
 
 			xOffset += EPV * 2;
 			count -= EPV;
-		}
-
-		if (i >= 0) {
-			// Find it now
-			for (int j = 0; j < EPV; j++) {
-				if (vmin.lane(j) == min) {
-					i += j << 1;
-					break;
-				}
-			}
 		}
 
 		while (count-- > 0) {
