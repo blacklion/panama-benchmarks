@@ -115,7 +115,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * \@noinspection CStyleArrayDeclaration, WeakerAccess
  */
 public class VectorTests {
-    private static final float EPSILON = 0.000001f;
+    private static final float EPSILON = 0.0001f;
     private static final float EPSILON_APPROX = 0.0001f;
 
     private static final int DATA_SIZE = 65536;

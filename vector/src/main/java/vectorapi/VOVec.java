@@ -1180,7 +1180,7 @@ public final class VOVec {
 			// vxim is [(x.im, x.im), (x.im, x.im), ...]
 			vxim = FloatVector.broadcast(PFS, x[1]);
 			// vxsq is [(x.re * x.re + x.im * x.im, x.re * x.re + x.im * x.im), ...]
-			vxsq = vxre.mul(vxre).add(vxim.mul(vxim));
+			vxsq = vxre.fma(vxre, vxim.mul(vxim));
 		}
 
 		zOffset <<= 1;
@@ -1245,7 +1245,7 @@ public final class VOVec {
 			final FloatVector vmulximswap = vmulxim.rearrange(SHUFFLE_CV_SWAP_RE_IM);
 
 			// vxsq is [(x[0].re * x[0].re + x[0].im * x[0].im, x[0].re * x[0].re + x[0].im * x[0].im), (x[1].re * x[1].re + x[1].im * x[1].im, x[1].re * x[1].re + x[1].im * x[1].im), ...]
-			final FloatVector vxsq = vxre.mul(vxre).add(vxim.mul(vxim));
+			final FloatVector vxsq = vxre.fma(vxre, vxim.mul(vxim));
 
 			//@DONE: Looks like sub(vmulximswap, MASK_C_RE) and add(vmulximswap, MASK_C_IM) is slower
 			// vrre is ([z[0].re * x[0].re - z[0].im * x[0].im, ?], ...)
@@ -1379,7 +1379,7 @@ public final class VOVec {
 			final FloatVector vmulximswap = vmulxim.rearrange(SHUFFLE_CV_SWAP_RE_IM);
 
 			// vysq is [(y[0].re * y[0].re + y[0].im * y[0].im, y[0].re * y[0].re + y[0].im * y[0].im), (y[1].re * y[1].re + y[1].im * y[1].im, y[1].re * y[1].re + y[1].im * y[1].im), ...]
-			final FloatVector vysq = vyre.mul(vyre).add(vyim.mul(vyim));
+			final FloatVector vysq = vyre.fma(vyre, vyim.mul(vyim));
 
 			// Now blend real parts and negated imaginary parts and divide by abs(y)^2
 			final FloatVector vr = vmulxre.blend(vmulximswap.neg(), MASK_C_IM).div(vysq);
@@ -1451,7 +1451,7 @@ public final class VOVec {
 			final FloatVector vmulximswap = vmulxim.rearrange(SHUFFLE_CV_SWAP_RE_IM);
 
 			// vysq is [(y[0].re * y[0].re + y[0].im * y[0].im, y[0].re * y[0].re + y[0].im * y[0].im), (y[1].re * y[1].re + y[1].im * y[1].im, y[1].re * y[1].re + y[1].im * y[1].im), ...]
-			final FloatVector vysq = vyre.mul(vyre).add(vyim.mul(vyim));
+			final FloatVector vysq = vyre.fma(vyre, vyim.mul(vyim));
 
 			// Now blend real parts and negated imaginary parts and divide by abs(y)^2
 			final FloatVector vr = vmulxre.blend(vmulximswap.neg(), MASK_C_IM).div(vysq);
@@ -1486,7 +1486,7 @@ public final class VOVec {
 			// vyim is [(y.im, y.im), (y.im, y.im), ...]
 			vyim = FloatVector.broadcast(PFS, y[1]);
 			// vysq is [(y.re * y.re + y.im * y.im, y.re * y.re + y.im * y.im), (y.re * y.re + y.im * y.im, y.re * y.re + y.im * y.im), ...]
-			vysq = vyre.mul(vyre).add(vyim.mul(vyim));
+			vysq = vyre.fma(vyre, vyim.mul(vyim));
 		}
 
 		xOffset <<= 1;
@@ -1554,7 +1554,7 @@ public final class VOVec {
 			final FloatVector vmulximswap = vmulxim.rearrange(SHUFFLE_CV_SWAP_RE_IM);
 
 			// Get abs to divide
-			final FloatVector vysq = vyre.mul(vyre).add(vyim.mul(vyim));
+			final FloatVector vysq = vyre.fma(vyre, vyim.mul(vyim));
 
 			//@DONE: Looks like sub(vmulximswap, MASK_C_RE) and add(vmulximswap, MASK_C_IM) is slower
 			// vrre is [(x.re * y[0].re + x.im * y[0].im, ?), (x.re * y[1].re + x.im * y[1].im, ?), ...]
@@ -1604,7 +1604,7 @@ public final class VOVec {
 			final FloatVector vmulximswap = vmulxim.rearrange(SHUFFLE_CV_SWAP_RE_IM);
 
 			// vysq is [(y[0].re * y[0].re + y[0].im * y[0].im, y[0].re * y[0].re + y[0].im * y[0].im), (y[1].re * y[1].re + y[1].im * y[1].im, y[1].re * y[1].re + y[1].im * y[1].im), ...]
-			final FloatVector vysq = vyre.mul(vyre).add(vyim.mul(vyim));
+			final FloatVector vysq = vyre.fma(vyre, vyim.mul(vyim));
 
 			//@DONE: Looks like sub(vmulximswap, MASK_C_RE) and add(vmulximswap, MASK_C_IM) is slower
 			// vrre is [(x[0].re * y[0].re + x[0].im * y[0].im, ?), (x[1].re * y[1].re + x[1].im * y[1].im, ?), ...]
@@ -2361,7 +2361,7 @@ public final class VOVec {
 			final FloatVector vx4 = FloatVector.fromArray(PFS, x, xOffset + EPVx3);
 			final FloatVector vy4 = FloatVector.fromArray(PFS, y, yOffset + EPVx3);
 
-			sum += vx1.mul(vy1).add(vx2.mul(vy2)).add(vx3.mul(vy3)).add(vx4.mul(vy4)).addLanes();
+			sum += vx1.fma(vy1, vx2.mul(vy2)).add(vx3.mul(vy3)).add(vx4.mul(vy4)).addLanes();
 
 			xOffset += EPVx4;
 			yOffset += EPVx4;
@@ -2675,7 +2675,7 @@ public final class VOVec {
 			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 
 			vxabs.intoArray(aabs, 0);
 			for (int j = 0; j < EPV; j++) {
@@ -2722,7 +2722,7 @@ public final class VOVec {
 			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 			vxabs.intoArray(aabs, 0);
 			for (int j = 0; j < EPV; j++) {
 				if (max < aabs[j]) {
@@ -2768,8 +2768,8 @@ public final class VOVec {
 			// vxim is [(x[0].im, x[0].im), (x[1].im, x[1].im), ...]
 			final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
 
-			final FloatVector vzabs = vzre.mul(vzre).add(vzim.mul(vzim));
-			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			final FloatVector vzabs = vzre.fma(vzre, vzim.mul(vzim));
+			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 
 			VectorMask<Float> xGz = vxabs.greaterThan(vzabs);
 			vx.intoArray(z, zOffset, xGz);
@@ -2811,8 +2811,8 @@ public final class VOVec {
 			// vyim is [(y[0].im, y[0].im), (y[1].im, y[1].im), ...]
 			final FloatVector vyim = vy.rearrange(SHUFFLE_CV_SPREAD_IM);
 
-			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
-			final FloatVector vyabs = vyre.mul(vyre).add(vyim.mul(vyim));
+			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
+			final FloatVector vyabs = vyre.fma(vyre, vyim.mul(vyim));
 
 			VectorMask<Float> xGy = vxabs.greaterThan(vyabs);
 			vy.blend(vx, xGy).intoArray(z, zOffset);
@@ -2915,7 +2915,7 @@ public final class VOVec {
 			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 
 			vxabs.intoArray(aabs, 0);
 			for (int j = 0; j < EPV; j++) {
@@ -2962,7 +2962,7 @@ public final class VOVec {
 			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 			float localMin = vxabs.minLanes();
 
 			vxabs.intoArray(aabs, 0);
@@ -3010,8 +3010,8 @@ public final class VOVec {
 			// vxim is [(x[0].im, x[0].im), (x[1].im, x[1].im), ...]
 			final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
 
-			final FloatVector vzabs = vzre.mul(vzre).add(vzim.mul(vzim));
-			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			final FloatVector vzabs = vzre.fma(vzre, vzim.mul(vzim));
+			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 
 			VectorMask<Float> xLz = vxabs.lessThan(vzabs);
 			vx.intoArray(z, zOffset, xLz);
@@ -3053,8 +3053,8 @@ public final class VOVec {
 			// vyim is [(y[0].im, y[0].im), (y[1].im, y[1].im), ...]
 			final FloatVector vyim = vy.rearrange(SHUFFLE_CV_SPREAD_IM);
 
-			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
-			final FloatVector vyabs = vyre.mul(vyre).add(vyim.mul(vyim));
+			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
+			final FloatVector vyabs = vyre.fma(vyre, vyim.mul(vyim));
 
 			VectorMask<Float> xLy = vxabs.lessThan(vyabs);
 			vy.blend(vx, xLy).intoArray(z, zOffset);
@@ -3136,7 +3136,7 @@ public final class VOVec {
 			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 
 			vxabs.intoArray(aabs, 0);
 			for (int j = 0; j < EPV; j++) {
@@ -3220,7 +3220,7 @@ public final class VOVec {
 			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 
 			vxabs.intoArray(aabs, 0);
 			for (int j = 0; j < EPV; j++) {
@@ -3258,7 +3258,7 @@ public final class VOVec {
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-			vz.mul(va1).add(vx.mul(va2)).intoArray(z, zOffset);
+			vz.fma(va1, vx.mul(va2)).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
@@ -3284,7 +3284,7 @@ public final class VOVec {
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
-			vx.mul(va1).add(vy.mul(va2)).intoArray(z, zOffset);
+			vx.fma(va1, vy.mul(va2)).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -3312,7 +3312,7 @@ public final class VOVec {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
 
-			final FloatVector vrre = vx.mul(va1).add(vy.mul(va2re));
+			final FloatVector vrre = vx.fma(va1, vy.mul(va2re));
 			final FloatVector vrim = vy.mul(va2im);
 
 			// Store twice
@@ -3352,8 +3352,8 @@ public final class VOVec {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
 
-			final FloatVector vrre = vx.mul(va1re).add(vy.mul(va2re));
-			final FloatVector vrim = vx.mul(va1im).add(vy.mul(va2im));
+			final FloatVector vrre = vx.fma(va1re, vy.mul(va2re));
+			final FloatVector vrim = vx.fma(va1im, vy.mul(va2im));
 
 			// Store twice
 			vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST), MASK_C_IM).intoArray(z, zOffset);
@@ -3389,7 +3389,7 @@ public final class VOVec {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
 
 			// Rearrange of vx gives zeroes in im-parts and it could be added without any masks or blends
-			vz.mul(va1).add(vx.mul(va2).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE)).intoArray(z, zOffset);
+			vz.fma(va1, vx.mul(va2).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE)).intoArray(z, zOffset);
 
 			xOffset += EPV2;
 			zOffset += EPV;
@@ -3420,7 +3420,7 @@ public final class VOVec {
 			final FloatVector vy = FloatVector.fromArray(PFS2, y, yOffset);
 
 			// Rearrange of vy gives zeroes in im-parts and it could be added without any masks or blends
-			vx.mul(va1).add(vy.mul(va2).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE)).intoArray(z, zOffset);
+			vx.fma(va1, vy.mul(va2).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE)).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			yOffset += EPV2;
@@ -3516,7 +3516,7 @@ public final class VOVec {
 			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 
 			vxabs.log10().mul(5.0f).intoArray(z, zOffset);
 
@@ -3551,7 +3551,7 @@ public final class VOVec {
 			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 
 			vxabs.log10().mul(5.0f).sub(base).intoArray(z, zOffset);
 
@@ -3647,7 +3647,7 @@ public final class VOVec {
 			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 
 			vxabs.log10().mul(10.0f).intoArray(z, zOffset);
 
@@ -3682,7 +3682,7 @@ public final class VOVec {
 			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 
 			vxabs.log10().mul(10.0f).sub(base).intoArray(z, zOffset);
 
