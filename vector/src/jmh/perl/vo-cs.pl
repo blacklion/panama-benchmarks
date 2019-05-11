@@ -16,6 +16,9 @@ while (<>) {
 		next;
 	}
 	my ($type, $op) = ($1, $2);
+	if (exists $B{$op}->{$cs}->{$type}) {
+		print STDERR "Dup: ${type}_$op $cs\n";
+	}
 	$B{$op}->{$cs}->{$type} = $score;
 	$CS{$cs} = 1;
 }
