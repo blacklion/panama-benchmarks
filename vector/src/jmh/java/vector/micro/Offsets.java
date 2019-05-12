@@ -49,7 +49,7 @@ public class Offsets {
 	private FloatVector zero;
 	private float x[];
 	private float y[];
-	/** @noinspection unused*/
+	/** @noinspection unused */
 	@Param({"0", "1", "2", "3", "4", "5", "6", "7"})
 	private int offset;
 
@@ -79,6 +79,6 @@ public class Offsets {
 
 	@Benchmark
 	public void load_store() {
-		 FloatVector.fromArray(PFS, x, offset).intoArray(y, offset);
+		FloatVector.fromArray(PFS, x, offset).intoArray(y, offset);
 	}
 }

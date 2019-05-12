@@ -65,7 +65,7 @@ public class CVp2r {
 		boolean[] alter = new boolean[EPV + 1];
 		alter[0] = true;
 		for (int i = 1; i < alter.length; i++)
-			alter[i] = !alter[i-1];
+			alter[i] = !alter[i - 1];
 		MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
 
 		boolean[] sh = new boolean[EPV];
@@ -96,7 +96,7 @@ public class CVp2r {
 
 	private float x[];
 	private float z[];
-	/** @noinspection unused*/
+	/** @noinspection unused */
 	@Param({"128"})
 	private int count;
 

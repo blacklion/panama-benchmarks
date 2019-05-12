@@ -27,7 +27,8 @@
 
 package vector.specific;
 
-import jdk.incubator.vector.*;
+import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.VectorSpecies;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -48,7 +49,7 @@ public class RVmax {
 	private final static FloatVector NEGATIVE_INFINITY = FloatVector.broadcast(PFS, Float.NEGATIVE_INFINITY);
 
 	private float x[];
-	/** @noinspection unused*/
+	/** @noinspection unused */
 	@Param({"128"})
 	private int count;
 

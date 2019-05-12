@@ -85,7 +85,7 @@ public class RVdotCV {
 	private float x[];
 	private float y[];
 	private float z[];
-	/** @noinspection unused*/
+	/** @noinspection unused */
 	@Param({"128"})
 	private int count;
 

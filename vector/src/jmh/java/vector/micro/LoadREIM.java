@@ -28,7 +28,6 @@
 package vector.micro;
 
 import jdk.incubator.vector.FloatVector;
-import jdk.incubator.vector.Vector;
 import jdk.incubator.vector.VectorShuffle;
 import jdk.incubator.vector.VectorSpecies;
 import org.openjdk.jmh.annotations.*;

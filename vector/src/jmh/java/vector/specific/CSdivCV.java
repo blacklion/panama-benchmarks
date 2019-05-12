@@ -27,7 +27,10 @@
 
 package vector.specific;
 
-import jdk.incubator.vector.*;
+import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.VectorMask;
+import jdk.incubator.vector.VectorShuffle;
+import jdk.incubator.vector.VectorSpecies;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.Random;
@@ -81,7 +84,7 @@ public class CSdivCV {
 	private float x[];
 	private float y[];
 	private float z[];
-	/** @noinspection unused*/
+	/** @noinspection unused */
 	@Param({"128"})
 	private int count;
 

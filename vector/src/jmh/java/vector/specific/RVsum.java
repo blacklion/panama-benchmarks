@@ -49,7 +49,7 @@ public class RVsum {
 	private final static FloatVector ZERO = FloatVector.zero(PFS);
 
 	private float x[];
-	/** @noinspection unused*/
+	/** @noinspection unused */
 	@Param({"128"})
 	private int count;
 

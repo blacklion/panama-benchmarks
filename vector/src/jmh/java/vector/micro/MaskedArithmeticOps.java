@@ -28,7 +28,6 @@
 package vector.micro;
 
 import jdk.incubator.vector.FloatVector;
-import jdk.incubator.vector.Vector;
 import jdk.incubator.vector.VectorMask;
 import jdk.incubator.vector.VectorSpecies;
 import org.openjdk.jmh.annotations.*;
@@ -36,7 +35,7 @@ import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
 
-/** @noinspection CStyleArrayDeclaration*/
+/** @noinspection CStyleArrayDeclaration */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
@@ -55,7 +54,7 @@ public class MaskedArithmeticOps {
 		boolean[] alter = new boolean[EPV + 1];
 		alter[0] = true;
 		for (int i = 1; i < alter.length; i++)
-			alter[i] = !alter[i-1];
+			alter[i] = !alter[i - 1];
 		MASK_C_RE = VectorMask.fromArray(PFS, alter, 0);
 		MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
 	}
@@ -101,7 +100,7 @@ public class MaskedArithmeticOps {
 
 	@Benchmark
 	public void hypotatan2WithMask(Blackhole bh) {
-		bh.consume(vx.hypot(vy,MASK_C_RE).blend(vx.atan2(vy, MASK_C_IM), MASK_C_IM));
+		bh.consume(vx.hypot(vy, MASK_C_RE).blend(vx.atan2(vy, MASK_C_IM), MASK_C_IM));
 	}
 
 	@Benchmark

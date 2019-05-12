@@ -27,7 +27,8 @@
 
 package vector.specific;
 
-import jdk.incubator.vector.*;
+import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.VectorSpecies;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 

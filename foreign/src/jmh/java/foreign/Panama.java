@@ -5,8 +5,8 @@ import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.BenchmarkParams;
 
 import java.foreign.NativeTypes;
-import java.foreign.layout.Padding;
-import java.foreign.memory.*;
+import java.foreign.memory.Array;
+import java.foreign.memory.Pointer;
 
 import static org.fftw3.fftw3_h.*;
 
@@ -58,10 +58,10 @@ public class Panama extends FFTBenchmarkParams {
 	public void Full(BenchState state) {
 		// In place or not we need to copy data in and copy data out
 		// maybe, between two arrays and not four, but still
-		for (int i = 0 ; i < state.size * 2; i++)
+		for (int i = 0; i < state.size * 2; i++)
 			state.i.set(i, state.ji[0]);
 		fftw_execute(state.p);
-		for (int i = 0 ; i < state.size * 2; i++)
+		for (int i = 0; i < state.size * 2; i++)
 			state.jo[i] = state.o.get(i);
 	}
 }

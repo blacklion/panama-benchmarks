@@ -58,7 +58,7 @@ public class RVexpi {
 		boolean[] alter = new boolean[EPV + 1];
 		alter[0] = true;
 		for (int i = 1; i < alter.length; i++)
-			alter[i] = !alter[i-1];
+			alter[i] = !alter[i - 1];
 		MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
 
 		// [r0, r1, ...] -> [(r0, r0), (r1, r1), ...]
@@ -75,7 +75,7 @@ public class RVexpi {
 
 	private float x[];
 	private float z[];
-	/** @noinspection unused*/
+	/** @noinspection unused */
 	@Param({"3", "4", "7", "8", "16", "20", "23", "1024", "1031"})
 	private int count;
 

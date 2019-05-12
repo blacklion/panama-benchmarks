@@ -61,7 +61,7 @@ public class CVdotCV {
 		boolean[] alter = new boolean[EPV + 1];
 		alter[0] = true;
 		for (int i = 1; i < alter.length; i++)
-			alter[i] = !alter[i-1];
+			alter[i] = !alter[i - 1];
 		MASK_C_RE = VectorMask.fromArray(PFS, alter, 0);
 		MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
 
@@ -80,7 +80,7 @@ public class CVdotCV {
 	private float x[];
 	private float y[];
 	private float z[];
-	/** @noinspection unused*/
+	/** @noinspection unused */
 	@Param({"128"})
 	private int count;
 

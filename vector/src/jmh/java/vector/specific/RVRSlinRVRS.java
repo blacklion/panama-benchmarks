@@ -30,7 +30,6 @@ package vector.specific;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorSpecies;
 import org.openjdk.jmh.annotations.*;
-import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
 
@@ -50,7 +49,7 @@ public class RVRSlinRVRS {
 	private float y[];
 	private float z[];
 	private float a1, a2;
-	/** @noinspection unused*/
+	/** @noinspection unused */
 	@Param({"128"})
 	private int count;
 

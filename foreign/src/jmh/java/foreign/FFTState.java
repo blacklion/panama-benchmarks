@@ -1,5 +1,6 @@
 package foreign;
 
+/** @noinspection CStyleArrayDeclaration */
 public class FFTState {
 	int size = 0;
 	boolean inPlace = false;

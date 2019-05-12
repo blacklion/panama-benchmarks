@@ -27,7 +27,10 @@
 
 package vector.micro;
 
-import jdk.incubator.vector.*;
+import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.VectorMask;
+import jdk.incubator.vector.VectorShuffle;
+import jdk.incubator.vector.VectorSpecies;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -43,7 +46,7 @@ import java.util.Random;
 public class LoadCVREPack {
 	private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;;
+	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
 	private final static int EPV = PFS.length();
 	private final static int EPV2 = PFS.length() / 2;
 

@@ -65,7 +65,7 @@ public class CVexp {
 		boolean[] alter = new boolean[EPV + 1];
 		alter[0] = true;
 		for (int i = 1; i < alter.length; i++)
-			alter[i] = !alter[i-1];
+			alter[i] = !alter[i - 1];
 		MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
 
 		boolean[] sh = new boolean[EPV];
@@ -96,7 +96,7 @@ public class CVexp {
 
 	private float x[];
 	private float z[];
-	/** @noinspection unused*/
+	/** @noinspection unused */
 	@Param({"128"})
 	private int count;
 
@@ -162,7 +162,7 @@ public class CVexp {
 		}
 
 		while (count-- > 0) {
-			float g = (float) Math.exp(x[xOffset + 0]);
+			float g = (float)Math.exp(x[xOffset + 0]);
 			z[zOffset + 0] = g * (float)Math.cos(x[xOffset + 1]);
 			z[zOffset + 1] = g * (float)Math.sin(x[xOffset + 1]);
 			xOffset += 2;
@@ -209,7 +209,7 @@ public class CVexp {
 		//@DONE: Don't process obe PFS-countd vector, it is too expensive to setup for only one
 
 		while (count-- > 0) {
-			float g = (float) Math.exp(x[xOffset + 0]);
+			float g = (float)Math.exp(x[xOffset + 0]);
 			z[zOffset + 0] = g * (float)Math.cos(x[xOffset + 1]);
 			z[zOffset + 1] = g * (float)Math.sin(x[xOffset + 1]);
 			xOffset += 2;
@@ -275,7 +275,7 @@ public class CVexp {
 		}
 
 		while (count-- > 0) {
-			float g = (float) Math.exp(x[xOffset + 0]);
+			float g = (float)Math.exp(x[xOffset + 0]);
 			z[zOffset + 0] = g * (float)Math.cos(x[xOffset + 1]);
 			z[zOffset + 1] = g * (float)Math.sin(x[xOffset + 1]);
 			xOffset += 2;

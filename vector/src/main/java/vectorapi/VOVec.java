@@ -35,7 +35,7 @@ import java.util.Arrays;
  * @author Lev Serebryakov
  * @noinspection CStyleArrayDeclaration
  */
-@SuppressWarnings({ "PointlessArithmeticExpression", "UnusedDeclaration" })
+@SuppressWarnings({"PointlessArithmeticExpression", "UnusedDeclaration"})
 public final class VOVec {
 	//@TODO: Global idea: check extraction of complex multiply/division code
 	//       to helper methods (and pray for inlining)
@@ -60,7 +60,7 @@ public final class VOVec {
 		And some one-complex-return function with "offset" result placement
 	 */
 	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
-	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));;
+	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
 	private final static int EPV = PFS.length();
 	private final static int EPV2 = EPV / 2;
 	private final static int EPVx2 = EPV * 2;
@@ -232,8 +232,8 @@ public final class VOVec {
 	public static void cv_add_cs_i(float z[], int zOffset, float x[], int count) {
 		FloatVector vx = null;
 		//@DONE: It is faster than FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0)
-		if (count>= EPV2)
-				vx = FloatVector.fromArray(FS64, x, 0).reshape(PFS).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV_SPREAD);
+		if (count >= EPV2)
+			vx = FloatVector.fromArray(FS64, x, 0).reshape(PFS).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV_SPREAD);
 
 		zOffset <<= 1;
 
@@ -1827,8 +1827,8 @@ public final class VOVec {
 		}
 
 		while (count-- > 0) {
-			z[zOffset + 0] = (float) Math.cos(x[xOffset]);
-			z[zOffset + 1] = (float) Math.sin(x[xOffset]);
+			z[zOffset + 0] = (float)Math.cos(x[xOffset]);
+			z[zOffset + 1] = (float)Math.sin(x[xOffset]);
 			xOffset += 1;
 			zOffset += 2;
 		}
@@ -1886,9 +1886,9 @@ public final class VOVec {
 		//@DONE: Don't process obe PFS-sized vector, it is too expensive to setup for only one
 
 		while (count-- > 0) {
-			float g = (float) Math.exp(z[zOffset + 0]);
-			z[zOffset + 0] = g * (float) Math.cos(z[zOffset + 1]);
-			z[zOffset + 1] = g * (float) Math.sin(z[zOffset + 1]);
+			float g = (float)Math.exp(z[zOffset + 0]);
+			z[zOffset + 0] = g * (float)Math.cos(z[zOffset + 1]);
+			z[zOffset + 1] = g * (float)Math.sin(z[zOffset + 1]);
 			zOffset += 2;
 		}
 	}
@@ -1946,7 +1946,7 @@ public final class VOVec {
 		//@DONE: Don't process obe PFS-sized vector, it is too expensive to setup for only one
 
 		while (count-- > 0) {
-			float g = (float) Math.exp(x[xOffset + 0]);
+			float g = (float)Math.exp(x[xOffset + 0]);
 			z[zOffset + 0] = g * (float)Math.cos(x[xOffset + 1]);
 			z[zOffset + 1] = g * (float)Math.sin(x[xOffset + 1]);
 			xOffset += 2;
@@ -2006,7 +2006,7 @@ public final class VOVec {
 	public static void cv_abs(float z[], int zOffset, float x[], int xOffset, int count) {
 		xOffset <<= 1;
 
-		while(count >= EPV) {
+		while (count >= EPV) {
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
 			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
@@ -2036,7 +2036,7 @@ public final class VOVec {
 	public static void cv_arg(float z[], int zOffset, float x[], int xOffset, int count) {
 		xOffset <<= 1;
 
-		while(count >= EPV) {
+		while (count >= EPV) {
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
 			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
@@ -2071,7 +2071,7 @@ public final class VOVec {
 
 		xOffset <<= 1;
 
-		while(count >= EPV) {
+		while (count >= EPV) {
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
 			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
@@ -2100,7 +2100,7 @@ public final class VOVec {
 	}
 
 	public static void rv_abs_i(float z[], int zOffset, int count) {
-		while(count >= EPV) {
+		while (count >= EPV) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
 			vz.abs().intoArray(z, zOffset);
 
@@ -2115,7 +2115,7 @@ public final class VOVec {
 	}
 
 	public static void rv_abs(float z[], int zOffset, float x[], int xOffset, int count) {
-		while(count >= EPV) {
+		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			vx.abs().intoArray(z, zOffset);
 
@@ -3503,7 +3503,7 @@ public final class VOVec {
 	public static void cv_10log10(float z[], int zOffset, float x[], int xOffset, int count) {
 		xOffset <<= 1;
 
-		while(count >= EPV) {
+		while (count >= EPV) {
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
 			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
@@ -3538,7 +3538,7 @@ public final class VOVec {
 		base = 10 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
 		xOffset <<= 1;
 
-		while(count >= EPV) {
+		while (count >= EPV) {
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
 			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
@@ -3634,7 +3634,7 @@ public final class VOVec {
 	public static void cv_20log10(float z[], int zOffset, float x[], int xOffset, int count) {
 		xOffset <<= 1;
 
-		while(count >= EPV) {
+		while (count >= EPV) {
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
 			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
@@ -3669,7 +3669,7 @@ public final class VOVec {
 		base = 20 * (float)Math.log10(Math.abs(base) + Float.MIN_NORMAL);
 		xOffset <<= 1;
 
-		while(count >= EPV) {
+		while (count >= EPV) {
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
 			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());

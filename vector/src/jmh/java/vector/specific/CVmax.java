@@ -71,7 +71,7 @@ public class CVmax {
 
 	private float x[];
 	private float z[];
-	/** @noinspection unused*/
+	/** @noinspection unused */
 	@Param({"128"})
 	private int count;
 
