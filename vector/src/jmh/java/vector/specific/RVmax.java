@@ -42,26 +42,26 @@ import java.util.Random;
 public class RVmax {
 	private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
-    private final static int EPV = PFS.length();
+	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
+	private final static int EPV = PFS.length();
 
-    private final static FloatVector NEGATIVE_INFINITY = FloatVector.broadcast(PFS, Float.NEGATIVE_INFINITY);
+	private final static FloatVector NEGATIVE_INFINITY = FloatVector.broadcast(PFS, Float.NEGATIVE_INFINITY);
 
 	private float x[];
 	/** @noinspection unused*/
 	@Param({"128"})
 	private int count;
 
-    @Setup(Level.Trial)
-    public void Setup() {
+	@Setup(Level.Trial)
+	public void Setup() {
 		Random r = new Random(SEED);
 
 		x = new float[count];
 
-        for (int i = 0; i < x.length; i++) {
-            x[i] = r.nextFloat() * 2.0f - 1.0f;
-        }
-    }
+		for (int i = 0; i < x.length; i++) {
+			x[i] = r.nextFloat() * 2.0f - 1.0f;
+		}
+	}
 
 	@Benchmark
 	public void nv(Blackhole bh) { bh.consume(rv_max_0(x, 0, count)); }
@@ -103,8 +103,8 @@ public class RVmax {
 	}
 
 	private static float rv_max_2(float x[], int xOffset, int count) {
-    	FloatVector vmax = NEGATIVE_INFINITY;
-    	final boolean needLanes = count >= EPV;
+		FloatVector vmax = NEGATIVE_INFINITY;
+		final boolean needLanes = count >= EPV;
 		while (count >= EPV) {
 			vmax = vmax.max(FloatVector.fromArray(PFS, x, xOffset));
 			xOffset += EPV;

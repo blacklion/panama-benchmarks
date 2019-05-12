@@ -3,7 +3,7 @@
 I've performed some comparison between Foreign interface and [JNA](https://github.com/java-native-access/jna) (which is JNI under the bonnet). Also, I've throw pure-Java implementation of same task to the mix, but as algorithms are not exactly the same, it is more for reference.
 
 First, I want to describe what I measure. If you know what FFT is and how FFTW library work, you could skip these parts.
- 
+
 
 ## What is FFT?
 
@@ -17,7 +17,7 @@ Theoretically, these algorithms have `O(n*log(n))` complexity in size of transfo
 Best general-purpose implementation of FFT algorithms is [FFTW3](https://www.fftw3.org) library. It is highly-optimized and very sophisticated library, written in pure C. It supports very clever methods to decompose work at hand, and its API works like this:
 
 1. You ask library to create "transform plan", and pass all details about transform you need: its size (main one is parameter, of course), input and output arrays (yes, at planning stage) and some flags, like could library destroy data in input array or is should use temporary array as working memory area. This "planning" stage could take some time, as large transform sizes could be decomposed into sub-transforms by multitude of means, and library do some internal benchmarking to select best way. This operation must be doe only once for given transform size and input-output configuration.
-1. You call transform with created plan multiple times on different data. Here are two possibilities: 
+1. You call transform with created plan multiple times on different data. Here are two possibilities:
   * You use the same input and output arrays, that were used at plan creation time. It is best way, according to FFTW documentation.
   * You could pass new input and output arrays for each execution. These arrays must be aligned as arrays passed to planning stage.
 
@@ -25,7 +25,7 @@ Best general-purpose implementation of FFT algorithms is [FFTW3](https://www.fft
 ## JTransforms
 
 [JTransforms](https://github.com/wendykierp/JTransforms) is pure-Java FFT library which is well-optimised but is not as «state-of-art» as FFTW. It has much simpler planner, it could not have vectorized algorithms, and it depends on HotSpot heavily. But it works on native Java `double[]` arrays and don't need any data preparation to use.
-  
+
 I've added JTransforms to benchmark to have some baseline, as it has no overhead to call, and at small transform sizes call overhead dominates. It is interesting to see, when more effective native code overcomes Java-Native call overhead.
 
 
@@ -38,7 +38,7 @@ I measure two versions: «in-place» (input and output array are the one array) 
 I measure only simplest, power-of-2 sizes, from `2^4` (`16`) to `2^18` (`131072`) complex numbers, so, there are twice as much `double` elements in arrays.
 
 Additionally, I measure pure FFT speed, for reference. What does it mean? Pure FFT speed doesn't include transfer of data from binding-dependent structure from native Java array and back. Some bindings could avoid this transfer (which is pure overhead) and for them «Pure FFT» and «Full Calculation» are the same.
- 
+
 I do *not* measure plan creation!
 
 
@@ -52,7 +52,7 @@ I do *not* measure plan creation!
 You could see all benchmarks and framework here:
 
 [https://github.com/blacklion/panama-benchmarks](https://github.com/blacklion/panama-benchmarks)
- 
+
 I plan to add more benchmarks in the future for different Panama sub-projects.
 
 
@@ -66,7 +66,7 @@ Please note, there are 3 Sheets: first one is plain CSV report from JMH, second 
 
 Please, note, that charts are effectively in Log-Log scale.
 
-Some summary of results: 
+Some summary of results:
 
 1. Data copying to and from Panama arrays is enormously expensive and dominate "full" execution time for any size. It makes Panama implementation always slower that any other (including Pure Java).
 1. Pure FFT calls cost the same for JNA and Panama.

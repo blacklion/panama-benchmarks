@@ -43,26 +43,26 @@ import java.util.Random;
 public class RVsum {
 	private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
-    private final static int EPV = PFS.length();
+	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
+	private final static int EPV = PFS.length();
 
-    private final static FloatVector ZERO = FloatVector.zero(PFS);
+	private final static FloatVector ZERO = FloatVector.zero(PFS);
 
 	private float x[];
 	/** @noinspection unused*/
 	@Param({"128"})
 	private int count;
 
-    @Setup(Level.Trial)
-    public void Setup() {
+	@Setup(Level.Trial)
+	public void Setup() {
 		Random r = new Random(SEED);
 
 		x = new float[count];
 
-        for (int i = 0; i < x.length; i++) {
-            x[i] = r.nextFloat() * 2.0f - 1.0f;
-        }
-    }
+		for (int i = 0; i < x.length; i++) {
+			x[i] = r.nextFloat() * 2.0f - 1.0f;
+		}
+	}
 
 	@Benchmark
 	public void nv(Blackhole bh) { bh.consume(rv_sum_0(x, 0, count)); }
@@ -96,8 +96,8 @@ public class RVsum {
 	}
 
 	private static float rv_sum_2(float x[], int xOffset, int count) {
-    	FloatVector vsum = ZERO;
-    	final boolean needLanes = count >= EPV;
+		FloatVector vsum = ZERO;
+		final boolean needLanes = count >= EPV;
 
 		while (count >= EPV) {
 			vsum = vsum.add(FloatVector.fromArray(PFS, x, xOffset));

@@ -42,10 +42,10 @@ import java.util.Random;
 public class CVsum {
 	private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
-    private final static int EPV = PFS.length();
-    private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
-    private final static int EPV2 = PFS2.length();
+	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
+	private final static int EPV = PFS.length();
+	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
+	private final static int EPV2 = PFS2.length();
 
 	private final static VectorMask<Float> MASK_SECOND_HALF;
 
@@ -56,7 +56,7 @@ public class CVsum {
 
 	private final static FloatVector ZERO = FloatVector.zero(PFS);
 
-    static {
+	static {
 		boolean[] secondhalf = new boolean[EPV];
 		Arrays.fill(secondhalf, PFS.length() / 2, secondhalf.length, true);
 		MASK_SECOND_HALF = VectorMask.fromArray(PFS, secondhalf, 0);
@@ -72,22 +72,22 @@ public class CVsum {
 	}
 
 	private float x[];
-    private float z[];
+	private float z[];
 	/** @noinspection unused*/
 	@Param({"128"})
 	private int count;
 
-    @Setup(Level.Trial)
-    public void Setup() {
+	@Setup(Level.Trial)
+	public void Setup() {
 		Random r = new Random(SEED);
 
 		x = new float[count * 2];
-        z = new float[2];
+		z = new float[2];
 
-        for (int i = 0; i < x.length; i++) {
-            x[i] = r.nextFloat() * 2.0f - 1.0f;
-        }
-    }
+		for (int i = 0; i < x.length; i++) {
+			x[i] = r.nextFloat() * 2.0f - 1.0f;
+		}
+	}
 
 	@Benchmark
 	public void nv() { cv_sum_0(z, x, 0, count); }

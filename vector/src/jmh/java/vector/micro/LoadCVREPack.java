@@ -41,80 +41,80 @@ import java.util.Random;
 @Threads(1)
 @State(Scope.Thread)
 public class LoadCVREPack {
-    private final static int SEED = 42; // Carefully selected, plucked by hands random number
+	private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;;
-    private final static int EPV = PFS.length();
-    private final static int EPV2 = PFS.length() / 2;
+	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;;
+	private final static int EPV = PFS.length();
+	private final static int EPV2 = PFS.length() / 2;
 
-    private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST;
-    private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST;
-    private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND;
-    private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND;
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST;
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST;
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND;
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND;
 
-    private final static int[] LOAD_CV_TO_CV_PACK_RE;
-   	private final static int[] LOAD_CV_TO_CV_PACK_IM;
+	private final static int[] LOAD_CV_TO_CV_PACK_RE;
+	private final static int[] LOAD_CV_TO_CV_PACK_IM;
 
-   	private final static VectorMask<Float> MASK_SECOND_HALF;
+	private final static VectorMask<Float> MASK_SECOND_HALF;
 
-    static {
-        boolean[] sh = new boolean[EPV];
-        Arrays.fill(sh, EPV / 2, sh.length, true);
-        MASK_SECOND_HALF = VectorMask.fromArray(PFS, sh, 0);
+	static {
+		boolean[] sh = new boolean[EPV];
+		Arrays.fill(sh, EPV / 2, sh.length, true);
+		MASK_SECOND_HALF = VectorMask.fromArray(PFS, sh, 0);
 
-        // [(re0, im0), (re1, im1), ...] -> [re0, re1, ..., re_len, ?, ...]
-        SHUFFLE_CV_TO_CV_PACK_RE_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
-        // [(re0, im0), (re1, im1), ...] -> [im0, im1, ..., im_len, ?, ...]
-        SHUFFLE_CV_TO_CV_PACK_IM_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
-        // [(re0, im0), (re1, im1), ...] -> [?, ..., re0, re1, ..., re_len]
-        SHUFFLE_CV_TO_CV_PACK_RE_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
-        // [(re0, im0), (re1, im1), ...] -> [?, ..., im0, im1, ..., im_len]
-        SHUFFLE_CV_TO_CV_PACK_IM_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1 : 0);
+		// [(re0, im0), (re1, im1), ...] -> [re0, re1, ..., re_len, ?, ...]
+		SHUFFLE_CV_TO_CV_PACK_RE_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
+		// [(re0, im0), (re1, im1), ...] -> [im0, im1, ..., im_len, ?, ...]
+		SHUFFLE_CV_TO_CV_PACK_IM_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
+		// [(re0, im0), (re1, im1), ...] -> [?, ..., re0, re1, ..., re_len]
+		SHUFFLE_CV_TO_CV_PACK_RE_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
+		// [(re0, im0), (re1, im1), ...] -> [?, ..., im0, im1, ..., im_len]
+		SHUFFLE_CV_TO_CV_PACK_IM_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1 : 0);
 
-        LOAD_CV_TO_CV_PACK_RE = new int[EPV];
-        LOAD_CV_TO_CV_PACK_IM = new int[EPV];
-        for (int i = 0; i < EPV; i++) {
-            LOAD_CV_TO_CV_PACK_RE[i] = i * 2;
-            LOAD_CV_TO_CV_PACK_IM[i] = i * 2 + 1;
-        }
-    }
+		LOAD_CV_TO_CV_PACK_RE = new int[EPV];
+		LOAD_CV_TO_CV_PACK_IM = new int[EPV];
+		for (int i = 0; i < EPV; i++) {
+			LOAD_CV_TO_CV_PACK_RE[i] = i * 2;
+			LOAD_CV_TO_CV_PACK_IM[i] = i * 2 + 1;
+		}
+	}
 
-    private float x[];
+	private float x[];
 
-    @Setup(Level.Trial)
-    public void Setup() {
-        Random r = new Random(SEED);
+	@Setup(Level.Trial)
+	public void Setup() {
+		Random r = new Random(SEED);
 
-        x = new float[EPV * 2];
+		x = new float[EPV * 2];
 
-        for (int i = 0; i < x.length; i++) {
-            x[i] = r.nextFloat() * 2.0f - 1.0f;
-        }
-    }
+		for (int i = 0; i < x.length; i++) {
+			x[i] = r.nextFloat() * 2.0f - 1.0f;
+		}
+	}
 
 
-    @Benchmark
-    public void load_with_spread(Blackhole bh) {
-        final FloatVector vxre = FloatVector.fromArray(PFS, x, 0, LOAD_CV_TO_CV_PACK_RE, 0);
+	@Benchmark
+	public void load_with_spread(Blackhole bh) {
+		final FloatVector vxre = FloatVector.fromArray(PFS, x, 0, LOAD_CV_TO_CV_PACK_RE, 0);
 		final FloatVector vxim = FloatVector.fromArray(PFS, x, 0, LOAD_CV_TO_CV_PACK_IM, 0);
-        bh.consume(vxre);
-        bh.consume(vxim);
-    }
+		bh.consume(vxre);
+		bh.consume(vxim);
+	}
 
-    @Benchmark
-    public void load_simple_shuffle_blend(Blackhole bh) {
-        final FloatVector vx1 = FloatVector.fromArray(PFS, x, 0);
-        final FloatVector vx2 = FloatVector.fromArray(PFS, x, EPV);
+	@Benchmark
+	public void load_simple_shuffle_blend(Blackhole bh) {
+		final FloatVector vx1 = FloatVector.fromArray(PFS, x, 0);
+		final FloatVector vx2 = FloatVector.fromArray(PFS, x, EPV);
 
-        final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
-        final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+		final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+		final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
 
-        final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
-        final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+		final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+		final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
 
-        final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
-        final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
-        bh.consume(vxre);
-        bh.consume(vxim);
-    }
+		final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
+		final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+		bh.consume(vxre);
+		bh.consume(vxim);
+	}
 }

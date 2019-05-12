@@ -4,8 +4,8 @@ This project has two main goals:
 
  1. To create set of vector (see below) operations using Vector API from [Project Panama](http://openjdk.java.net/projects/panama/).
  2. To benchmark Vector API against non-vectorized Java implementations of same operations.
- 
-Also, there will be different small benchmarks for different Vector API code snippets. 
+
+Also, there will be different small benchmarks for different Vector API code snippets.
 
 ## Introduction.
 This project contains two implementations of `Math`-like API for math operations over vectors of real (`float`) and complex (pairs of `float`) numbers. Operations are all arithmetic operations plus some specific ones, as exponentiation and complex exponentiation, logarithms, and such.
@@ -79,7 +79,7 @@ z = a1 * x + a2 * y;
 ```
 
 ## API naming and arguments convention.
-All methods of this API are named systematically. Name consist of types of arguments, operation name and optional suffix which describes implementation details. Type of result is not described, but could be deduced from type of arguments and operation semantic. 
+All methods of this API are named systematically. Name consist of types of arguments, operation name and optional suffix which describes implementation details. Type of result is not described, but could be deduced from type of arguments and operation semantic.
 
 Several operations are implemented with overloaded methods, to implement special often used cases. For example, all operations which takes or return complex scalar are implemented with and without additional offset argument for scalar parameter or return value. Some other operations with vector arguments are additionally implemented without offset for one of vector arguments, as they are often used with zero offset. Such additional implementations don't have special names or suffixes and differs from regular implementations by Java method signature.
 

@@ -42,13 +42,13 @@ import java.util.Random;
 public class CVexp {
 	private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
-    private final static int EPV = PFS.length();
-    private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
-    private final static int EPV2 = PFS2.length();
+	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
+	private final static int EPV = PFS.length();
+	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
+	private final static int EPV2 = PFS2.length();
 
 	private final static VectorMask<Float> MASK_C_IM;
-    private final static VectorMask<Float> MASK_SECOND_HALF;
+	private final static VectorMask<Float> MASK_SECOND_HALF;
 
 	private final static VectorShuffle<Float> SHUFFLE_CV_SPREAD_IM;
 	private final static VectorShuffle<Float> SHUFFLE_CV_SPREAD_RE;
@@ -61,16 +61,16 @@ public class CVexp {
 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND;
 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND;
 
-    static {
-        boolean[] alter = new boolean[EPV + 1];
-        alter[0] = true;
-        for (int i = 1; i < alter.length; i++)
-            alter[i] = !alter[i-1];
-        MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
+	static {
+		boolean[] alter = new boolean[EPV + 1];
+		alter[0] = true;
+		for (int i = 1; i < alter.length; i++)
+			alter[i] = !alter[i-1];
+		MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
 
-        boolean[] sh = new boolean[EPV];
-        Arrays.fill(sh, EPV / 2, sh.length, true);
-        MASK_SECOND_HALF = VectorMask.fromArray(PFS, sh, 0);
+		boolean[] sh = new boolean[EPV];
+		Arrays.fill(sh, EPV / 2, sh.length, true);
+		MASK_SECOND_HALF = VectorMask.fromArray(PFS, sh, 0);
 
 		// [(re0, im0), (re1, im1), ...] -> [(re0, re0), (re1, re1), ...]
 		SHUFFLE_CV_SPREAD_RE = VectorShuffle.shuffle(PFS, i -> i - i % 2);
@@ -95,34 +95,34 @@ public class CVexp {
 	}
 
 	private float x[];
-    private float z[];
+	private float z[];
 	/** @noinspection unused*/
 	@Param({"128"})
 	private int count;
 
-    @Setup(Level.Trial)
-    public void Setup() {
+	@Setup(Level.Trial)
+	public void Setup() {
 		Random r = new Random(SEED);
 
-        x = new float[count * 2];
+		x = new float[count * 2];
 		z = new float[count * 2];
 
-        for (int i = 0; i < x.length; i++) {
-            x[i] = r.nextFloat() * 2.0f - 1.0f;
-        }
-    }
+		for (int i = 0; i < x.length; i++) {
+			x[i] = r.nextFloat() * 2.0f - 1.0f;
+		}
+	}
 
 	@Benchmark
 	public void nv() { cv_exp_0(z, 0, x, 0, count); }
-	
-    @Benchmark
-    public void epv2() { cv_exp_1(z, 0, x, 0, count); }
 
-    @Benchmark
-    public void epv() { cv_exp_2(z, 0, x, 0, count); }
+	@Benchmark
+	public void epv2() { cv_exp_1(z, 0, x, 0, count); }
 
-    @Benchmark
-    public void epv_epv2() { cv_exp_3(z, 0, x, 0, count); }
+	@Benchmark
+	public void epv() { cv_exp_2(z, 0, x, 0, count); }
+
+	@Benchmark
+	public void epv_epv2() { cv_exp_3(z, 0, x, 0, count); }
 
 	private static void cv_exp_0(float z[], int zOffset, float x[], int xOffset, int count) {
 		zOffset <<= 1;
@@ -136,30 +136,30 @@ public class CVexp {
 		}
 	}
 
-    private static void cv_exp_1(float z[], int zOffset, float x[], int xOffset, int count) {
+	private static void cv_exp_1(float z[], int zOffset, float x[], int xOffset, int count) {
 		xOffset <<= 1;
-   		zOffset <<= 1;
+		zOffset <<= 1;
 
-   		while (count >= EPV2) {
-   			//@DONE: one load & two reshuffles are faster
-   			//@TODO: check, do we need pack and process twice elements, and save result twice
-   			// vx is [(x[0].re, x[0].im), (x[1].re, x[1].im), ...]
-   			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-   			// vxreexp is [(exp(x[0].re), exp(x[0].re)), (exp(x[1].re), exp(x[1].re)), ...]
-   			final FloatVector vxreexp = vx.rearrange(SHUFFLE_CV_SPREAD_RE).exp();
-   			// vxim is [(x[0].im, x[0].im), (x[1].im, x[1].im), ...]
-   			final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
+		while (count >= EPV2) {
+			//@DONE: one load & two reshuffles are faster
+			//@TODO: check, do we need pack and process twice elements, and save result twice
+			// vx is [(x[0].re, x[0].im), (x[1].re, x[1].im), ...]
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			// vxreexp is [(exp(x[0].re), exp(x[0].re)), (exp(x[1].re), exp(x[1].re)), ...]
+			final FloatVector vxreexp = vx.rearrange(SHUFFLE_CV_SPREAD_RE).exp();
+			// vxim is [(x[0].im, x[0].im), (x[1].im, x[1].im), ...]
+			final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
 
-   			//@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
-   			final FloatVector vrre = vxreexp.mul(vxim.cos());
-   			final FloatVector vrim = vxreexp.mul(vxim.sin());
+			//@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
+			final FloatVector vrre = vxreexp.mul(vxim.cos());
+			final FloatVector vrim = vxreexp.mul(vxim.sin());
 
-   			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
+			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
 
 			xOffset += EPV;
-   			zOffset += EPV;
-   			count -= EPV2;
-   		}
+			zOffset += EPV;
+			count -= EPV2;
+		}
 
 		while (count-- > 0) {
 			float g = (float) Math.exp(x[xOffset + 0]);
@@ -168,7 +168,7 @@ public class CVexp {
 			xOffset += 2;
 			zOffset += 2;
 		}
-   	}
+	}
 
 	private static void cv_exp_2(float z[], int zOffset, float x[], int xOffset, int count) {
 		xOffset <<= 1;
@@ -217,7 +217,7 @@ public class CVexp {
 		}
 	}
 
-   	private static void cv_exp_3(float z[], int zOffset, float x[], int xOffset, int count) {
+	private static void cv_exp_3(float z[], int zOffset, float x[], int xOffset, int count) {
 		xOffset <<= 1;
 		zOffset <<= 1;
 
@@ -281,5 +281,5 @@ public class CVexp {
 			xOffset += 2;
 			zOffset += 2;
 		}
-   	}
+	}
 }

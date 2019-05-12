@@ -40,230 +40,230 @@ import java.util.Random;
 @Threads(1)
 @State(Scope.Thread)
 public class CVp2r {
-    private final static int SEED = 42; // Carefully selected, plucked by hands random number
+	private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
-    private final static int EPV = PFS.length();
-    private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
-    private final static int EPV2 = PFS2.length();
+	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
+	private final static int EPV = PFS.length();
+	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
+	private final static int EPV2 = PFS2.length();
 
-    private final static VectorMask<Float> MASK_SECOND_HALF;
-    private final static VectorMask<Float> MASK_C_IM;
+	private final static VectorMask<Float> MASK_SECOND_HALF;
+	private final static VectorMask<Float> MASK_C_IM;
 
-    private final static VectorShuffle<Float> SHUFFLE_CV_SPREAD_IM;
-    private final static VectorShuffle<Float> SHUFFLE_CV_SPREAD_RE;
-    private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST;
-    private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST;
-    private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND;
-    private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND;
-    private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST;
-    private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST;
-    private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND;
-    private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND;
+	private final static VectorShuffle<Float> SHUFFLE_CV_SPREAD_IM;
+	private final static VectorShuffle<Float> SHUFFLE_CV_SPREAD_RE;
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST;
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST;
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND;
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND;
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST;
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST;
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND;
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND;
 
-    static {
-        boolean[] alter = new boolean[EPV + 1];
-        alter[0] = true;
-        for (int i = 1; i < alter.length; i++)
-            alter[i] = !alter[i-1];
-        MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
+	static {
+		boolean[] alter = new boolean[EPV + 1];
+		alter[0] = true;
+		for (int i = 1; i < alter.length; i++)
+			alter[i] = !alter[i-1];
+		MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
 
-        boolean[] sh = new boolean[EPV];
-        Arrays.fill(sh, EPV / 2, sh.length, true);
-        MASK_SECOND_HALF = VectorMask.fromArray(PFS, sh, 0);
+		boolean[] sh = new boolean[EPV];
+		Arrays.fill(sh, EPV / 2, sh.length, true);
+		MASK_SECOND_HALF = VectorMask.fromArray(PFS, sh, 0);
 
-        // [(re0, im0), (re1, im1), ...] -> [(re0, re0), (re1, re1), ...]
-        SHUFFLE_CV_SPREAD_RE = VectorShuffle.shuffle(PFS, i -> i - i % 2);
-        // [(re0, im0), (re1, im1), ...] -> [(im0, im0), (im1, im1), ...]
-        SHUFFLE_CV_SPREAD_IM = VectorShuffle.shuffle(PFS, i -> i - i % 2 + 1);
-        // [(re0, im0), (re1, im1), ...] -> [re0, re1, ..., re_len, ?, ...]
-        SHUFFLE_CV_TO_CV_PACK_RE_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
-        // [(re0, im0), (re1, im1), ...] -> [im0, im1, ..., im_len, ?, ...]
-        SHUFFLE_CV_TO_CV_PACK_IM_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
-        // [(re0, im0), (re1, im1), ...] -> [?, ..., re0, re1, ..., re_len]
-        SHUFFLE_CV_TO_CV_PACK_RE_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
-        // [(re0, im0), (re1, im1), ...] -> [?, ..., im0, im1, ..., im_len]
-        SHUFFLE_CV_TO_CV_PACK_IM_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1 : 0);
-        // [re0, re1, re2, ...] -> [(re0, ?), (re1, ?), ..., (re_{len/2}, ?)]
-        SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? i / 2 : 0);
-        // [im0, im1, im2, ...] -> [(?, im0), (?, im1), ..., (?, im_{len/2})]
-        SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST = VectorShuffle.shuffle(PFS, i -> (i % 2 == 1) ? i / 2 : 0);
-        // [..., re_{len/2}, ..., re_len] -> [(re_{len/2}, ?), ..., (re_len, ?)]
-        SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? i / 2 + EPV2 : 0);
-        // [..., im_{len/2}, ..., im_len] -> [(?, im_{len/2}), ..., (?, im_len)]
-        SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND = VectorShuffle.shuffle(PFS, i -> (i % 2 == 1) ? i / 2 + EPV2 : 0);
-    }
+		// [(re0, im0), (re1, im1), ...] -> [(re0, re0), (re1, re1), ...]
+		SHUFFLE_CV_SPREAD_RE = VectorShuffle.shuffle(PFS, i -> i - i % 2);
+		// [(re0, im0), (re1, im1), ...] -> [(im0, im0), (im1, im1), ...]
+		SHUFFLE_CV_SPREAD_IM = VectorShuffle.shuffle(PFS, i -> i - i % 2 + 1);
+		// [(re0, im0), (re1, im1), ...] -> [re0, re1, ..., re_len, ?, ...]
+		SHUFFLE_CV_TO_CV_PACK_RE_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
+		// [(re0, im0), (re1, im1), ...] -> [im0, im1, ..., im_len, ?, ...]
+		SHUFFLE_CV_TO_CV_PACK_IM_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
+		// [(re0, im0), (re1, im1), ...] -> [?, ..., re0, re1, ..., re_len]
+		SHUFFLE_CV_TO_CV_PACK_RE_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
+		// [(re0, im0), (re1, im1), ...] -> [?, ..., im0, im1, ..., im_len]
+		SHUFFLE_CV_TO_CV_PACK_IM_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1 : 0);
+		// [re0, re1, re2, ...] -> [(re0, ?), (re1, ?), ..., (re_{len/2}, ?)]
+		SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? i / 2 : 0);
+		// [im0, im1, im2, ...] -> [(?, im0), (?, im1), ..., (?, im_{len/2})]
+		SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST = VectorShuffle.shuffle(PFS, i -> (i % 2 == 1) ? i / 2 : 0);
+		// [..., re_{len/2}, ..., re_len] -> [(re_{len/2}, ?), ..., (re_len, ?)]
+		SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? i / 2 + EPV2 : 0);
+		// [..., im_{len/2}, ..., im_len] -> [(?, im_{len/2}), ..., (?, im_len)]
+		SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND = VectorShuffle.shuffle(PFS, i -> (i % 2 == 1) ? i / 2 + EPV2 : 0);
+	}
 
-    private float x[];
-    private float z[];
-    /** @noinspection unused*/
-    @Param({"128"})
-    private int count;
+	private float x[];
+	private float z[];
+	/** @noinspection unused*/
+	@Param({"128"})
+	private int count;
 
-    @Setup(Level.Trial)
-    public void Setup() {
-        Random r = new Random(SEED);
+	@Setup(Level.Trial)
+	public void Setup() {
+		Random r = new Random(SEED);
 
-        x = new float[count * 2];
-        z = new float[count * 2];
+		x = new float[count * 2];
+		z = new float[count * 2];
 
-        for (int i = 0; i < x.length; i++) {
-            x[i] = r.nextFloat() * 2.0f - 1.0f;
-        }
-    }
+		for (int i = 0; i < x.length; i++) {
+			x[i] = r.nextFloat() * 2.0f - 1.0f;
+		}
+	}
 
-    @Benchmark
-    public void nv() { cv_p2r_0(z, 0, x, 0, count); }
+	@Benchmark
+	public void nv() { cv_p2r_0(z, 0, x, 0, count); }
 
-    @Benchmark
-    public void epv2() { cv_p2r_1(z, 0, x, 0, count); }
+	@Benchmark
+	public void epv2() { cv_p2r_1(z, 0, x, 0, count); }
 
-    @Benchmark
-    public void epv() { cv_p2r_2(z, 0, x, 0, count); }
+	@Benchmark
+	public void epv() { cv_p2r_2(z, 0, x, 0, count); }
 
-    @Benchmark
-    public void epv_epv2() { cv_p2r_3(z, 0, x, 0, count); }
+	@Benchmark
+	public void epv_epv2() { cv_p2r_3(z, 0, x, 0, count); }
 
-    private static void cv_p2r_0(float z[], int zOffset, float x[], int xOffset, int count) {
-   		zOffset <<= 1;
-   		xOffset <<= 1;
-   		while (count-- > 0) {
-   			z[zOffset + 0] = x[xOffset + 0] * (float)Math.cos(x[xOffset + 1]);
-   			z[zOffset + 1] = x[xOffset + 0] * (float)Math.sin(x[xOffset + 1]);
-   			zOffset += 2;
-   			xOffset += 2;
-   		}
-   	}
+	private static void cv_p2r_0(float z[], int zOffset, float x[], int xOffset, int count) {
+		zOffset <<= 1;
+		xOffset <<= 1;
+		while (count-- > 0) {
+			z[zOffset + 0] = x[xOffset + 0] * (float)Math.cos(x[xOffset + 1]);
+			z[zOffset + 1] = x[xOffset + 0] * (float)Math.sin(x[xOffset + 1]);
+			zOffset += 2;
+			xOffset += 2;
+		}
+	}
 
-    private static void cv_p2r_1(float z[], int zOffset, float x[], int xOffset, int count) {
-        xOffset <<= 1;
-        zOffset <<= 1;
+	private static void cv_p2r_1(float z[], int zOffset, float x[], int xOffset, int count) {
+		xOffset <<= 1;
+		zOffset <<= 1;
 
-        while (count >= EPV2) {
-            //@DONE: one load & two reshuffles are faster
-            //@TODO: check, do we need pack and process twice elements, and save result twice
-            // vx is [(x[0].re, x[0].im), (x[1].re, x[1].im), ...]
-            final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-            // vxreexp is [(x[0].re, x[0].re), (x[1].re, x[1].re), ...]
-            final FloatVector vxre = vx.rearrange(SHUFFLE_CV_SPREAD_RE);
-            // vxim is [(x[0].im, x[0].im), (x[1].im, x[1].im), ...]
-            final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
+		while (count >= EPV2) {
+			//@DONE: one load & two reshuffles are faster
+			//@TODO: check, do we need pack and process twice elements, and save result twice
+			// vx is [(x[0].re, x[0].im), (x[1].re, x[1].im), ...]
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			// vxreexp is [(x[0].re, x[0].re), (x[1].re, x[1].re), ...]
+			final FloatVector vxre = vx.rearrange(SHUFFLE_CV_SPREAD_RE);
+			// vxim is [(x[0].im, x[0].im), (x[1].im, x[1].im), ...]
+			final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
 
-            //@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
-            final FloatVector vrre = vxre.mul(vxim.cos());
-            final FloatVector vrim = vxre.mul(vxim.sin());
+			//@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
+			final FloatVector vrre = vxre.mul(vxim.cos());
+			final FloatVector vrim = vxre.mul(vxim.sin());
 
-            vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
+			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
 
-            xOffset += EPV;
-            zOffset += EPV;
-            count -= EPV2;
-        }
+			xOffset += EPV;
+			zOffset += EPV;
+			count -= EPV2;
+		}
 
-        while (count-- > 0) {
-            z[zOffset + 0] = x[xOffset + 0] * (float)Math.cos(x[xOffset + 1]);
-            z[zOffset + 1] = x[xOffset + 0] * (float)Math.sin(x[xOffset + 1]);
-            xOffset += 2;
-            zOffset += 2;
-        }
-    }
+		while (count-- > 0) {
+			z[zOffset + 0] = x[xOffset + 0] * (float)Math.cos(x[xOffset + 1]);
+			z[zOffset + 1] = x[xOffset + 0] * (float)Math.sin(x[xOffset + 1]);
+			xOffset += 2;
+			zOffset += 2;
+		}
+	}
 
-    private static void cv_p2r_2(float z[], int zOffset, float x[], int xOffset, int count) {
-        xOffset <<= 1;
-        zOffset <<= 1;
+	private static void cv_p2r_2(float z[], int zOffset, float x[], int xOffset, int count) {
+		xOffset <<= 1;
+		zOffset <<= 1;
 
-        while (count >= EPV) {
-            final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
-            final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
+		while (count >= EPV) {
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
 
-            // Ger vx1re/vx1im till vx2 is loading
-            final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
-            final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+			// Ger vx1re/vx1im till vx2 is loading
+			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
 
-            // Ger vx2re/vx2im
-            final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
-            final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+			// Ger vx2re/vx2im
+			final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
 
-            // Combine them
-            final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
-            final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+			// Combine them
+			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
+			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-            final FloatVector vrre = vxre.mul(vxim.cos());
-            final FloatVector vrim = vxre.mul(vxim.sin());
+			final FloatVector vrre = vxre.mul(vxim.cos());
+			final FloatVector vrim = vxre.mul(vxim.sin());
 
-            // And combine & store twice
-            vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST), MASK_C_IM).intoArray(z, zOffset);
-            vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND), MASK_C_IM).intoArray(z, zOffset + EPV);
+			// And combine & store twice
+			vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST), MASK_C_IM).intoArray(z, zOffset);
+			vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND), MASK_C_IM).intoArray(z, zOffset + EPV);
 
-            zOffset += EPV * 2;
-            count -= EPV;
-        }
+			zOffset += EPV * 2;
+			count -= EPV;
+		}
 
-        while (count-- > 0) {
-            z[zOffset + 0] = x[xOffset + 0] * (float)Math.cos(x[xOffset + 1]);
-            z[zOffset + 1] = x[xOffset + 0] * (float)Math.sin(x[xOffset + 1]);
-            xOffset += 2;
-            zOffset += 2;
-        }
-    }
+		while (count-- > 0) {
+			z[zOffset + 0] = x[xOffset + 0] * (float)Math.cos(x[xOffset + 1]);
+			z[zOffset + 1] = x[xOffset + 0] * (float)Math.sin(x[xOffset + 1]);
+			xOffset += 2;
+			zOffset += 2;
+		}
+	}
 
-    private static void cv_p2r_3(float z[], int zOffset, float x[], int xOffset, int count) {
-        xOffset <<= 1;
-        zOffset <<= 1;
+	private static void cv_p2r_3(float z[], int zOffset, float x[], int xOffset, int count) {
+		xOffset <<= 1;
+		zOffset <<= 1;
 
-        while (count >= EPV) {
-            final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
-            final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
+		while (count >= EPV) {
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
 
-            // Ger vx1re/vx1im till vx2 is loading
-            final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
-            final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+			// Ger vx1re/vx1im till vx2 is loading
+			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
 
-            // Ger vx2re/vx2im
-            final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
-            final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+			// Ger vx2re/vx2im
+			final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
 
-            // Combine them
-            final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
-            final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+			// Combine them
+			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
+			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-            final FloatVector vrre = vxre.mul(vxim.cos());
-            final FloatVector vrim = vxre.mul(vxim.sin());
+			final FloatVector vrre = vxre.mul(vxim.cos());
+			final FloatVector vrim = vxre.mul(vxim.sin());
 
-            // And combine & store twice
-            vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST), MASK_C_IM).intoArray(z, zOffset);
-            vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND), MASK_C_IM).intoArray(z, zOffset + EPV);
+			// And combine & store twice
+			vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST), MASK_C_IM).intoArray(z, zOffset);
+			vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND), MASK_C_IM).intoArray(z, zOffset + EPV);
 
-            zOffset += EPV * 2;
-            count -= EPV;
-        }
+			zOffset += EPV * 2;
+			count -= EPV;
+		}
 
-        if (count >= EPV2) {
-            //@DONE: one load & two reshuffles are faster
-            //@TODO: check, do we need pack and process twice elements, and save result twice
-            // vx is [(x[0].re, x[0].im), (x[1].re, x[1].im), ...]
-            final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-            // vxreexp is [(x[0].re, x[0].re), (x[1].re, x[1].re), ...]
-            final FloatVector vxre = vx.rearrange(SHUFFLE_CV_SPREAD_RE);
-            // vxim is [(x[0].im, x[0].im), (x[1].im, x[1].im), ...]
-            final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
+		if (count >= EPV2) {
+			//@DONE: one load & two reshuffles are faster
+			//@TODO: check, do we need pack and process twice elements, and save result twice
+			// vx is [(x[0].re, x[0].im), (x[1].re, x[1].im), ...]
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			// vxreexp is [(x[0].re, x[0].re), (x[1].re, x[1].re), ...]
+			final FloatVector vxre = vx.rearrange(SHUFFLE_CV_SPREAD_RE);
+			// vxim is [(x[0].im, x[0].im), (x[1].im, x[1].im), ...]
+			final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
 
-            //@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
-            final FloatVector vrre = vxre.mul(vxim.cos());
-            final FloatVector vrim = vxre.mul(vxim.sin());
+			//@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
+			final FloatVector vrre = vxre.mul(vxim.cos());
+			final FloatVector vrim = vxre.mul(vxim.sin());
 
-            vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
+			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
 
-            xOffset += EPV;
-            zOffset += EPV;
-            count -= EPV2;
-        }
+			xOffset += EPV;
+			zOffset += EPV;
+			count -= EPV2;
+		}
 
-        while (count-- > 0) {
-            z[zOffset + 0] = x[xOffset + 0] * (float)Math.cos(x[xOffset + 1]);
-            z[zOffset + 1] = x[xOffset + 0] * (float)Math.sin(x[xOffset + 1]);
-            xOffset += 2;
-            zOffset += 2;
-        }
-    }
+		while (count-- > 0) {
+			z[zOffset + 0] = x[xOffset + 0] * (float)Math.cos(x[xOffset + 1]);
+			z[zOffset + 1] = x[xOffset + 0] * (float)Math.sin(x[xOffset + 1]);
+			xOffset += 2;
+			zOffset += 2;
+		}
+	}
 }

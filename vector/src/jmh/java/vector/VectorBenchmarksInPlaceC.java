@@ -64,16 +64,16 @@ public class VectorBenchmarksInPlaceC {
     private float cvy[];
     private float cvz[];
     private float cvd[];
-    
+
     private float rsx;
     private float rsy;
     private float rsz;
-    
+
     private float csx[];
     private float csy[];
     private float csz[];
 
-    
+
     @Setup(Level.Trial)
     public void Setup() {
         Random r = new Random(SEED);
@@ -97,11 +97,11 @@ public class VectorBenchmarksInPlaceC {
             cvy[i] = r.nextFloat() * 2.0f - 1.0f;
             cvd[i] = cvz[i] = r.nextFloat() * 2.0f - 1.0f;
         }
-        
+
         rsx = r.nextFloat() * 2.0f - 1.0f;
         rsy = r.nextFloat() * 2.0f - 1.0f;
         rsz = r.nextFloat() * 2.0f - 1.0f;
-        
+
         csx = new float[] { r.nextFloat() * 2.0f - 1.0f, r.nextFloat() * 2.0f - 1.0f };
         csy = new float[] { r.nextFloat() * 2.0f - 1.0f, r.nextFloat() * 2.0f - 1.0f };
         csz = new float[] { r.nextFloat() * 2.0f - 1.0f, r.nextFloat() * 2.0f - 1.0f };

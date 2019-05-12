@@ -35,11 +35,11 @@ use lib abs_path("$FindBin::Bin/../../main/perl");
 use OpAnalyzer;
 
 my $SKIPPED_OPS = {
-  'sub'     => 'add',
-  '20log10' => '10log10',
-  'conjmul' => 'mul',
-  'min'     => 'max',
-  'minarg'  => 'maxarg'
+	'sub'     => 'add',
+	'20log10' => '10log10',
+	'conjmul' => 'mul',
+	'min'     => 'max',
+	'minarg'  => 'maxarg'
 };
 
 die "Syntax: $0 <BaseImpl.java> <VectorImpl.java>\n" unless @ARGV == 2;
@@ -220,16 +220,16 @@ public class $class {
     private float cvy[];
     private float cvz[];
     private float cvd[];
-    
+
     private float rsx;
     private float rsy;
     private float rsz;
-    
+
     private float csx[];
     private float csy[];
     private float csz[];
 
-    
+
     \@Setup(Level.Trial)
     public void Setup() {
         Random r = new Random(SEED);
@@ -253,11 +253,11 @@ public class $class {
             cvy[i] = r.nextFloat() * 2.0f - 1.0f;
             cvd[i] = cvz[i] = r.nextFloat() * 2.0f - 1.0f;
         }
-        
+
         rsx = r.nextFloat() * 2.0f - 1.0f;
         rsy = r.nextFloat() * 2.0f - 1.0f;
         rsz = r.nextFloat() * 2.0f - 1.0f;
-        
+
         csx = new float[] { r.nextFloat() * 2.0f - 1.0f, r.nextFloat() * 2.0f - 1.0f };
         csy = new float[] { r.nextFloat() * 2.0f - 1.0f, r.nextFloat() * 2.0f - 1.0f };
         csz = new float[] { r.nextFloat() * 2.0f - 1.0f, r.nextFloat() * 2.0f - 1.0f };
@@ -293,7 +293,7 @@ sub generateBenchmark1i {
 		return;
 	}
 	push @args, 'callSize';
-		
+
 	&generateBenchmarkHeader($FH, $op->{'name'}, $imp, $out);
 	print $FH $CODE_INDENT, "$imp.", $op->{'name'}, '(', join(', ', @args), ");\n";
 	&generateBenchmarkFooter($FH);
@@ -301,7 +301,7 @@ sub generateBenchmark1i {
 
 sub generateBenchmark1o {
 	my ($FH, $op, $imp) = (@_);
-	
+
 	my $out;
 	my @args = ();
 	eval {
@@ -326,7 +326,7 @@ sub generateBenchmark1o {
 
 sub generateBenchmark2i {
 	my ($FH, $op, $imp) = (@_);
-	
+
 	my $out;
 	my @args = ();
 	eval {
@@ -347,7 +347,7 @@ sub generateBenchmark2i {
 
 sub generateBenchmark2o {
 	my ($FH, $op, $imp) = (@_);
-	
+
 	my $out;
 	my @args = ();
 	eval {

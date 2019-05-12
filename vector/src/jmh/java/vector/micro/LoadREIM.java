@@ -43,53 +43,53 @@ import java.util.Random;
 @Threads(1)
 @State(Scope.Thread)
 public class LoadREIM {
-    private final static int SEED = 42; // Carefully selected, plucked by hands random number
+	private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
-    private final static int EPV = PFS.length();
+	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
+	private final static int EPV = PFS.length();
 
-    private static final VectorShuffle<Float> SHUFFLE_CV_SPREAD_RE;
-    private static final VectorShuffle<Float> SHUFFLE_CV_SPREAD_IM;
-    private final static int[] LOAD_CV_TO_CV_SPREAD_RE;
-    private final static int[] LOAD_CV_TO_CV_SPREAD_IM;
+	private static final VectorShuffle<Float> SHUFFLE_CV_SPREAD_RE;
+	private static final VectorShuffle<Float> SHUFFLE_CV_SPREAD_IM;
+	private final static int[] LOAD_CV_TO_CV_SPREAD_RE;
+	private final static int[] LOAD_CV_TO_CV_SPREAD_IM;
 
-    static {
-        // [(re0, im0), (re1, im1), ...] -> [(re0, re0), (re1, re1), ...]
-        SHUFFLE_CV_SPREAD_RE = VectorShuffle.shuffle(PFS, i -> i - i % 2);
-        // [(re0, im0), (re1, im1), ...] -> [(im0, im0), (im1, im1), ...]
-        SHUFFLE_CV_SPREAD_IM = VectorShuffle.shuffle(PFS, i -> i - i % 2 + 1);
+	static {
+		// [(re0, im0), (re1, im1), ...] -> [(re0, re0), (re1, re1), ...]
+		SHUFFLE_CV_SPREAD_RE = VectorShuffle.shuffle(PFS, i -> i - i % 2);
+		// [(re0, im0), (re1, im1), ...] -> [(im0, im0), (im1, im1), ...]
+		SHUFFLE_CV_SPREAD_IM = VectorShuffle.shuffle(PFS, i -> i - i % 2 + 1);
 
-        LOAD_CV_TO_CV_SPREAD_RE = SHUFFLE_CV_SPREAD_RE.toArray();
-        LOAD_CV_TO_CV_SPREAD_IM = SHUFFLE_CV_SPREAD_IM.toArray();
-    }
+		LOAD_CV_TO_CV_SPREAD_RE = SHUFFLE_CV_SPREAD_RE.toArray();
+		LOAD_CV_TO_CV_SPREAD_IM = SHUFFLE_CV_SPREAD_IM.toArray();
+	}
 
-    private float x[];
+	private float x[];
 
-    @Setup(Level.Trial)
-    public void Setup() {
-        Random r = new Random(SEED);
+	@Setup(Level.Trial)
+	public void Setup() {
+		Random r = new Random(SEED);
 
-        x = new float[EPV * 2];
-        for (int i = 0; i < x.length; i++) {
-            x[i] = r.nextFloat() * 2.0f - 1.0f;
-        }
-    }
+		x = new float[EPV * 2];
+		for (int i = 0; i < x.length; i++) {
+			x[i] = r.nextFloat() * 2.0f - 1.0f;
+		}
+	}
 
 
-    @Benchmark
-    public void load_with_spread(Blackhole bh) {
-        final FloatVector vxre = FloatVector.fromArray(PFS, x, 0, LOAD_CV_TO_CV_SPREAD_RE, 0);
-        final FloatVector vxim = FloatVector.fromArray(PFS, x, 0, LOAD_CV_TO_CV_SPREAD_IM, 0);
-        bh.consume(vxre);
-        bh.consume(vxim);
-    }
+	@Benchmark
+	public void load_with_spread(Blackhole bh) {
+		final FloatVector vxre = FloatVector.fromArray(PFS, x, 0, LOAD_CV_TO_CV_SPREAD_RE, 0);
+		final FloatVector vxim = FloatVector.fromArray(PFS, x, 0, LOAD_CV_TO_CV_SPREAD_IM, 0);
+		bh.consume(vxre);
+		bh.consume(vxim);
+	}
 
-    @Benchmark
-    public void load_simple_shuffle(Blackhole bh) {
-        final FloatVector vx = FloatVector.fromArray(PFS, x, 0);
-        final FloatVector vxre = vx.rearrange(SHUFFLE_CV_SPREAD_RE);
-        final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
-        bh.consume(vxre);
-        bh.consume(vxim);
-    }
+	@Benchmark
+	public void load_simple_shuffle(Blackhole bh) {
+		final FloatVector vx = FloatVector.fromArray(PFS, x, 0);
+		final FloatVector vxre = vx.rearrange(SHUFFLE_CV_SPREAD_RE);
+		final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
+		bh.consume(vxre);
+		bh.consume(vxim);
+	}
 }

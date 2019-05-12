@@ -43,34 +43,34 @@ import java.util.Random;
 @Threads(1)
 @State(Scope.Thread)
 public class LoadCStoCV {
-    private final static int SEED = 42; // Carefully selected, plucked by hands random number
+	private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
-    private final static int EPV = PFS.length();
-    private final static VectorSpecies<Float> FS64 = FloatVector.SPECIES_64;
+	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
+	private final static int EPV = PFS.length();
+	private final static VectorSpecies<Float> FS64 = FloatVector.SPECIES_64;
 
-    private final static VectorShuffle<Float> SHUFFLE_CS_TO_CV = VectorShuffle.shuffle(PFS, i -> i % 2);
-    private final static int[] LOAD_CS_TO_CV_SPREAD = SHUFFLE_CS_TO_CV.toArray();
+	private final static VectorShuffle<Float> SHUFFLE_CS_TO_CV = VectorShuffle.shuffle(PFS, i -> i % 2);
+	private final static int[] LOAD_CS_TO_CV_SPREAD = SHUFFLE_CS_TO_CV.toArray();
 
-    private float x[];
+	private float x[];
 
-    @Setup(Level.Trial)
-    public void Setup() {
-        Random r = new Random(SEED);
+	@Setup(Level.Trial)
+	public void Setup() {
+		Random r = new Random(SEED);
 
-        x = new float[EPV * 2];
-        for (int i = 0; i < x.length; i++) {
-            x[i] = r.nextFloat() * 2.0f - 1.0f;
-        }
-    }
+		x = new float[EPV * 2];
+		for (int i = 0; i < x.length; i++) {
+			x[i] = r.nextFloat() * 2.0f - 1.0f;
+		}
+	}
 
-    @Benchmark
-    public void load_with_spread(Blackhole bh) {
-        bh.consume(FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0));
-    }
+	@Benchmark
+	public void load_with_spread(Blackhole bh) {
+		bh.consume(FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0));
+	}
 
-    @Benchmark
-    public void load_reshape_shuffle(Blackhole bh) {
-        bh.consume(FloatVector.fromArray(FS64, x, 0).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV));
-    }
+	@Benchmark
+	public void load_reshape_shuffle(Blackhole bh) {
+		bh.consume(FloatVector.fromArray(FS64, x, 0).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV));
+	}
 }

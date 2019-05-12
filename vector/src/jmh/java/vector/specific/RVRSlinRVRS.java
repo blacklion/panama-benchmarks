@@ -41,94 +41,94 @@ import java.util.Random;
 @Threads(1)
 @State(Scope.Thread)
 public class RVRSlinRVRS {
-    private final static int SEED = 42; // Carefully selected, plucked by hands random number
+	private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
-    private final static int EPV = PFS.length();
+	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
+	private final static int EPV = PFS.length();
 
-    private float x[];
-    private float y[];
-    private float z[];
-    private float a1, a2;
-    /** @noinspection unused*/
-    @Param({"128"})
-    private int count;
+	private float x[];
+	private float y[];
+	private float z[];
+	private float a1, a2;
+	/** @noinspection unused*/
+	@Param({"128"})
+	private int count;
 
-    @Setup
-    public void Setup() {
-        Random r = new Random(SEED);
+	@Setup
+	public void Setup() {
+		Random r = new Random(SEED);
 
-        x = new float[count];
-        y = new float[count];
-        z = new float[count];
+		x = new float[count];
+		y = new float[count];
+		z = new float[count];
 
-        for (int i = 0; i < y.length; i++) {
-            x[i] = r.nextFloat() * 2.0f - 1.0f;
-            y[i] = r.nextFloat() * 2.0f - 1.0f;
-        }
-        a1 = r.nextFloat() * 2.0f - 1.0f;
-        a2 = r.nextFloat() * 2.0f - 1.0f;
-    }
+		for (int i = 0; i < y.length; i++) {
+			x[i] = r.nextFloat() * 2.0f - 1.0f;
+			y[i] = r.nextFloat() * 2.0f - 1.0f;
+		}
+		a1 = r.nextFloat() * 2.0f - 1.0f;
+		a2 = r.nextFloat() * 2.0f - 1.0f;
+	}
 
-    @Benchmark
-    public void nv() { rv_rs_lin_rv_rs_0(z, 0, x, 0, a1, y, 0, a2, count); }
+	@Benchmark
+	public void nv() { rv_rs_lin_rv_rs_0(z, 0, x, 0, a1, y, 0, a2, count); }
 
-    @Benchmark
-    public void naive() { rv_rs_lin_rv_rs_1(z, 0, x, 0, a1, y, 0, a2, count); }
+	@Benchmark
+	public void naive() { rv_rs_lin_rv_rs_1(z, 0, x, 0, a1, y, 0, a2, count); }
 
-    @Benchmark
-    public void fma() { rv_rs_lin_rv_rs_2(z, 0, x, 0, a1, y, 0, a2, count); }
+	@Benchmark
+	public void fma() { rv_rs_lin_rv_rs_2(z, 0, x, 0, a1, y, 0, a2, count); }
 
-    private static void rv_rs_lin_rv_rs_0(float z[], int zOffset, float x[], int xOffset, float a1, float y[], int yOffset, float a2, int count) {
-        while (count-- > 0)
-            z[zOffset++] = x[xOffset++] * a1 + y[yOffset++] * a2;
-    }
+	private static void rv_rs_lin_rv_rs_0(float z[], int zOffset, float x[], int xOffset, float a1, float y[], int yOffset, float a2, int count) {
+		while (count-- > 0)
+			z[zOffset++] = x[xOffset++] * a1 + y[yOffset++] * a2;
+	}
 
-    private static void rv_rs_lin_rv_rs_1(float z[], int zOffset, float x[], int xOffset, float a1, float y[], int yOffset, float a2, int count) {
-        FloatVector va1 = null;
-        FloatVector va2 = null;
-        //@DONE: it is fater thab ...mul(a1)
-        if (count >= EPV) {
-            va1 = FloatVector.broadcast(PFS, a1);
-            va2 = FloatVector.broadcast(PFS, a2);
-        }
+	private static void rv_rs_lin_rv_rs_1(float z[], int zOffset, float x[], int xOffset, float a1, float y[], int yOffset, float a2, int count) {
+		FloatVector va1 = null;
+		FloatVector va2 = null;
+		//@DONE: it is fater thab ...mul(a1)
+		if (count >= EPV) {
+			va1 = FloatVector.broadcast(PFS, a1);
+			va2 = FloatVector.broadcast(PFS, a2);
+		}
 
-        while (count >= EPV) {
-            final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-            final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
-            vx.mul(va1).add(vy.mul(va2)).intoArray(z, zOffset);
+		while (count >= EPV) {
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+			vx.mul(va1).add(vy.mul(va2)).intoArray(z, zOffset);
 
-            xOffset += EPV;
-            yOffset += EPV;
-            zOffset += EPV;
-            count -= EPV;
-        }
+			xOffset += EPV;
+			yOffset += EPV;
+			zOffset += EPV;
+			count -= EPV;
+		}
 
-        while (count-- > 0)
-            z[zOffset++] = x[xOffset++] * a1 + y[yOffset++] * a2;
-    }
+		while (count-- > 0)
+			z[zOffset++] = x[xOffset++] * a1 + y[yOffset++] * a2;
+	}
 
-    private static void rv_rs_lin_rv_rs_2(float z[], int zOffset, float x[], int xOffset, float a1, float y[], int yOffset, float a2, int count) {
-        FloatVector va1 = null;
-        FloatVector va2 = null;
-        //@DONE: it is fater thab ...mul(a1)
-        if (count >= EPV) {
-            va1 = FloatVector.broadcast(PFS, a1);
-            va2 = FloatVector.broadcast(PFS, a2);
-        }
+	private static void rv_rs_lin_rv_rs_2(float z[], int zOffset, float x[], int xOffset, float a1, float y[], int yOffset, float a2, int count) {
+		FloatVector va1 = null;
+		FloatVector va2 = null;
+		//@DONE: it is fater thab ...mul(a1)
+		if (count >= EPV) {
+			va1 = FloatVector.broadcast(PFS, a1);
+			va2 = FloatVector.broadcast(PFS, a2);
+		}
 
-        while (count >= EPV) {
-            final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-            final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
-            vx.fma(va1, vy.mul(va2)).intoArray(z, zOffset);
+		while (count >= EPV) {
+			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+			vx.fma(va1, vy.mul(va2)).intoArray(z, zOffset);
 
-            xOffset += EPV;
-            yOffset += EPV;
-            zOffset += EPV;
-            count -= EPV;
-        }
+			xOffset += EPV;
+			yOffset += EPV;
+			zOffset += EPV;
+			count -= EPV;
+		}
 
-        while (count-- > 0)
-            z[zOffset++] = x[xOffset++] * a1 + y[yOffset++] * a2;
-    }
+		while (count-- > 0)
+			z[zOffset++] = x[xOffset++] * a1 + y[yOffset++] * a2;
+	}
 }

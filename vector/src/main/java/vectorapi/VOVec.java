@@ -83,9 +83,9 @@ public final class VOVec {
 	private final static VectorShuffle<Float> SHUFFLE_CV_SPREAD_IM;
 
 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST;
- 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST;
- 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND;
- 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND;
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST;
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND;
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND;
 
 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_FRONT_RE;
 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_FRONT_IM;
@@ -538,7 +538,7 @@ public final class VOVec {
 		FloatVector vx = null;
 		if (count >= EPV)
 			vx = FloatVector.broadcast(PFS, x);
-			
+
 		while (count >= EPV) {
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
 			vx.sub(vy).intoArray(z, zOffset);
@@ -914,7 +914,7 @@ public final class VOVec {
 		FloatVector vy = null;
 		//@DONE: it is fater thab vx.mul(y)
 		if (count >= EPV)
-		    vy = FloatVector.broadcast(PFS, y);
+			vy = FloatVector.broadcast(PFS, y);
 
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
@@ -948,7 +948,7 @@ public final class VOVec {
 		FloatVector vy = null;
 		//@DONE: it is fater thab vx.mul(y)
 		if (count >= EPV2)
-		    vy = FloatVector.broadcast(PFS, y);
+			vy = FloatVector.broadcast(PFS, y);
 
 		xOffset <<= 1;
 		zOffset <<= 1;
@@ -1095,7 +1095,7 @@ public final class VOVec {
 		FloatVector vx = null;
 		//@DONE: it is fater thab vz.mul(x)
 		if (count >= EPV)
-		    vx = FloatVector.broadcast(PFS, x);
+			vx = FloatVector.broadcast(PFS, x);
 
 		while (count >= EPV) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
@@ -1128,7 +1128,7 @@ public final class VOVec {
 		FloatVector vx = null;
 		//@DONE: it is fater thab vz.mul(x)
 		if (count >= EPV2)
-		    vx = FloatVector.broadcast(PFS, x);
+			vx = FloatVector.broadcast(PFS, x);
 
 		zOffset <<= 1;
 
@@ -1277,7 +1277,7 @@ public final class VOVec {
 		FloatVector vy = null;
 		//@DONE: it is fater thab vx.div(y)
 		if (count >= EPV)
-		    vy = FloatVector.broadcast(PFS, y);
+			vy = FloatVector.broadcast(PFS, y);
 
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
@@ -1330,7 +1330,7 @@ public final class VOVec {
 		FloatVector vy = null;
 		//@DONE: it is fater thab vx.div(y)
 		if (count >= EPV2)
-		    vy = FloatVector.broadcast(PFS, y);
+			vy = FloatVector.broadcast(PFS, y);
 
 		zOffset <<= 1;
 		xOffset <<= 1;
@@ -2067,7 +2067,7 @@ public final class VOVec {
 		FloatVector vy = null;
 		//@DONE: it is fater thab ...mul(y)
 		if (count >= EPV)
-		    vy = FloatVector.broadcast(PFS, y);
+			vy = FloatVector.broadcast(PFS, y);
 
 		xOffset <<= 1;
 
@@ -3499,7 +3499,7 @@ public final class VOVec {
 		while (count-- > 0)
 			z[zOffset++] = 10 * (float)Math.log10(Math.abs(x[xOffset++]) + Float.MIN_NORMAL) - base;
 	}
-	
+
 	public static void cv_10log10(float z[], int zOffset, float x[], int xOffset, int count) {
 		xOffset <<= 1;
 

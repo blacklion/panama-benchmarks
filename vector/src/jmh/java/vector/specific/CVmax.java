@@ -42,22 +42,22 @@ import java.util.Random;
 public class CVmax {
 	private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
-    private final static int EPV = PFS.length();
-    private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
-    private final static int EPV2 = PFS2.length();
+	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
+	private final static int EPV = PFS.length();
+	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
+	private final static int EPV2 = PFS2.length();
 
-    private final static VectorMask<Float> MASK_SECOND_HALF;
+	private final static VectorMask<Float> MASK_SECOND_HALF;
 
 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST;
 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST;
 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND;
 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND;
 
-    static {
-        boolean[] sh = new boolean[EPV];
-        Arrays.fill(sh, EPV / 2, sh.length, true);
-        MASK_SECOND_HALF = VectorMask.fromArray(PFS, sh, 0);
+	static {
+		boolean[] sh = new boolean[EPV];
+		Arrays.fill(sh, EPV / 2, sh.length, true);
+		MASK_SECOND_HALF = VectorMask.fromArray(PFS, sh, 0);
 
 		// [(re0, im0), (re1, im1), ...] -> [re0, re1, ..., re_len, ?, ...]
 		SHUFFLE_CV_TO_CV_PACK_RE_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
@@ -70,22 +70,22 @@ public class CVmax {
 	}
 
 	private float x[];
-    private float z[];
+	private float z[];
 	/** @noinspection unused*/
 	@Param({"128"})
 	private int count;
 
-    @Setup(Level.Trial)
-    public void Setup() {
+	@Setup(Level.Trial)
+	public void Setup() {
 		Random r = new Random(SEED);
 
 		x = new float[count * 2];
-        z = new float[2];
+		z = new float[2];
 
-        for (int i = 0; i < x.length; i++) {
-            x[i] = r.nextFloat() * 2.0f - 1.0f;
-        }
-    }
+		for (int i = 0; i < x.length; i++) {
+			x[i] = r.nextFloat() * 2.0f - 1.0f;
+		}
+	}
 
 	@Benchmark
 	public void nv() { cv_max_0(z, x, 0, count); }
@@ -93,7 +93,7 @@ public class CVmax {
 	@Benchmark
 	public void in_loop_lane() { cv_max_1(z, x, 0, count); }
 
-    @Benchmark
+	@Benchmark
 	public void out_of_loop_lane() { cv_max_2(z, x, 0, count); }
 
 	@Benchmark

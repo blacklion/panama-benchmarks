@@ -40,43 +40,43 @@ import java.util.Random;
 @Threads(1)
 @State(Scope.Thread)
 public class LoadRVtoCVBoth {
-    private final static int SEED = 42; // Carefully selected, plucked by hands random number
+	private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
-    private final static int EPV = PFS.length();
-    private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
+	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
+	private final static int EPV = PFS.length();
+	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
 
-    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_BOTH;
-    private final static int[] LOAD_RV_TO_CV_BOTH;
+	private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_BOTH;
+	private final static int[] LOAD_RV_TO_CV_BOTH;
 
-    static {
-        // [r0, r1, ...] -> [(r0, r0), (r1, r1), ...]
-        SHUFFLE_RV_TO_CV_BOTH = VectorShuffle.shuffle(PFS, i -> i / 2);
+	static {
+		// [r0, r1, ...] -> [(r0, r0), (r1, r1), ...]
+		SHUFFLE_RV_TO_CV_BOTH = VectorShuffle.shuffle(PFS, i -> i / 2);
 
-        LOAD_RV_TO_CV_BOTH = SHUFFLE_RV_TO_CV_BOTH.toArray();
-    }
+		LOAD_RV_TO_CV_BOTH = SHUFFLE_RV_TO_CV_BOTH.toArray();
+	}
 
-    private float x[];
+	private float x[];
 
-    @Setup(Level.Trial)
-    public void Setup() {
-        Random r = new Random(SEED);
+	@Setup(Level.Trial)
+	public void Setup() {
+		Random r = new Random(SEED);
 
-        x = new float[EPV * 2];
-        for (int i = 0; i < x.length; i++) {
-            x[i] = r.nextFloat() * 2.0f - 1.0f;
-        }
-    }
+		x = new float[EPV * 2];
+		for (int i = 0; i < x.length; i++) {
+			x[i] = r.nextFloat() * 2.0f - 1.0f;
+		}
+	}
 
 
-    @Benchmark
-    public void load_with_spread(Blackhole bh) {
-        bh.consume(FloatVector.fromArray(PFS, x, 0, LOAD_RV_TO_CV_BOTH, 0));
-    }
+	@Benchmark
+	public void load_with_spread(Blackhole bh) {
+		bh.consume(FloatVector.fromArray(PFS, x, 0, LOAD_RV_TO_CV_BOTH, 0));
+	}
 
-    @Benchmark
-    public void load_simple_shuffle(Blackhole bh) {
-        final FloatVector vr = FloatVector.fromArray(PFS2, x, 0);
-        bh.consume(vr.reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH));
-    }
+	@Benchmark
+	public void load_simple_shuffle(Blackhole bh) {
+		final FloatVector vr = FloatVector.fromArray(PFS2, x, 0);
+		bh.consume(vr.reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH));
+	}
 }

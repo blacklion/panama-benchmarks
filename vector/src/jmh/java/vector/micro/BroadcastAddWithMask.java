@@ -49,37 +49,37 @@ public class BroadcastAddWithMask {
 	private final static int EPV = PFS.length();
 	private final static VectorMask<Float> MASK_C_RE;
 
-    static {
+	static {
 		boolean[] alter = new boolean[EPV];
 		alter[0] = true;
 		for (int i = 1; i < alter.length; i++)
 			alter[i] = !alter[i-1];
 		MASK_C_RE = VectorMask.fromArray(PFS, alter, 0);
-    }
+	}
 
-    private float x[];
-    private float y;
-    private FloatVector vy;
+	private float x[];
+	private float y;
+	private FloatVector vy;
 
-    @Setup(Level.Trial)
-    public void Setup() {
-    	Random r = new Random(SEED);
-        x = new float[EPV * 2];
-        for (int i = 0; i < x.length; i++) {
-            x[i] = r.nextFloat() * 2.0f - 1.0f;
-        }
-        y = r.nextFloat() * 2.0f - 1.0f;
-        vy = FloatVector.zero(PFS).blend(y, MASK_C_RE);
-    }
+	@Setup(Level.Trial)
+	public void Setup() {
+		Random r = new Random(SEED);
+		x = new float[EPV * 2];
+		for (int i = 0; i < x.length; i++) {
+			x[i] = r.nextFloat() * 2.0f - 1.0f;
+		}
+		y = r.nextFloat() * 2.0f - 1.0f;
+		vy = FloatVector.zero(PFS).blend(y, MASK_C_RE);
+	}
 
 
-    @Benchmark
-    public void addsm(Blackhole bh) {
-        bh.consume(FloatVector.fromArray(PFS, x, 0).add(y, MASK_C_RE));
-    }
+	@Benchmark
+	public void addsm(Blackhole bh) {
+		bh.consume(FloatVector.fromArray(PFS, x, 0).add(y, MASK_C_RE));
+	}
 
-    @Benchmark
-    public void addv(Blackhole bh) {
-        bh.consume(FloatVector.fromArray(PFS, x, 0).add(vy));
-    }
+	@Benchmark
+	public void addv(Blackhole bh) {
+		bh.consume(FloatVector.fromArray(PFS, x, 0).add(vy));
+	}
 }

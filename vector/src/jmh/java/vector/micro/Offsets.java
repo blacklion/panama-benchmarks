@@ -41,44 +41,44 @@ import java.util.Random;
 @Threads(1)
 @State(org.openjdk.jmh.annotations.Scope.Thread)
 public class Offsets {
-    private final static int SEED = 42; // Carefully selected, plucked by hands random number
+	private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
-    private final static int EPV = PFS.length();
+	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
+	private final static int EPV = PFS.length();
 
-    private FloatVector zero;
-    private float x[];
-    private float y[];
-    /** @noinspection unused*/
-    @Param({"0", "1", "2", "3", "4", "5", "6", "7"})
-    private int offset;
+	private FloatVector zero;
+	private float x[];
+	private float y[];
+	/** @noinspection unused*/
+	@Param({"0", "1", "2", "3", "4", "5", "6", "7"})
+	private int offset;
 
-    @Setup(Level.Trial)
-    public void Setup() {
-        Random r = new Random(SEED);
+	@Setup(Level.Trial)
+	public void Setup() {
+		Random r = new Random(SEED);
 
-        zero = FloatVector.zero(PFS);
-        x = new float[EPV + offset];
-        y = new float[EPV + offset];
-        
-        for (int i = 0; i < x.length; i++) {
-            x[i] = r.nextFloat() * 2.0f - 1.0f;
-            y[i] = r.nextFloat() * 2.0f - 1.0f;
-        }
-    }
+		zero = FloatVector.zero(PFS);
+		x = new float[EPV + offset];
+		y = new float[EPV + offset];
 
-    @Benchmark
-    public void load(Blackhole bh) {
-        bh.consume(FloatVector.fromArray(PFS, x, offset));
-    }
+		for (int i = 0; i < x.length; i++) {
+			x[i] = r.nextFloat() * 2.0f - 1.0f;
+			y[i] = r.nextFloat() * 2.0f - 1.0f;
+		}
+	}
 
-    @Benchmark
-    public void store() {
-        zero.intoArray(y, offset);
-    }
+	@Benchmark
+	public void load(Blackhole bh) {
+		bh.consume(FloatVector.fromArray(PFS, x, offset));
+	}
 
-    @Benchmark
-    public void load_store() {
-         FloatVector.fromArray(PFS, x, offset).intoArray(y, offset);
-    }
+	@Benchmark
+	public void store() {
+		zero.intoArray(y, offset);
+	}
+
+	@Benchmark
+	public void load_store() {
+		 FloatVector.fromArray(PFS, x, offset).intoArray(y, offset);
+	}
 }

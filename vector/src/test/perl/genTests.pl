@@ -153,14 +153,14 @@ public class VectorTests {
     private static float cvx[];
     private static float cvy[];
     private static float cvz[];
-    
+
     private static float rsx;
     private static float rsy;
     private static float rsz;
-    
+
     private static float csx[];
     private static float csy[];
-    
+
     \@BeforeAll
     public static void Setup() {
         rvx = new float[DATA_SIZE + MAX_OFFSET];
@@ -180,11 +180,11 @@ public class VectorTests {
             cvy[i] = (float)(Math.random() * 2.0 - 1.0);
             cvz[i] = (float)(Math.random() * 2.0 - 1.0);
         }
-        
+
         rsx = (float)(Math.random() * 2.0 - 1.0);
         rsy = (float)(Math.random() * 2.0 - 1.0);
         rsz = (float)(Math.random() * 2.0 - 1.0);
-        
+
         csx = new float[] { (float)(Math.random() * 2.0 - 1.0), (float)(Math.random() * 2.0 - 1.0) };
         csy = new float[] { (float)(Math.random() * 2.0 - 1.0), (float)(Math.random() * 2.0 - 1.0) };
     }
@@ -197,7 +197,7 @@ for my $name (sort keys %{$VEC}) {
 
 	# Parse this op
 	my $op;
-	
+
 	eval { $op = &OpAnalyzer::parseOp($name, $VEC->{$name}); };
 	if ($@) {
 		print STDERR $@;
@@ -255,7 +255,7 @@ sub generateTest1i {
 
 sub generateTest1o {
 	my $op = shift;
-	
+
 	my $out;
 	my @args1 = ();
 	my @args2 = ();
