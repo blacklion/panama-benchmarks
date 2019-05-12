@@ -33,16 +33,14 @@ import org.openjdk.jmh.annotations.*;
 import java.util.Arrays;
 import java.util.Random;
 
-/** @noinspection CStyleArrayDeclaration, WeakerAccess, PointlessArithmeticExpression */
+/** @noinspection PointlessArithmeticExpression, CStyleArrayDeclaration, SameParameterValue */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
 @Threads(1)
 @State(Scope.Thread)
-public class CVMax {
+public class CVmax {
 	private final static int SEED = 42; // Carefully selected, plucked by hands random number
-
-    private final static int MAX_SIZE = 128;
 
     private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
     private final static int EPV = PFS.length();
@@ -51,25 +49,37 @@ public class CVMax {
 
     private final static VectorMask<Float> MASK_SECOND_HALF;
 
-	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
-	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
-	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
-	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1: 0);
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST;
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST;
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND;
+	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND;
 
     static {
         boolean[] sh = new boolean[EPV];
         Arrays.fill(sh, EPV / 2, sh.length, true);
         MASK_SECOND_HALF = VectorMask.fromArray(PFS, sh, 0);
+
+		// [(re0, im0), (re1, im1), ...] -> [re0, re1, ..., re_len, ?, ...]
+		SHUFFLE_CV_TO_CV_PACK_RE_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
+		// [(re0, im0), (re1, im1), ...] -> [im0, im1, ..., im_len, ?, ...]
+		SHUFFLE_CV_TO_CV_PACK_IM_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
+		// [(re0, im0), (re1, im1), ...] -> [?, ..., re0, re1, ..., re_len]
+		SHUFFLE_CV_TO_CV_PACK_RE_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
+		// [(re0, im0), (re1, im1), ...] -> [?, ..., im0, im1, ..., im_len]
+		SHUFFLE_CV_TO_CV_PACK_IM_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1 : 0);
 	}
 
 	private float x[];
     private float z[];
+	/** @noinspection unused*/
+	@Param({"128"})
+	private int count;
 
     @Setup(Level.Trial)
     public void Setup() {
 		Random r = new Random(SEED);
 
-		x = new float[MAX_SIZE * 2];
+		x = new float[count * 2];
         z = new float[2];
 
         for (int i = 0; i < x.length; i++) {
@@ -78,24 +88,37 @@ public class CVMax {
     }
 
 	@Benchmark
-	public void find_internal() { cv_max_0(z, x, 0, MAX_SIZE); }
+	public void nv() { cv_max_0(z, x, 0, count); }
+
+	@Benchmark
+	public void in_loop_lane() { cv_max_1(z, x, 0, count); }
 
     @Benchmark
-	public void find_external() {
-		cv_max_1(z, x, 0, MAX_SIZE);
-	}
+	public void out_of_loop_lane() { cv_max_2(z, x, 0, count); }
 
 	@Benchmark
-	public void find_array() {
-		cv_max_3(z, x, 0, MAX_SIZE);
-	}
+	public void in_loop_into_array() { cv_max_3(z, x, 0, count); }
 
 	@Benchmark
-	public void find_nv() {
-		cv_max_4(z, x, 0, MAX_SIZE);
-	}
+	public void out_of_loop_into_array() { cv_max_4(z, x, 0, count); }
 
 	private static void cv_max_0(float z[], float x[], int xOffset, int count) {
+		float max = Float.NEGATIVE_INFINITY;
+		int i = -1;
+		xOffset <<= 1;
+		while (count-- > 0) {
+			float abs = x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1];
+			if (max < abs) {
+				max = abs;
+				i = xOffset;
+			}
+			xOffset += 2;
+		}
+		z[0] = x[i + 0];
+		z[1] = x[i + 1];
+	}
+
+	private static void cv_max_1(float z[], float x[], int xOffset, int count) {
 		float max = Float.NEGATIVE_INFINITY;
 		int i = -1;
 		xOffset <<= 1;
@@ -143,7 +166,7 @@ public class CVMax {
 		z[1] = x[i + 1];
 	}
 
-	private static void cv_max_1(float z[], float x[], int xOffset, int count) {
+	private static void cv_max_2(float z[], float x[], int xOffset, int count) {
 		float max = Float.NEGATIVE_INFINITY;
 		FloatVector vmax = null;
 		int i = -1;
@@ -245,8 +268,48 @@ public class CVMax {
 
 	private static void cv_max_4(float z[], float x[], int xOffset, int count) {
 		float max = Float.NEGATIVE_INFINITY;
+		FloatVector vmax = null;
 		int i = -1;
 		xOffset <<= 1;
+
+		while (count >= EPV) {
+			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
+			final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + PFS.length());
+
+			final FloatVector vx1re = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST);
+			final FloatVector vx1im = vx1.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST);
+
+			final FloatVector vx2re = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_SECOND);
+			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
+
+			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
+			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
+
+			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
+			float localMax = vxabs.maxLanes();
+			if (max < localMax) {
+				vmax = vxabs;
+				i = xOffset;
+				max = localMax;
+			}
+
+			xOffset += EPV * 2;
+			count -= EPV;
+		}
+
+		// Find max in stored vector
+		if (i >= 0) {
+			float amax[] = new float[EPV];
+			vmax.intoArray(amax, 0);
+			for (int j = 0; j < EPV; j++) {
+				if (amax[j] == max) {
+					i += j * 2;
+					break;
+				}
+			}
+		}
+
 		while (count-- > 0) {
 			float abs = x[xOffset + 0] * x[xOffset + 0] + x[xOffset + 1] * x[xOffset + 1];
 			if (max < abs) {

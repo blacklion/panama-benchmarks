@@ -31,19 +31,16 @@ import jdk.incubator.vector.*;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
-import java.util.Arrays;
 import java.util.Random;
 
-/** @noinspection CStyleArrayDeclaration, WeakerAccess, PointlessArithmeticExpression */
+/** @noinspection CStyleArrayDeclaration, SameParameterValue */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
 @Threads(1)
 @State(Scope.Thread)
-public class RVMax {
+public class RVmax {
 	private final static int SEED = 42; // Carefully selected, plucked by hands random number
-
-    private final static int MAX_SIZE = 65536;
 
     private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
     private final static int EPV = PFS.length();
@@ -51,6 +48,7 @@ public class RVMax {
     private final static FloatVector NEGATIVE_INFINITY = FloatVector.broadcast(PFS, Float.NEGATIVE_INFINITY);
 
 	private float x[];
+	/** @noinspection unused*/
 	@Param({"128"})
 	private int count;
 
@@ -58,7 +56,7 @@ public class RVMax {
     public void Setup() {
 		Random r = new Random(SEED);
 
-		x = new float[MAX_SIZE];
+		x = new float[count];
 
         for (int i = 0; i < x.length; i++) {
             x[i] = r.nextFloat() * 2.0f - 1.0f;
@@ -66,12 +64,25 @@ public class RVMax {
     }
 
 	@Benchmark
-	public void lines_in(Blackhole bh) { bh.consume(rv_max_0(x, 0, count)); }
+	public void nv(Blackhole bh) { bh.consume(rv_max_0(x, 0, count)); }
 
 	@Benchmark
-	public void lines_out(Blackhole bh) { bh.consume(rv_max_1(x, 0, count)); }
+	public void max_lanes(Blackhole bh) { bh.consume(rv_max_1(x, 0, count)); }
+
+	@Benchmark
+	public void vector_max(Blackhole bh) { bh.consume(rv_max_2(x, 0, count)); }
 
 	private static float rv_max_0(float x[], int xOffset, int count) {
+		float max = Float.NEGATIVE_INFINITY;
+		while (count-- > 0) {
+			if (max < x[xOffset])
+				max = x[xOffset];
+			xOffset += 1;
+		}
+		return max;
+	}
+
+	private static float rv_max_1(float x[], int xOffset, int count) {
 		float max = Float.NEGATIVE_INFINITY;
 
 		while (count >= EPV) {
@@ -91,7 +102,7 @@ public class RVMax {
 		return max;
 	}
 
-	private static float rv_max_1(float x[], int xOffset, int count) {
+	private static float rv_max_2(float x[], int xOffset, int count) {
     	FloatVector vmax = NEGATIVE_INFINITY;
     	final boolean needLanes = count >= EPV;
 		while (count >= EPV) {

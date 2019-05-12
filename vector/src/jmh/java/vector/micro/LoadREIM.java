@@ -25,61 +25,71 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ****************************************************************************/
 
-package vector.specific;
+package vector.micro;
 
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.Vector;
-import jdk.incubator.vector.VectorMask;
+import jdk.incubator.vector.VectorShuffle;
 import jdk.incubator.vector.VectorSpecies;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
 
-/** @noinspection CStyleArrayDeclaration*/
+/** @noinspection CStyleArrayDeclaration, SameParameterValue */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
 @Threads(1)
 @State(Scope.Thread)
-public class BroadcastAddWithMask {
-	private final static int SEED = 42; // Carefully selected, plucked by hands random number
+public class LoadREIM {
+    private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
-	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
-	private final static int EPV = PFS.length();
-	private final static VectorMask<Float> MASK_C_RE;
+    private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
+    private final static int EPV = PFS.length();
+
+    private static final VectorShuffle<Float> SHUFFLE_CV_SPREAD_RE;
+    private static final VectorShuffle<Float> SHUFFLE_CV_SPREAD_IM;
+    private final static int[] LOAD_CV_TO_CV_SPREAD_RE;
+    private final static int[] LOAD_CV_TO_CV_SPREAD_IM;
 
     static {
-		boolean[] alter = new boolean[EPV];
-		alter[0] = true;
-		for (int i = 1; i < alter.length; i++)
-			alter[i] = !alter[i-1];
-		MASK_C_RE = VectorMask.fromArray(PFS, alter, 0);
+        // [(re0, im0), (re1, im1), ...] -> [(re0, re0), (re1, re1), ...]
+        SHUFFLE_CV_SPREAD_RE = VectorShuffle.shuffle(PFS, i -> i - i % 2);
+        // [(re0, im0), (re1, im1), ...] -> [(im0, im0), (im1, im1), ...]
+        SHUFFLE_CV_SPREAD_IM = VectorShuffle.shuffle(PFS, i -> i - i % 2 + 1);
+
+        LOAD_CV_TO_CV_SPREAD_RE = SHUFFLE_CV_SPREAD_RE.toArray();
+        LOAD_CV_TO_CV_SPREAD_IM = SHUFFLE_CV_SPREAD_IM.toArray();
     }
 
     private float x[];
-    private float y;
-    private FloatVector vy;
 
     @Setup(Level.Trial)
     public void Setup() {
-    	Random r = new Random(SEED);
+        Random r = new Random(SEED);
+
         x = new float[EPV * 2];
         for (int i = 0; i < x.length; i++) {
             x[i] = r.nextFloat() * 2.0f - 1.0f;
         }
-        y = r.nextFloat() * 2.0f - 1.0f;
-        vy = FloatVector.zero(PFS).blend(y, MASK_C_RE);
     }
 
 
     @Benchmark
-    public void addsm(Blackhole bh) {
-        bh.consume(FloatVector.fromArray(PFS, x, 0).add(y, MASK_C_RE));
+    public void load_with_spread(Blackhole bh) {
+        final FloatVector vxre = FloatVector.fromArray(PFS, x, 0, LOAD_CV_TO_CV_SPREAD_RE, 0);
+        final FloatVector vxim = FloatVector.fromArray(PFS, x, 0, LOAD_CV_TO_CV_SPREAD_IM, 0);
+        bh.consume(vxre);
+        bh.consume(vxim);
     }
 
     @Benchmark
-    public void addv(Blackhole bh) {
-        bh.consume(FloatVector.fromArray(PFS, x, 0).add(vy));
+    public void load_simple_shuffle(Blackhole bh) {
+        final FloatVector vx = FloatVector.fromArray(PFS, x, 0);
+        final FloatVector vxre = vx.rearrange(SHUFFLE_CV_SPREAD_RE);
+        final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
+        bh.consume(vxre);
+        bh.consume(vxim);
     }
 }

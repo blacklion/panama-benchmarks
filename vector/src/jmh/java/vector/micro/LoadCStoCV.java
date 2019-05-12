@@ -25,64 +25,52 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ****************************************************************************/
 
-package vector.specific;
+package vector.micro;
 
 import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.Vector;
+import jdk.incubator.vector.VectorShuffle;
 import jdk.incubator.vector.VectorSpecies;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
 
-/** @noinspection CStyleArrayDeclaration, WeakerAccess */
+/** @noinspection CStyleArrayDeclaration, SameParameterValue */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
 @Threads(1)
-@State(org.openjdk.jmh.annotations.Scope.Thread)
-public class Offsets {
+@State(Scope.Thread)
+public class LoadCStoCV {
     private final static int SEED = 42; // Carefully selected, plucked by hands random number
-
-    private final static int MAX_OFFSET = 3;
-
-    @Param({"0", "1", "2", "3"})
-    public int offset;
 
     private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
     private final static int EPV = PFS.length();
+    private final static VectorSpecies<Float> FS64 = FloatVector.SPECIES_64;
 
-    private FloatVector zero;
+    private final static VectorShuffle<Float> SHUFFLE_CS_TO_CV = VectorShuffle.shuffle(PFS, i -> i % 2);
+    private final static int[] LOAD_CS_TO_CV_SPREAD = SHUFFLE_CS_TO_CV.toArray();
+
     private float x[];
-    private float y[];
-    
-    
+
     @Setup(Level.Trial)
     public void Setup() {
         Random r = new Random(SEED);
 
-        zero = FloatVector.zero(PFS);
-        x = new float[EPV + MAX_OFFSET];
-        y = new float[EPV + MAX_OFFSET];
-        
+        x = new float[EPV * 2];
         for (int i = 0; i < x.length; i++) {
             x[i] = r.nextFloat() * 2.0f - 1.0f;
-            y[i] = r.nextFloat() * 2.0f - 1.0f;
         }
     }
 
-
     @Benchmark
-    public void load(Blackhole bh) {
-        bh.consume(FloatVector.fromArray(PFS, x, offset));
+    public void load_with_spread(Blackhole bh) {
+        bh.consume(FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0));
     }
 
     @Benchmark
-    public void store() {
-        zero.intoArray(y, offset);
-    }
-
-    @Benchmark
-    public void loadstore() {
-         FloatVector.fromArray(PFS, x, offset).intoArray(y, offset);
+    public void load_reshape_shuffle(Blackhole bh) {
+        bh.consume(FloatVector.fromArray(FS64, x, 0).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV));
     }
 }

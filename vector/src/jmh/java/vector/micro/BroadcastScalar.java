@@ -25,7 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ****************************************************************************/
 
-package vector.specific;
+package vector.micro;
 
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorSpecies;

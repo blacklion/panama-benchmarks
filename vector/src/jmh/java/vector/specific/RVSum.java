@@ -34,16 +34,14 @@ import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
 
-/** @noinspection CStyleArrayDeclaration, WeakerAccess, PointlessArithmeticExpression */
+/** @noinspection CStyleArrayDeclaration, SameParameterValue */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
 @Threads(1)
 @State(Scope.Thread)
-public class RVSum {
+public class RVsum {
 	private final static int SEED = 42; // Carefully selected, plucked by hands random number
-
-    private final static int MAX_SIZE = 65536;
 
     private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
     private final static int EPV = PFS.length();
@@ -51,6 +49,7 @@ public class RVSum {
     private final static FloatVector ZERO = FloatVector.zero(PFS);
 
 	private float x[];
+	/** @noinspection unused*/
 	@Param({"128"})
 	private int count;
 
@@ -58,7 +57,7 @@ public class RVSum {
     public void Setup() {
 		Random r = new Random(SEED);
 
-		x = new float[MAX_SIZE];
+		x = new float[count];
 
         for (int i = 0; i < x.length; i++) {
             x[i] = r.nextFloat() * 2.0f - 1.0f;
@@ -66,12 +65,22 @@ public class RVSum {
     }
 
 	@Benchmark
-	public void lines_in(Blackhole bh) { bh.consume(rv_sum_0(x, 0, count)); }
+	public void nv(Blackhole bh) { bh.consume(rv_sum_0(x, 0, count)); }
 
 	@Benchmark
-	public void lines_out(Blackhole bh) { bh.consume(rv_sum_1(x, 0, count)); }
+	public void saccum_add_lanes(Blackhole bh) { bh.consume(rv_sum_1(x, 0, count)); }
+
+	@Benchmark
+	public void vaccum_add_lanes(Blackhole bh) { bh.consume(rv_sum_2(x, 0, count)); }
 
 	private static float rv_sum_0(float x[], int xOffset, int count) {
+		float sum = 0.0f;
+		while (count-- > 0)
+			sum += x[xOffset++];
+		return sum;
+	}
+
+	private static float rv_sum_1(float x[], int xOffset, int count) {
 		float sum = 0.0f;
 
 		while (count >= EPV) {
@@ -86,7 +95,7 @@ public class RVSum {
 		return sum;
 	}
 
-	private static float rv_sum_1(float x[], int xOffset, int count) {
+	private static float rv_sum_2(float x[], int xOffset, int count) {
     	FloatVector vsum = ZERO;
     	final boolean needLanes = count >= EPV;
 

@@ -33,7 +33,7 @@ import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
 
-/** @noinspection PointlessArithmeticExpression, CStyleArrayDeclaration */
+/** @noinspection CStyleArrayDeclaration, SameParameterValue */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
@@ -47,9 +47,9 @@ public class RVdotRV {
     private final static int EPVx2 = EPV * 2;
     private final static int EPVx3 = EPV * 3;
     private final static int EPVx4 = EPV * 4;
+
     private final static FloatVector ZERO = FloatVector.zero(PFS);
 
-    private float z[];
     private float x[];
     private float y[];
     @Param({"128"})
@@ -59,32 +59,67 @@ public class RVdotRV {
     public void Setup() {
         Random r = new Random(SEED);
 
-        x = new float[65536];
-        y = new float[65536];
+        x = new float[count];
+        y = new float[count];
 
         for (int i = 0; i < y.length; i++)
             y[i] = r.nextFloat() * 2.0f - 1.0f;
     }
 
     @Benchmark
-    public void addLanes_1(Blackhole bh) { bh.consume(rv_dot_rv_0(x, 0, y, 0, count)); }
+    public void nv(Blackhole bh) { bh.consume(rv_dot_rv_0(x, 0, y, 0, count)); }
 
     @Benchmark
-    public void addLanes_2(Blackhole bh) { bh.consume(rv_dot_rv_1(x, 0, y, 0, count)); }
+    public void saccum_add_lanes(Blackhole bh) { bh.consume(rv_dot_rv_1(x, 0, y, 0, count)); }
 
     @Benchmark
-    public void addLanes_4_1(Blackhole bh) { bh.consume(rv_dot_rv_2(x, 0, y, 0, count)); }
+    public void saccum_unroll_2_1_fma_add_lanes(Blackhole bh) { bh.consume(rv_dot_rv_2(x, 0, y, 0, count)); }
 
     @Benchmark
-    public void addLanes_4_2_1(Blackhole bh) { bh.consume(rv_dot_rv_3(x, 0, y, 0, count)); }
+    public void saccum_unroll_4_2_fma_add_lanes(Blackhole bh) { bh.consume(rv_dot_rv_3(x, 0, y, 0, count)); }
 
     @Benchmark
-    public void addLanes_8(Blackhole bh) { bh.consume(rv_dot_rv_4(x, 0, y, 0, count)); }
+    public void saccum_unroll_4_2_1_fma_add_lanes(Blackhole bh) { bh.consume(rv_dot_rv_4(x, 0, y, 0, count)); }
 
     @Benchmark
-    public void addLanes_8_if(Blackhole bh) { bh.consume(rv_dot_rv_5(x, 0, y, 0, count)); }
+    public void saccum_unroll_2_1_chain_add_lanes(Blackhole bh) { bh.consume(rv_dot_rv_5(x, 0, y, 0, count)); }
+
+    @Benchmark
+    public void saccum_unroll_4_2_chain_add_lanes(Blackhole bh) { bh.consume(rv_dot_rv_6(x, 0, y, 0, count)); }
+
+    @Benchmark
+    public void saccum_unroll_4_2_1_chain_add_lanes(Blackhole bh) { bh.consume(rv_dot_rv_7(x, 0, y, 0, count)); }
+
+    @Benchmark
+    public void vaccum_add_lanes(Blackhole bh) { bh.consume(rv_dot_rv_8(x, 0, y, 0, count)); }
+
+    @Benchmark
+    public void vaccum_unroll_2_1_personal_add_lanes(Blackhole bh) { bh.consume(rv_dot_rv_9(x, 0, y, 0, count)); }
+
+    @Benchmark
+    public void vaccum_unroll_4_2_personal_add_lanes(Blackhole bh) { bh.consume(rv_dot_rv_a(x, 0, y, 0, count)); }
+
+    @Benchmark
+    public void vaccum_unroll_4_2_1_personal_add_lanes(Blackhole bh) { bh.consume(rv_dot_rv_b(x, 0, y, 0, count)); }
+
+    @Benchmark
+    public void vaccum_unroll_2_1_combine_add_lanes(Blackhole bh) { bh.consume(rv_dot_rv_c(x, 0, y, 0, count)); }
+
+    @Benchmark
+    public void vaccum_unroll_4_2_combine_add_lanes(Blackhole bh) { bh.consume(rv_dot_rv_d(x, 0, y, 0, count)); }
+
+    @Benchmark
+    public void vaccum_unroll_4_2_1_combine_add_lanes(Blackhole bh) { bh.consume(rv_dot_rv_e(x, 0, y, 0, count)); }
+
 
     private static float rv_dot_rv_0(float x[], int xOffset, float y[], int yOffset, int count) {
+        float sum = 0.0f;
+        while (count-- > 0)
+            sum += x[xOffset++] * y[yOffset++];
+        return sum;
+    }
+
+    private static float rv_dot_rv_1(float x[], int xOffset, float y[], int yOffset, int count) {
         float sum = 0.0f;
 
         while (count >= EPV) {
@@ -103,7 +138,128 @@ public class RVdotRV {
         return sum;
     }
 
-    private static float rv_dot_rv_1(float x[], int xOffset, float y[], int yOffset, int count) {
+    private static float rv_dot_rv_2(float x[], int xOffset, float y[], int yOffset, int count) {
+        float sum = 0.0f;
+
+        while (count >= EPVx2) {
+            final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy1 = FloatVector.fromArray(PFS, y, yOffset);
+            final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
+            final FloatVector vy2 = FloatVector.fromArray(PFS, y, yOffset + EPV);
+
+            // sum += vx1.mul(vy1).add(vx2.mul(vy2)).addLanes();
+            sum += vx1.fma(vy1, vx2.mul(vy2)).addLanes();
+
+            xOffset += EPVx2;
+            yOffset += EPVx2;
+            count -= EPVx2;
+        }
+
+        if (count >= EPV) {
+            final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+            sum += vx.mul(vy).addLanes();
+
+            xOffset += EPV;
+            yOffset += EPV;
+            count -= EPV;
+        }
+
+        while (count-- > 0)
+            sum += x[xOffset++] * y[yOffset++];
+
+        return sum;
+    }
+
+    private static float rv_dot_rv_3(float x[], int xOffset, float y[], int yOffset, int count) {
+        float sum = 0.0f;
+
+        while (count >= EPVx4) {
+            final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy1 = FloatVector.fromArray(PFS, y, yOffset);
+            final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
+            final FloatVector vy2 = FloatVector.fromArray(PFS, y, yOffset + EPV);
+            final FloatVector vx3 = FloatVector.fromArray(PFS, x, xOffset + EPVx2);
+            final FloatVector vy3 = FloatVector.fromArray(PFS, y, yOffset + EPVx2);
+            final FloatVector vx4 = FloatVector.fromArray(PFS, x, xOffset + EPVx3);
+            final FloatVector vy4 = FloatVector.fromArray(PFS, y, yOffset + EPVx3);
+
+            // sum += vx1.mul(vy1).add(vx2.mul(vy2)).add(vx3.mul(vy3)).add(vx4.mul(vy4)).addLanes();
+            sum += vx1.fma(vy1, vx2.mul(vy2)).add(vx3.fma(vy3, vx4.mul(vy4))).addLanes();
+
+            xOffset += EPVx4;
+            yOffset += EPVx4;
+            count -= EPVx4;
+        }
+
+        while (count >= EPV) {
+            final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+            sum += vx.mul(vy).addLanes();
+
+            xOffset += EPV;
+            yOffset += EPV;
+            count -= EPV;
+        }
+
+        while (count-- > 0)
+            sum += x[xOffset++] * y[yOffset++];
+
+        return sum;
+    }
+
+    private static float rv_dot_rv_4(float x[], int xOffset, float y[], int yOffset, int count) {
+        float sum = 0.0f;
+
+        while (count >= EPVx4) {
+            final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy1 = FloatVector.fromArray(PFS, y, yOffset);
+            final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
+            final FloatVector vy2 = FloatVector.fromArray(PFS, y, yOffset + EPV);
+            final FloatVector vx3 = FloatVector.fromArray(PFS, x, xOffset + EPVx2);
+            final FloatVector vy3 = FloatVector.fromArray(PFS, y, yOffset + EPVx2);
+            final FloatVector vx4 = FloatVector.fromArray(PFS, x, xOffset + EPVx3);
+            final FloatVector vy4 = FloatVector.fromArray(PFS, y, yOffset + EPVx3);
+
+            // sum += vx1.mul(vy1).add(vx2.mul(vy2)).add(vx3.mul(vy3)).add(vx4.mul(vy4)).addLanes();
+            sum += vx1.fma(vy1, vx2.mul(vy2)).add(vx3.fma(vy3, vx4.mul(vy4))).addLanes();
+
+            xOffset += EPVx4;
+            yOffset += EPVx4;
+            count -= EPVx4;
+        }
+
+        if (count >= EPVx2) {
+            final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy1 = FloatVector.fromArray(PFS, y, yOffset);
+            final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
+            final FloatVector vy2 = FloatVector.fromArray(PFS, y, yOffset + EPV);
+
+            // sum += vx1.mul(vy1).add(vx2.mul(vy2)).addLanes();
+            sum += vx1.fma(vy1, vx2.mul(vy2)).addLanes();
+
+            xOffset += EPVx2;
+            yOffset += EPVx2;
+            count -= EPVx2;
+        }
+
+        if (count >= EPV) {
+            final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+            sum += vx.mul(vy).addLanes();
+
+            xOffset += EPV;
+            yOffset += EPV;
+            count -= EPV;
+        }
+
+        while (count-- > 0)
+            sum += x[xOffset++] * y[yOffset++];
+
+        return sum;
+    }
+
+    private static float rv_dot_rv_5(float x[], int xOffset, float y[], int yOffset, int count) {
         float sum = 0.0f;
 
         while (count >= EPVx2) {
@@ -135,7 +291,7 @@ public class RVdotRV {
         return sum;
     }
 
-    private static float rv_dot_rv_2(float x[], int xOffset, float y[], int yOffset, int count) {
+    private static float rv_dot_rv_6(float x[], int xOffset, float y[], int yOffset, int count) {
         float sum = 0.0f;
 
         while (count >= EPVx4) {
@@ -171,7 +327,7 @@ public class RVdotRV {
         return sum;
     }
 
-    private static float rv_dot_rv_3(float x[], int xOffset, float y[], int yOffset, int count) {
+    private static float rv_dot_rv_7(float x[], int xOffset, float y[], int yOffset, int count) {
         float sum = 0.0f;
 
         while (count >= EPVx4) {
@@ -220,31 +376,8 @@ public class RVdotRV {
         return sum;
     }
 
-    private static float rv_dot_rv_4(float x[], int xOffset, float y[], int yOffset, int count) {
+    private static float rv_dot_rv_8(float x[], int xOffset, float y[], int yOffset, int count) {
         FloatVector vsum = ZERO;
-        float sum = 0.0f;
-
-        while (count >= EPV) {
-            final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-            final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
-            vsum = vsum.add(vx.mul(vy));
-
-            xOffset += EPV;
-            yOffset += EPV;
-            count -= EPV;
-        }
-
-        while (count-- > 0)
-            sum += x[xOffset++] * y[yOffset++];
-
-        sum += vsum.addLanes();
-
-        return sum;
-    }
-
-    private static float rv_dot_rv_5(float x[], int xOffset, float y[], int yOffset, int count) {
-        FloatVector vsum = ZERO;
-        float sum = 0.0f;
         final boolean needLanes = count >= EPV;
 
         while (count >= EPV) {
@@ -257,11 +390,306 @@ public class RVdotRV {
             count -= EPV;
         }
 
+        float sum = 0.0f;
         while (count-- > 0)
             sum += x[xOffset++] * y[yOffset++];
 
         if (needLanes)
             sum += vsum.addLanes();
+
+        return sum;
+    }
+
+    private static float rv_dot_rv_9(float x[], int xOffset, float y[], int yOffset, int count) {
+        FloatVector vsum1 = ZERO;
+        FloatVector vsum2 = ZERO;
+        final boolean needLanes = count >= EPV;
+
+        while (count >= EPVx2) {
+            final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy1 = FloatVector.fromArray(PFS, y, yOffset);
+            final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
+            final FloatVector vy2 = FloatVector.fromArray(PFS, y, yOffset + EPV);
+
+            vsum1 = vsum1.add(vx1.mul(vy1));
+            vsum2 = vsum2.add(vx2.mul(vy2));
+
+            xOffset += EPVx2;
+            yOffset += EPVx2;
+            count -= EPVx2;
+        }
+
+        if (count >= EPV) {
+            final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+            vsum1 = vsum1.add(vx.mul(vy).addLanes());
+
+            xOffset += EPV;
+            yOffset += EPV;
+            count -= EPV;
+        }
+
+        float sum = 0.0f;
+        while (count-- > 0)
+            sum += x[xOffset++] * y[yOffset++];
+
+        if (needLanes)
+            sum += vsum1.addLanes() + vsum2.addLanes();
+
+        return sum;
+    }
+
+    private static float rv_dot_rv_a(float x[], int xOffset, float y[], int yOffset, int count) {
+        FloatVector vsum1 = ZERO;
+        FloatVector vsum2 = ZERO;
+        FloatVector vsum3 = ZERO;
+        FloatVector vsum4 = ZERO;
+        final boolean needLanes = count >= EPV;
+
+        while (count >= EPVx4) {
+            final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy1 = FloatVector.fromArray(PFS, y, yOffset);
+            final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
+            final FloatVector vy2 = FloatVector.fromArray(PFS, y, yOffset + EPV);
+            final FloatVector vx3 = FloatVector.fromArray(PFS, x, xOffset + EPVx2);
+            final FloatVector vy3 = FloatVector.fromArray(PFS, y, yOffset + EPVx2);
+            final FloatVector vx4 = FloatVector.fromArray(PFS, x, xOffset + EPVx3);
+            final FloatVector vy4 = FloatVector.fromArray(PFS, y, yOffset + EPVx3);
+
+            vsum1 = vsum1.add(vx1.mul(vy1));
+            vsum2 = vsum2.add(vx2.mul(vy2));
+            vsum3 = vsum3.add(vx3.mul(vy3));
+            vsum4 = vsum4.add(vx4.mul(vy4));
+
+            xOffset += EPVx4;
+            yOffset += EPVx4;
+            count -= EPVx4;
+        }
+
+        while (count >= EPV) {
+            final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+            vsum1 = vsum1.add(vx.mul(vy));
+
+            xOffset += EPV;
+            yOffset += EPV;
+            count -= EPV;
+        }
+
+        float sum = 0.0f;
+        while (count-- > 0)
+            sum += x[xOffset++] * y[yOffset++];
+
+        if (needLanes)
+            sum += vsum1.addLanes() + vsum2.addLanes() + vsum3.addLanes() + vsum4.addLanes();
+
+        return sum;
+    }
+
+    private static float rv_dot_rv_b(float x[], int xOffset, float y[], int yOffset, int count) {
+        FloatVector vsum1 = ZERO;
+        FloatVector vsum2 = ZERO;
+        FloatVector vsum3 = ZERO;
+        FloatVector vsum4 = ZERO;
+        final boolean needLanes = count >= EPV;
+
+        while (count >= EPVx4) {
+            final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy1 = FloatVector.fromArray(PFS, y, yOffset);
+            final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
+            final FloatVector vy2 = FloatVector.fromArray(PFS, y, yOffset + EPV);
+            final FloatVector vx3 = FloatVector.fromArray(PFS, x, xOffset + EPVx2);
+            final FloatVector vy3 = FloatVector.fromArray(PFS, y, yOffset + EPVx2);
+            final FloatVector vx4 = FloatVector.fromArray(PFS, x, xOffset + EPVx3);
+            final FloatVector vy4 = FloatVector.fromArray(PFS, y, yOffset + EPVx3);
+
+            vsum1 = vsum1.add(vx1.mul(vy1));
+            vsum2 = vsum2.add(vx2.mul(vy2));
+            vsum3 = vsum3.add(vx3.mul(vy3));
+            vsum4 = vsum4.add(vx4.mul(vy4));
+
+            xOffset += EPVx4;
+            yOffset += EPVx4;
+            count -= EPVx4;
+        }
+
+        if (count >= EPVx2) {
+            final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy1 = FloatVector.fromArray(PFS, y, yOffset);
+            final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
+            final FloatVector vy2 = FloatVector.fromArray(PFS, y, yOffset + EPV);
+
+            vsum1 = vsum1.add(vx1.mul(vy1));
+            vsum3 = vsum3.add(vx2.mul(vy2));
+
+            xOffset += EPVx2;
+            yOffset += EPVx2;
+            count -= EPVx2;
+        }
+
+        if (count >= EPV) {
+            final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+            vsum1 = vsum1.add(vx.mul(vy));
+
+            xOffset += EPV;
+            yOffset += EPV;
+            count -= EPV;
+        }
+
+        float sum = 0.0f;
+        while (count-- > 0)
+            sum += x[xOffset++] * y[yOffset++];
+
+        if (needLanes)
+            sum += vsum1.addLanes() + vsum2.addLanes() + vsum3.addLanes() + vsum4.addLanes();
+
+        return sum;
+    }
+
+    private static float rv_dot_rv_c(float x[], int xOffset, float y[], int yOffset, int count) {
+        FloatVector vsum1 = ZERO;
+        FloatVector vsum2 = ZERO;
+        final boolean needLanes = count >= EPV;
+
+        while (count >= EPVx2) {
+            final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy1 = FloatVector.fromArray(PFS, y, yOffset);
+            final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
+            final FloatVector vy2 = FloatVector.fromArray(PFS, y, yOffset + EPV);
+
+            vsum1 = vsum1.add(vx1.mul(vy1));
+            vsum2 = vsum2.add(vx2.mul(vy2));
+
+            xOffset += EPVx2;
+            yOffset += EPVx2;
+            count -= EPVx2;
+        }
+
+        if (count >= EPV) {
+            final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+            vsum1 = vsum1.add(vx.mul(vy).addLanes());
+
+            xOffset += EPV;
+            yOffset += EPV;
+            count -= EPV;
+        }
+
+        float sum = 0.0f;
+        while (count-- > 0)
+            sum += x[xOffset++] * y[yOffset++];
+
+        if (needLanes)
+            sum += vsum1.add(vsum2).addLanes();
+
+        return sum;
+    }
+
+    private static float rv_dot_rv_d(float x[], int xOffset, float y[], int yOffset, int count) {
+        FloatVector vsum1 = ZERO;
+        FloatVector vsum2 = ZERO;
+        FloatVector vsum3 = ZERO;
+        FloatVector vsum4 = ZERO;
+        final boolean needLanes = count >= EPV;
+
+        while (count >= EPVx4) {
+            final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy1 = FloatVector.fromArray(PFS, y, yOffset);
+            final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
+            final FloatVector vy2 = FloatVector.fromArray(PFS, y, yOffset + EPV);
+            final FloatVector vx3 = FloatVector.fromArray(PFS, x, xOffset + EPVx2);
+            final FloatVector vy3 = FloatVector.fromArray(PFS, y, yOffset + EPVx2);
+            final FloatVector vx4 = FloatVector.fromArray(PFS, x, xOffset + EPVx3);
+            final FloatVector vy4 = FloatVector.fromArray(PFS, y, yOffset + EPVx3);
+
+            vsum1 = vsum1.add(vx1.mul(vy1));
+            vsum2 = vsum2.add(vx2.mul(vy2));
+            vsum3 = vsum3.add(vx3.mul(vy3));
+            vsum4 = vsum4.add(vx4.mul(vy4));
+
+            xOffset += EPVx4;
+            yOffset += EPVx4;
+            count -= EPVx4;
+        }
+
+        while (count >= EPV) {
+            final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+            vsum1 = vsum1.add(vx.mul(vy));
+
+            xOffset += EPV;
+            yOffset += EPV;
+            count -= EPV;
+        }
+
+        float sum = 0.0f;
+        while (count-- > 0)
+            sum += x[xOffset++] * y[yOffset++];
+
+        if (needLanes)
+            sum += vsum1.add(vsum2).add(vsum3.add(vsum4)).addLanes();
+
+        return sum;
+    }
+
+    private static float rv_dot_rv_e(float x[], int xOffset, float y[], int yOffset, int count) {
+        FloatVector vsum1 = ZERO;
+        FloatVector vsum2 = ZERO;
+        FloatVector vsum3 = ZERO;
+        FloatVector vsum4 = ZERO;
+        final boolean needLanes = count >= EPV;
+
+        while (count >= EPVx4) {
+            final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy1 = FloatVector.fromArray(PFS, y, yOffset);
+            final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
+            final FloatVector vy2 = FloatVector.fromArray(PFS, y, yOffset + EPV);
+            final FloatVector vx3 = FloatVector.fromArray(PFS, x, xOffset + EPVx2);
+            final FloatVector vy3 = FloatVector.fromArray(PFS, y, yOffset + EPVx2);
+            final FloatVector vx4 = FloatVector.fromArray(PFS, x, xOffset + EPVx3);
+            final FloatVector vy4 = FloatVector.fromArray(PFS, y, yOffset + EPVx3);
+
+            vsum1 = vsum1.add(vx1.mul(vy1));
+            vsum2 = vsum2.add(vx2.mul(vy2));
+            vsum3 = vsum3.add(vx3.mul(vy3));
+            vsum4 = vsum4.add(vx4.mul(vy4));
+
+            xOffset += EPVx4;
+            yOffset += EPVx4;
+            count -= EPVx4;
+        }
+
+        if (count >= EPVx2) {
+            final FloatVector vx1 = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy1 = FloatVector.fromArray(PFS, y, yOffset);
+            final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
+            final FloatVector vy2 = FloatVector.fromArray(PFS, y, yOffset + EPV);
+
+            vsum1 = vsum1.add(vx1.mul(vy1));
+            vsum3 = vsum3.add(vx2.mul(vy2));
+
+            xOffset += EPVx2;
+            yOffset += EPVx2;
+            count -= EPVx2;
+        }
+
+        if (count >= EPV) {
+            final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
+            final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
+            vsum1 = vsum1.add(vx.mul(vy));
+
+            xOffset += EPV;
+            yOffset += EPV;
+            count -= EPV;
+        }
+
+        float sum = 0.0f;
+        while (count-- > 0)
+            sum += x[xOffset++] * y[yOffset++];
+
+        if (needLanes)
+            sum += vsum1.add(vsum2).add(vsum3.add(vsum4)).addLanes();
 
         return sum;
     }

@@ -34,7 +34,7 @@ import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
 
-/** @noinspection PointlessArithmeticExpression, CStyleArrayDeclaration */
+/** @noinspection CStyleArrayDeclaration, SameParameterValue */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
@@ -46,12 +46,13 @@ public class RVRSlinRVRS {
     private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
     private final static int EPV = PFS.length();
 
-    private float z[];
     private float x[];
     private float y[];
+    private float z[];
     private float a1, a2;
+    /** @noinspection unused*/
     @Param({"128"})
-    private int count = 128;
+    private int count;
 
     @Setup
     public void Setup() {

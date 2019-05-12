@@ -32,33 +32,27 @@ import org.openjdk.jmh.annotations.*;
 
 import java.util.Random;
 
-/** @noinspection PointlessArithmeticExpression, WeakerAccess, CStyleArrayDeclaration */
+/** @noinspection PointlessArithmeticExpression, CStyleArrayDeclaration, SameParameterValue */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
 @Threads(1)
 @State(Scope.Thread)
-public class RVExpi {
+public class RVexpi {
     private final static int SEED = 42; // Carefully selected, plucked by hands random number
-
-    private final static int MAX_SIZE = 1031;
-
-    // EPV on my system is 8
-    @Param({"3", "4", "7", "8", "16", "20", "23", "1024", "1031"})
-    public int size;
 
     private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
     private final static int EPV = PFS.length();
     private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
     private final static int EPV2 = PFS2.length();
 
-    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_BOTH = VectorShuffle.shuffle(PFS, i -> i / 2);;
-    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_RE_LOW = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2) : 0);
-    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_IM_LOW = VectorShuffle.shuffle(PFS, i-> (i % 2 == 0) ? 0 : (i / 2));
-    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_RE_HIGH = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2 + EPV / 2) : 0);
-    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_IM_HIGH = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? 0 : (i / 2 + EPV / 2));
-
     private final static VectorMask<Float> MASK_C_IM;
+
+    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_BOTH;
+    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_RE_LOW;
+    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_IM_LOW;
+    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_RE_HIGH;
+    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_IM_HIGH;
 
     static {
         boolean[] alter = new boolean[EPV + 1];
@@ -66,17 +60,31 @@ public class RVExpi {
         for (int i = 1; i < alter.length; i++)
             alter[i] = !alter[i-1];
         MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
+
+        // [r0, r1, ...] -> [(r0, r0), (r1, r1), ...]
+        SHUFFLE_RV_TO_CV_BOTH = VectorShuffle.shuffle(PFS, i -> i / 2);
+        // [r0, r1, ..., r_len] -> [(r0, ?), (r1, ?), ... (r_{len/2}, ?)]
+        SHUFFLE_RV_TO_CV_RE_LOW = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2) : 0);
+        // [r0, r1, ..., r_len] -> [(?, r0), (?, r1), ... (?, r_{len/2})]
+        SHUFFLE_RV_TO_CV_IM_LOW = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? 0 : (i / 2));
+        // [..., r_{len/2} ..., r_len] -> [(r_{len/2}, ?), ..., (r_len, ?)]
+        SHUFFLE_RV_TO_CV_RE_HIGH = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2 + EPV / 2) : 0);
+        // [..., r_{len/2} ..., r_len] -> [(?, r_{len/2}), ..., (?, r_len)]
+        SHUFFLE_RV_TO_CV_IM_HIGH = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? 0 : (i / 2 + EPV / 2));
     }
 
     private float x[];
     private float z[];
+    /** @noinspection unused*/
+    @Param({"3", "4", "7", "8", "16", "20", "23", "1024", "1031"})
+    private int count;
 
     @Setup(Level.Trial)
     public void Setup() {
         Random r = new Random(SEED);
 
-        x = new float[MAX_SIZE];
-        z = new float[MAX_SIZE * 2];
+        x = new float[count];
+        z = new float[count * 2];
 
         for (int i = 0; i < x.length; i++) {
             x[i] = r.nextFloat() * 2.0f - 1.0f;
@@ -85,35 +93,35 @@ public class RVExpi {
 
     @Benchmark
     public void nv() {
-        rv_expi_0(z, 0, x, 0, size);
+        rv_expi_0(z, 0, x, 0, count);
     }
 
     @Benchmark
     public void pfs2_reshape_ops() {
-        rv_expi_1(z, 0, x, 0, size);
+        rv_expi_1(z, 0, x, 0, count);
     }
 
     @Benchmark
     public void pfs2_ops_reshape() {
-        rv_expi_1a(z, 0, x, 0, size);
+        rv_expi_1a(z, 0, x, 0, count);
     }
 
     @Benchmark
     public void pfs() {
-        rv_expi_2(z, 0, x, 0, size);
+        rv_expi_2(z, 0, x, 0, count);
     }
 
     @Benchmark
     public void pfs_pfs2_reshape_ops() {
-        rv_expi_3(z, 0, x, 0, size);
+        rv_expi_3(z, 0, x, 0, count);
     }
 
     @Benchmark
     public void pfs_pfs2_ops_reshape() {
-        rv_expi_3a(z, 0, x, 0, size);
+        rv_expi_3a(z, 0, x, 0, count);
     }
 
-    public static void rv_expi_0(float z[], int zOffset, float x[], int xOffset, int count) {
+    private static void rv_expi_0(float z[], int zOffset, float x[], int xOffset, int count) {
         zOffset <<= 1;
         while (count-- > 0) {
             z[zOffset + 0] = (float)Math.cos(x[xOffset]);
@@ -123,7 +131,7 @@ public class RVExpi {
         }
     }
 
-    public static void rv_expi_1(float z[], int zOffset, float x[], int xOffset, int count) {
+    private static void rv_expi_1(float z[], int zOffset, float x[], int xOffset, int count) {
         zOffset <<= 1;
         while (count >= EPV2) {
             final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
@@ -143,7 +151,7 @@ public class RVExpi {
         }
     }
 
-    public static void rv_expi_1a(float z[], int zOffset, float x[], int xOffset, int count) {
+    private static void rv_expi_1a(float z[], int zOffset, float x[], int xOffset, int count) {
         zOffset <<= 1;
         while (count >= EPV2) {
             final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset);
@@ -163,7 +171,7 @@ public class RVExpi {
         }
     }
 
-    public static void rv_expi_2(float z[], int zOffset, float x[], int xOffset, int count) {
+    private static void rv_expi_2(float z[], int zOffset, float x[], int xOffset, int count) {
         zOffset <<= 1;
         while (count >= EPV) {
             final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
@@ -186,7 +194,7 @@ public class RVExpi {
         }
     }
 
-    public static void rv_expi_3(float z[], int zOffset, float x[], int xOffset, int count) {
+    private static void rv_expi_3(float z[], int zOffset, float x[], int xOffset, int count) {
         zOffset <<= 1;
         while (count >= EPV) {
             final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
@@ -220,7 +228,7 @@ public class RVExpi {
         }
     }
 
-    public static void rv_expi_3a(float z[], int zOffset, float x[], int xOffset, int count) {
+    private static void rv_expi_3a(float z[], int zOffset, float x[], int xOffset, int count) {
         zOffset <<= 1;
         while (count >= EPV) {
             final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);

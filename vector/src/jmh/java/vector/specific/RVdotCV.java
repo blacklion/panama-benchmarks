@@ -34,7 +34,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.util.Arrays;
 import java.util.Random;
 
-/** @noinspection PointlessArithmeticExpression, CStyleArrayDeclaration */
+/** @noinspection PointlessArithmeticExpression, CStyleArrayDeclaration, SameParameterValue */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
@@ -48,6 +48,8 @@ public class RVdotCV {
     private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
     private final static int EPV2 = PFS2.length();
 
+    private final static VectorMask<Float> MASK_SECOND_HALF;
+
     private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_BOTH;
     private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST;
     private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST;
@@ -55,7 +57,6 @@ public class RVdotCV {
     private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND;
     private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_FRONT_RE;
     private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_FRONT_IM;
-    private final static VectorMask<Float> MASK_SECOND_HALF;
 
     private final static FloatVector ZERO = FloatVector.zero(PFS);
     private final static FloatVector ZERO2 = FloatVector.zero(PFS2);
@@ -81,19 +82,20 @@ public class RVdotCV {
         SHUFFLE_CV_TO_CV_FRONT_IM = VectorShuffle.shuffle(PFS, i -> i * 2 + 1 < EPV ? i * 2 + 1 : i);
     }
 
-    private float z[];
     private float x[];
     private float y[];
+    private float z[];
+    /** @noinspection unused*/
     @Param({"128"})
-    private int count = 128;
+    private int count;
 
     @Setup
     public void Setup() {
         Random r = new Random(SEED);
 
-        z = new float[2];
         x = new float[count];
         y = new float[count * 2];
+        z = new float[2];
 
         for (int i = 0; i < x.length; i++)
             x[i] = r.nextFloat() * 2.0f - 1.0f;

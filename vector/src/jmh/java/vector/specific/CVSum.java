@@ -33,13 +33,13 @@ import org.openjdk.jmh.annotations.*;
 import java.util.Arrays;
 import java.util.Random;
 
-/** @noinspection CStyleArrayDeclaration, WeakerAccess, PointlessArithmeticExpression */
+/** @noinspection PointlessArithmeticExpression, CStyleArrayDeclaration, SameParameterValue */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
 @Threads(1)
 @State(Scope.Thread)
-public class CVSum {
+public class CVsum {
 	private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
     private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
@@ -47,11 +47,14 @@ public class CVSum {
     private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
     private final static int EPV2 = PFS2.length();
 
+	private final static VectorMask<Float> MASK_SECOND_HALF;
+
 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_FIRST;
 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_FIRST;
 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_RE_SECOND;
 	private final static VectorShuffle<Float> SHUFFLE_CV_TO_CV_PACK_IM_SECOND;
-	private final static VectorMask<Float> MASK_SECOND_HALF;
+
+	private final static FloatVector ZERO = FloatVector.zero(PFS);
 
     static {
 		boolean[] secondhalf = new boolean[EPV];
@@ -68,11 +71,11 @@ public class CVSum {
 		SHUFFLE_CV_TO_CV_PACK_IM_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1 : 0);
 	}
 
-	@Param({"128"})
-	private int count;
-
 	private float x[];
     private float z[];
+	/** @noinspection unused*/
+	@Param({"128"})
+	private int count;
 
     @Setup(Level.Trial)
     public void Setup() {
@@ -90,10 +93,13 @@ public class CVSum {
 	public void nv() { cv_sum_0(z, x, 0, count); }
 
 	@Benchmark
-	public void reshape_add_lanes() { cv_sum_1(z, x, 0, count); }
+	public void saccum_reshape_add_lanes() { cv_sum_1(z, x, 0, count); }
 
 	@Benchmark
-	public void blend_add_lanes() { cv_sum_2(z, x, 0, count); }
+	public void saccum_blend_add_lanes() { cv_sum_2(z, x, 0, count); }
+
+	@Benchmark
+	public void vaccum_reshape_add_lanes() { cv_sum_3(z, x, 0, count); }
 
 	private static void cv_sum_0(float z[], float x[], int xOffset, int count) {
 		float re = 0.0f;
@@ -114,7 +120,6 @@ public class CVSum {
 		xOffset <<= 1;
 
 		while (count >= EPV2) {
-			//@TODO Check, can we pack and process twice elements, and save result twice
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 
 			// It is faster than addLanes(MASK)
@@ -164,6 +169,35 @@ public class CVSum {
 			im += x[xOffset + 1];
 			xOffset += 2;
 		}
+		z[0] = re;
+		z[1] = im;
+	}
+
+	private static void cv_sum_3(float z[], float x[], int xOffset, int count) {
+		FloatVector vsum = ZERO;
+		final boolean needLanes = count > EPV2;
+		xOffset <<= 1;
+
+		while (count >= EPV2) {
+			vsum = vsum.add(FloatVector.fromArray(PFS, x, xOffset));
+
+			xOffset += EPV;
+			count -= EPV2;
+		}
+
+		float re = 0.0f;
+		float im = 0.0f;
+		while (count-- > 0) {
+			re += x[xOffset + 0];
+			im += x[xOffset + 1];
+			xOffset += 2;
+		}
+
+		if (needLanes) {
+			re += vsum.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST).reshape(PFS2).addLanes();
+			im += vsum.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST).reshape(PFS2).addLanes();
+		}
+
 		z[0] = re;
 		z[1] = im;
 	}

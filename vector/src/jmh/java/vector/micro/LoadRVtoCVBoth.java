@@ -25,7 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ****************************************************************************/
 
-package vector.specific;
+package vector.micro;
 
 import jdk.incubator.vector.*;
 import org.openjdk.jmh.annotations.*;
@@ -33,33 +33,27 @@ import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
 
-/** @noinspection CStyleArrayDeclaration*/
+/** @noinspection CStyleArrayDeclaration, SameParameterValue */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
 @Threads(1)
 @State(Scope.Thread)
-public class LoadRVtoCVRE {
+public class LoadRVtoCVBoth {
     private final static int SEED = 42; // Carefully selected, plucked by hands random number
 
     private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
     private final static int EPV = PFS.length();
     private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
 
-    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_RE = VectorShuffle.shuffle(PFS, i -> i / 2);
-    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_RE_ZERO = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2) : (EPV - 1));
-    private final static int[] LOAD_RV_TO_CV_RE = SHUFFLE_RV_TO_CV_RE.toArray();
-
-    private final static VectorMask<Float> MASK_C_RE;
-    private final static VectorMask<Float> MASK_C_IM;
+    private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_BOTH;
+    private final static int[] LOAD_RV_TO_CV_BOTH;
 
     static {
-        boolean[] alter = new boolean[EPV + 1];
-   		alter[0] = true;
-   		for (int i = 1; i < alter.length; i++)
-   			alter[i] = !alter[i-1];
-   		MASK_C_RE = VectorMask.fromArray(PFS, alter, 0);
-        MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
+        // [r0, r1, ...] -> [(r0, r0), (r1, r1), ...]
+        SHUFFLE_RV_TO_CV_BOTH = VectorShuffle.shuffle(PFS, i -> i / 2);
+
+        LOAD_RV_TO_CV_BOTH = SHUFFLE_RV_TO_CV_BOTH.toArray();
     }
 
     private float x[];
@@ -69,7 +63,6 @@ public class LoadRVtoCVRE {
         Random r = new Random(SEED);
 
         x = new float[EPV * 2];
-
         for (int i = 0; i < x.length; i++) {
             x[i] = r.nextFloat() * 2.0f - 1.0f;
         }
@@ -77,19 +70,13 @@ public class LoadRVtoCVRE {
 
 
     @Benchmark
-    public void complexLoad(Blackhole bh) {
-        bh.consume(FloatVector.fromArray(PFS, x, 0, MASK_C_RE, LOAD_RV_TO_CV_RE, 0));
+    public void load_with_spread(Blackhole bh) {
+        bh.consume(FloatVector.fromArray(PFS, x, 0, LOAD_RV_TO_CV_BOTH, 0));
     }
 
     @Benchmark
-    public void loadAndReshuffleAndBlend(Blackhole bh) {
+    public void load_simple_shuffle(Blackhole bh) {
         final FloatVector vr = FloatVector.fromArray(PFS2, x, 0);
-        bh.consume(vr.reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE).blend(FloatVector.zero(PFS), MASK_C_IM));
-    }
-
-    @Benchmark
-    public void loadAndReshuffle(Blackhole bh) {
-        final FloatVector vr = FloatVector.fromArray(PFS2, x, 0);
-        bh.consume(vr.reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE_ZERO));
+        bh.consume(vr.reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH));
     }
 }

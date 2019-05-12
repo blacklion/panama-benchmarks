@@ -32,7 +32,7 @@ import org.openjdk.jmh.annotations.*;
 
 import java.util.Random;
 
-/** @noinspection PointlessArithmeticExpression, CStyleArrayDeclaration */
+/** @noinspection PointlessArithmeticExpression, CStyleArrayDeclaration, SameParameterValue */
 @Fork(2)
 @Warmup(iterations = 5, time = 2)
 @Measurement(iterations = 10, time = 2)
@@ -48,35 +48,50 @@ public class CSdivCV {
 
     private final static VectorMask<Float> MASK_C_IM;
 
-    private final static VectorShuffle<Float> SHUFFLE_CS_TO_CV_SPREAD = VectorShuffle.shuffle(PFS, i -> i % 2);
-    private final static VectorShuffle<Float> SHUFFLE_CV_SWAP_RE_IM = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? i + 1 : i - 1);
-    private final static VectorShuffle<Float> SHUFFLE_CV_SPREAD_RE = VectorShuffle.shuffle(PFS, i -> i - i % 2);
-    private final static VectorShuffle<Float> SHUFFLE_CV_SPREAD_IM = VectorShuffle.shuffle(PFS, i -> i - i % 2 + 1);
+    private final static VectorShuffle<Float> SHUFFLE_CS_TO_CV_SPREAD;
+    private final static VectorShuffle<Float> SHUFFLE_CV_SPREAD_RE;
+    private final static VectorShuffle<Float> SHUFFLE_CV_SPREAD_IM;
+    private final static VectorShuffle<Float> SHUFFLE_CV_SWAP_RE_IM;
 
-    private final static int[] LOAD_CS_TO_CV_SPREAD = SHUFFLE_CS_TO_CV_SPREAD.toArray();
-    private final static int[] LOAD_CV_TO_CV_SPREAD_RE = SHUFFLE_CV_SPREAD_RE.toArray();
-    private final static int[] LOAD_CV_TO_CV_SPREAD_IM = SHUFFLE_CV_SPREAD_IM.toArray();
+    private final static int[] LOAD_CS_TO_CV_SPREAD;
+    private final static int[] LOAD_CV_TO_CV_SPREAD_RE;
+    private final static int[] LOAD_CV_TO_CV_SPREAD_IM;
 
     static {
         boolean[] alter = new boolean[EPV + 1];
         alter[0] = true;
         for (int i = 1; i < alter.length; i++)
-            alter[i] = !alter[i-1];
+            alter[i] = !alter[i - 1];
         MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
+
+        // [re, im] -> [(re, im), (re, im), (re, im), ...]
+        SHUFFLE_CS_TO_CV_SPREAD = VectorShuffle.shuffle(PFS, i -> i % 2);
+        // [(re0, im0), (re1, im1), ...] -> [(re0, re0), (re1, re1), ...]
+        SHUFFLE_CV_SPREAD_RE = VectorShuffle.shuffle(PFS, i -> i - i % 2);
+        // [(re0, im0), (re1, im1), ...] -> [(im0, im0), (im1, im1), ...]
+        SHUFFLE_CV_SPREAD_IM = VectorShuffle.shuffle(PFS, i -> i - i % 2 + 1);
+        // [(re0, im0), (re1, im1), ...] -> [(im0, re0), (im1, re1), ...]
+        SHUFFLE_CV_SWAP_RE_IM = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? i + 1 : i - 1);
+
+        LOAD_CS_TO_CV_SPREAD = SHUFFLE_CS_TO_CV_SPREAD.toArray();
+        LOAD_CV_TO_CV_SPREAD_RE = SHUFFLE_CV_SPREAD_RE.toArray();
+        LOAD_CV_TO_CV_SPREAD_IM = SHUFFLE_CV_SPREAD_IM.toArray();
     }
 
-    private float z[];
     private float x[];
     private float y[];
-    private int count = 16;
+    private float z[];
+    /** @noinspection unused*/
+    @Param({"128"})
+    private int count;
 
     @Setup
     public void Setup() {
         Random r = new Random(SEED);
 
         x = new float[2];
-        y = new float[65536 * 2];
-        z = new float[65536 * 2];
+        y = new float[count * 2];
+        z = new float[count * 2];
 
         for (int i = 0; i < y.length; i++)
             y[i] = r.nextFloat() * 2.0f - 1.0f;
@@ -85,26 +100,34 @@ public class CSdivCV {
     }
 
     @Benchmark
-    public void loadepv_load1() {
-        cs_div_cv_long_load_one_load(z, 0, x, y, 0, count);
-    }
+    public void nv() { cs_div_cv_0(z, 0, x, y, 0, count); }
 
     @Benchmark
-    public void loadepv_load2() {
-        cs_div_cv_long_load_two_loads(z, 0, x, y, 0, count);
-    }
+    public void spread_rearrange() { cs_div_cv_1(z, 0, x, y, 0, count); }
 
     @Benchmark
-    public void load64_load1() {
-        cs_div_cv_short_load_one_load(z, 0, x, y, 0, count);
-    }
+    public void reshape_rearrange() { cs_div_cv_2(z, 0, x, y, 0, count); }
 
     @Benchmark
-    public void load64_load2() {
-        cs_div_cv_short_load_two_loads(z, 0, x, y, 0, count);
+    public void spread_spread() { cs_div_cv_3(z, 0, x, y, 0, count); }
+
+    @Benchmark
+    public void reshape_spread() { cs_div_cv_4(z, 0, x, y, 0, count); }
+
+    private static void cs_div_cv_0(float z[], int zOffset, float x[], float y[], int yOffset, int count) {
+        float sq;
+        zOffset <<= 1;
+        yOffset <<= 1;
+        while (count-- > 0) {
+            sq = y[yOffset + 0] * y[yOffset + 0] + y[yOffset + 1] * y[yOffset + 1];
+            z[zOffset + 0] = (x[0] * y[yOffset + 0] + x[1] * y[yOffset + 1]) / sq;
+            z[zOffset + 1] = (x[1] * y[yOffset + 0] - x[0] * y[yOffset + 1]) / sq;
+            zOffset += 2;
+            yOffset += 2;
+        }
     }
 
-    public static void cs_div_cv_long_load_one_load(float z[], int zOffset, float x[], float y[], int yOffset, int count) {
+    private static void cs_div_cv_1(float z[], int zOffset, float x[], float y[], int yOffset, int count) {
         FloatVector vx = null;
         if (count >= EPV2)
             vx = FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0);
@@ -153,7 +176,7 @@ public class CSdivCV {
         }
     }
 
-    public static void cs_div_cv_short_load_one_load(float z[], int zOffset, float x[], float y[], int yOffset, int count) {
+    private static void cs_div_cv_2(float z[], int zOffset, float x[], float y[], int yOffset, int count) {
         FloatVector vx = null;
         if (count >= EPV2)
             vx = FloatVector.fromArray(FS64, x, 0).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV_SPREAD);
@@ -202,7 +225,7 @@ public class CSdivCV {
         }
     }
 
-    public static void cs_div_cv_long_load_two_loads(float z[], int zOffset, float x[], float y[], int yOffset, int count) {
+    private static void cs_div_cv_3(float z[], int zOffset, float x[], float y[], int yOffset, int count) {
         FloatVector vx = null;
         if (count >= EPV2)
             vx = FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0);
@@ -249,7 +272,7 @@ public class CSdivCV {
         }
     }
 
-    public static void cs_div_cv_short_load_two_loads(float z[], int zOffset, float x[], float y[], int yOffset, int count) {
+    private static void cs_div_cv_4(float z[], int zOffset, float x[], float y[], int yOffset, int count) {
         FloatVector vx = null;
         if (count >= EPV2)
             vx = FloatVector.fromArray(FS64, x, 0).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV_SPREAD);
