@@ -185,6 +185,7 @@ public class RVdotRV {
             final FloatVector vy4 = FloatVector.fromArray(PFS, y, yOffset + EPVx3);
 
             // sum += vx1.mul(vy1).add(vx2.mul(vy2)).add(vx3.mul(vy3)).add(vx4.mul(vy4)).addLanes();
+            // Strange, but it is better than 3 fma and one mul
             sum += vx1.fma(vy1, vx2.mul(vy2)).add(vx3.fma(vy3, vx4.mul(vy4))).addLanes();
 
             xOffset += EPVx4;
@@ -222,6 +223,7 @@ public class RVdotRV {
             final FloatVector vy4 = FloatVector.fromArray(PFS, y, yOffset + EPVx3);
 
             // sum += vx1.mul(vy1).add(vx2.mul(vy2)).add(vx3.mul(vy3)).add(vx4.mul(vy4)).addLanes();
+            // Strange, but it is better than 3 fma and one mul
             sum += vx1.fma(vy1, vx2.mul(vy2)).add(vx3.fma(vy3, vx4.mul(vy4))).addLanes();
 
             xOffset += EPVx4;
