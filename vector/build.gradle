@@ -28,20 +28,55 @@ apply plugin: 'java'
 // To allow JMH plugin propagate its dependencies to IDEA
 apply plugin: 'idea'
 apply plugin: 'me.champeau.jmh'
+apply plugin: 'application'
 
 repositories {
   mavenCentral()
 }
 
 dependencies {
-	testImplementation('org.junit.jupiter:junit-jupiter:5.4.1')
+	testImplementation(platform('org.junit:junit-bom:6.0.2'))
+	testImplementation('org.junit.jupiter:junit-jupiter')
+	testRuntimeOnly('org.junit.platform:junit-platform-launcher')
 }
 
 test {
 	useJUnitPlatform()
+
+	jvmArgs(['--enable-preview'])
+	jvmArgs(['--add-modules', 'jdk.incubator.vector'])
+
 	testLogging {
 		events "passed", "skipped", "failed"
 	}
+}
+
+compileJava {
+	options.compilerArgs.addAll(['--enable-preview'])
+	options.compilerArgs.addAll(['--add-modules', 'jdk.incubator.vector'])
+}
+
+compileTestJava {
+	options.compilerArgs.addAll(['--enable-preview'])
+	options.compilerArgs.addAll(['--add-modules', 'jdk.incubator.vector'])
+}
+
+compileJmhJava {
+	options.compilerArgs.addAll(['--enable-preview'])
+	options.compilerArgs.addAll(['--add-modules', 'jdk.incubator.vector'])
+}
+
+application {
+	applicationDefaultJvmArgs = ['--enable-preview', '--add-modules', 'jdk.incubator.vector']
+}
+
+jmhRunBytecodeGenerator {
+	jvmArgs.addAll(['--enable-preview'])
+	jvmArgs.addAll(['--add-modules', 'jdk.incubator.vector'])
+}
+
+jmh {
+	jvmArgsPrepend = ['--enable-preview', '--add-modules', 'jdk.incubator.vector']
 }
 
 task benchmarkJar(type: Jar, dependsOn: jmhJar) {
