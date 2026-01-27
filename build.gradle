@@ -25,22 +25,20 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ****************************************************************************/
 plugins {
-  id 'me.champeau.gradle.jmh' version '0.4.8'
+  id "me.champeau.jmh" version "0.7.3"
 }
-
 version = '0.1'
 
 repositories {
-  jcenter() // repository from which JMH will be downloaded
   mavenCentral()
 }
 
 apply plugin: 'java'
 apply plugin: 'idea' // To allow JMH plugin propagate its dependencies to IDEA
-apply plugin: 'me.champeau.gradle.jmh'
+apply plugin: 'me.champeau.jmh'
 
 jmh {
-  jmhVersion = '1.21'
+  jmhVersion = '1.37'
   fork = 2
   warmupIterations = 5
   warmup = '5s'
@@ -52,7 +50,6 @@ task benchmarkJar(type: Jar, dependsOn: jmhJar) {
   manifest {
 	attributes 'Main-Class': 'org.openjdk.jmh.Main'
   }
-  classifier = 'benchmark'
   from {
 	(jmhJar.outputs.files + configurations.jmh + configurations.jmhRuntime).collect { it.isDirectory() ? it : zipTree(it) }
   }

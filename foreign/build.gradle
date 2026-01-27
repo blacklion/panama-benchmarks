@@ -27,24 +27,22 @@
 apply plugin: 'java'
 // To allow JMH plugin propagate its dependencies to IDEA
 apply plugin: 'idea'
-apply plugin: 'me.champeau.gradle.jmh'
+apply plugin: 'me.champeau.jmh'
 
 repositories {
-  jcenter() // repository from which JMH will be downloaded
   mavenCentral()
 }
 
 dependencies {
-  compile group: 'com.github.wendykierp', name: 'JTransforms', version: '3.1'
-  compile group: 'net.java.dev.jna', name: 'jna', version: '5.2.0'
-  compile fileTree(include: ['*.jar'], dir: 'libs')
+  implementation group: 'com.github.wendykierp:JTransforms:3.1'
+  implementation group: 'net.java.dev.jna:jna:5.2.0'
+  implementation fileTree(include: ['*.jar'], dir: 'libs')
 }
 
 task benchmarkJar(type: Jar, dependsOn: jmhJar) {
   manifest {
 	attributes 'Main-Class': 'org.openjdk.jmh.Main'
   }
-  classifier = 'benchmark'
   from {
 	(jmhJar.outputs.files + configurations.jmh + configurations.jmhRuntime).collect { it.isDirectory() ? it : zipTree(it) }
   }

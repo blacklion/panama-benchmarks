@@ -27,10 +27,9 @@
 apply plugin: 'java'
 // To allow JMH plugin propagate its dependencies to IDEA
 apply plugin: 'idea'
-apply plugin: 'me.champeau.gradle.jmh'
+apply plugin: 'me.champeau.jmh'
 
 repositories {
-  jcenter() // repository from which JMH will be downloaded
   mavenCentral()
 }
 
@@ -49,7 +48,6 @@ task benchmarkJar(type: Jar, dependsOn: jmhJar) {
   manifest {
 	attributes 'Main-Class': 'org.openjdk.jmh.Main'
   }
-  classifier = 'benchmark'
   from {
 	(jmhJar.outputs.files + configurations.jmh + configurations.jmhRuntime).collect { it.isDirectory() ? it : zipTree(it) }
   }
