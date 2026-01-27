@@ -54,9 +54,9 @@ public class LoadREIM {
 
 	static {
 		// [(re0, im0), (re1, im1), ...] -> [(re0, re0), (re1, re1), ...]
-		SHUFFLE_CV_SPREAD_RE = VectorShuffle.shuffle(PFS, i -> i - i % 2);
+		SHUFFLE_CV_SPREAD_RE = VectorShuffle.fromOp(PFS, i -> i - i % 2);
 		// [(re0, im0), (re1, im1), ...] -> [(im0, im0), (im1, im1), ...]
-		SHUFFLE_CV_SPREAD_IM = VectorShuffle.shuffle(PFS, i -> i - i % 2 + 1);
+		SHUFFLE_CV_SPREAD_IM = VectorShuffle.fromOp(PFS, i -> i - i % 2 + 1);
 
 		LOAD_CV_TO_CV_SPREAD_RE = SHUFFLE_CV_SPREAD_RE.toArray();
 		LOAD_CV_TO_CV_SPREAD_IM = SHUFFLE_CV_SPREAD_IM.toArray();

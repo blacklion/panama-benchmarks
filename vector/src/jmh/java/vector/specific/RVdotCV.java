@@ -45,7 +45,7 @@ public class RVdotCV {
 
 	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
 	private final static int EPV = PFS.length();
-	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
+	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.vectorBitSize() / 2));
 	private final static int EPV2 = PFS2.length();
 
 	private final static VectorMask<Float> MASK_SECOND_HALF;
@@ -67,19 +67,19 @@ public class RVdotCV {
 		MASK_SECOND_HALF = VectorMask.fromArray(PFS, secondhalf, 0);
 
 		// [r0, r1, ...] -> [(r0, r0), (r1, r1), ...]
-		SHUFFLE_RV_TO_CV_BOTH = VectorShuffle.shuffle(PFS, i -> i / 2);
+		SHUFFLE_RV_TO_CV_BOTH = VectorShuffle.fromOp(PFS, i -> i / 2);
 		// [(re0, im0), (re1, im1), ...] -> [re0, re1, ..., re_len, ?, ...]
-		SHUFFLE_CV_TO_CV_PACK_RE_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
+		SHUFFLE_CV_TO_CV_PACK_RE_FIRST = VectorShuffle.fromOp(PFS, i -> (i < EPV2) ? i * 2 : 0);
 		// [(re0, im0), (re1, im1), ...] -> [im0, im1, ..., im_len, ?, ...]
-		SHUFFLE_CV_TO_CV_PACK_IM_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
+		SHUFFLE_CV_TO_CV_PACK_IM_FIRST = VectorShuffle.fromOp(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
 		// [(re0, im0), (re1, im1), ...] -> [?, ..., re0, re1, ..., re_len]
-		SHUFFLE_CV_TO_CV_PACK_RE_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
+		SHUFFLE_CV_TO_CV_PACK_RE_SECOND = VectorShuffle.fromOp(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
 		// [(re0, im0), (re1, im1), ...] -> [?, ..., im0, im1, ..., im_len]
-		SHUFFLE_CV_TO_CV_PACK_IM_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1 : 0);
+		SHUFFLE_CV_TO_CV_PACK_IM_SECOND = VectorShuffle.fromOp(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1 : 0);
 		// [(re0, im0), (re1, im1), ...] -> [re0, re1, ...]
-		SHUFFLE_CV_TO_CV_FRONT_RE = VectorShuffle.shuffle(PFS, i -> i * 2 < EPV ? i * 2 : i);
+		SHUFFLE_CV_TO_CV_FRONT_RE = VectorShuffle.fromOp(PFS, i -> i * 2 < EPV ? i * 2 : i);
 		// [(re0, im0), (re1, im1), ...] -> [im0, im1, ...]
-		SHUFFLE_CV_TO_CV_FRONT_IM = VectorShuffle.shuffle(PFS, i -> i * 2 + 1 < EPV ? i * 2 + 1 : i);
+		SHUFFLE_CV_TO_CV_FRONT_IM = VectorShuffle.fromOp(PFS, i -> i * 2 + 1 < EPV ? i * 2 + 1 : i);
 	}
 
 	private float x[];
@@ -152,8 +152,8 @@ public class RVdotCV {
 			final FloatVector vyre = vy1re.blend(vy2re, MASK_SECOND_HALF);
 			final FloatVector vyim = vy1im.blend(vy2im, MASK_SECOND_HALF);
 
-			re += vx.mul(vyre).addLanes();
-			im += vx.mul(vyim).addLanes();
+			re += vx.mul(vyre).reduceLanes(VectorOperators.ADD);
+			im += vx.mul(vyim).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			yOffset += EPV * 2; // We load twice as much complex numbers
@@ -199,8 +199,8 @@ public class RVdotCV {
 			count -= EPV;
 		}
 
-		float re = needLanes ? vre.addLanes() : 0.0f;
-		float im = needLanes ? vim.addLanes() : 0.0f;
+		float re = needLanes ? vre.reduceLanes(VectorOperators.ADD) : 0.0f;
+		float im = needLanes ? vim.reduceLanes(VectorOperators.ADD) : 0.0f;
 		while (count-- > 0) {
 			re += x[xOffset] * y[yOffset + 0];
 			im += x[xOffset] * y[yOffset + 1];
@@ -217,13 +217,13 @@ public class RVdotCV {
 		yOffset <<= 1;
 
 		while (count >= EPV2) {
-			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
+			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_BOTH);
 			//@DONE: It is faster than FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
 			final FloatVector vymul = vx.mul(vy);
 
-			re += vymul.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reshape(PFS2).addLanes();
-			im += vymul.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reshape(PFS2).addLanes();
+			re += vymul.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reinterpretShape(PFS2, 0).reinterpretAsFloats().reduceLanes(VectorOperators.ADD);
+			im += vymul.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reinterpretShape(PFS2, 0).reinterpretAsFloats().reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV2;
 			yOffset += EPV; // We load twice as much complex numbers
@@ -247,21 +247,21 @@ public class RVdotCV {
 		yOffset <<= 1;
 
 		while (count >= EPV2) {
-			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
+			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_BOTH);
 			//@DONE: It is faster than FloatVector.fromArray(PFS, y, yOffset, LOAD_CV_TO_CV_PACK_{RE|IM}, 0)
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
 			final FloatVector vymul = vx.mul(vy);
 
-			vre = vre.add(vymul.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reshape(PFS2));
-			vim = vim.add(vymul.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reshape(PFS2));
+			vre = vre.add(vymul.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reinterpretShape(PFS2, 0).reinterpretAsFloats());
+			vim = vim.add(vymul.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reinterpretShape(PFS2, 0).reinterpretAsFloats());
 
 			xOffset += EPV2;
 			yOffset += EPV; // We load twice as much complex numbers
 			count -= EPV2;
 		}
 
-		float re = needLanes ? vre.addLanes() : 0.0f;
-		float im = needLanes ? vim.addLanes() : 0.0f;
+		float re = needLanes ? vre.reduceLanes(VectorOperators.ADD) : 0.0f;
+		float im = needLanes ? vim.reduceLanes(VectorOperators.ADD) : 0.0f;
 		while (count-- > 0) {
 			re += x[xOffset] * y[yOffset + 0];
 			im += x[xOffset] * y[yOffset + 1];

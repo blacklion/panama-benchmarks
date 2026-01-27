@@ -43,7 +43,7 @@ public class CVdotCV {
 
 	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
 	private final static int EPV = PFS.length();
-	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
+	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.vectorBitSize() / 2));
 	private final static int EPV2 = PFS2.length();
 
 	private final static VectorMask<Float> MASK_C_RE;
@@ -66,15 +66,15 @@ public class CVdotCV {
 		MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
 
 		// [(re0, im0), (re1, im1), ...] -> [(re0, re0), (re1, re1), ...]
-		SHUFFLE_CV_SPREAD_RE = VectorShuffle.shuffle(PFS, i -> i - i % 2);
+		SHUFFLE_CV_SPREAD_RE = VectorShuffle.fromOp(PFS, i -> i - i % 2);
 		// [(re0, im0), (re1, im1), ...] -> [(im0, im0), (im1, im1), ...]
-		SHUFFLE_CV_SPREAD_IM = VectorShuffle.shuffle(PFS, i -> i - i % 2 + 1);
+		SHUFFLE_CV_SPREAD_IM = VectorShuffle.fromOp(PFS, i -> i - i % 2 + 1);
 		// [(re0, im0), (re1, im1), ...] -> [(im0, re0), (im1, re1), ...]
-		SHUFFLE_CV_SWAP_RE_IM = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? i + 1 : i - 1);
+		SHUFFLE_CV_SWAP_RE_IM = VectorShuffle.fromOp(PFS, i -> (i % 2 == 0) ? i + 1 : i - 1);
 		// [(re0, im0), (re1, im1), ...] -> [re0, re1, ...]
-		SHUFFLE_CV_TO_CV_FRONT_RE = VectorShuffle.shuffle(PFS, i -> i * 2 < EPV ? i * 2 : i);
+		SHUFFLE_CV_TO_CV_FRONT_RE = VectorShuffle.fromOp(PFS, i -> i * 2 < EPV ? i * 2 : i);
 		// [(re0, im0), (re1, im1), ...] -> [im0, im1, ...]
-		SHUFFLE_CV_TO_CV_FRONT_IM = VectorShuffle.shuffle(PFS, i -> i * 2 + 1 < EPV ? i * 2 + 1 : i);
+		SHUFFLE_CV_TO_CV_FRONT_IM = VectorShuffle.fromOp(PFS, i -> i * 2 + 1 < EPV ? i * 2 + 1 : i);
 	}
 
 	private float x[];
@@ -171,8 +171,8 @@ public class CVdotCV {
 			// vrim is ([?, x[0].im * y.re + x[0].re * y.im], ...)
 			final FloatVector vrim = vmulyre.add(vmulximswap);
 
-			re += vrre.addLanes(MASK_C_RE);
-			im += vrim.addLanes(MASK_C_IM);
+			re += vrre.reduceLanes(VectorOperators.ADD, MASK_C_RE);
+			im += vrim.reduceLanes(VectorOperators.ADD, MASK_C_IM);
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -224,8 +224,8 @@ public class CVdotCV {
 			final FloatVector vrim = vmulyre.add(vmulximswap);
 
 			// Reshape to addLines
-			re += vrre.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reshape(PFS2).addLanes();
-			im += vrim.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reshape(PFS2).addLanes();
+			re += vrre.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reinterpretShape(PFS2, 0).reinterpretAsFloats().reduceLanes(VectorOperators.ADD);
+			im += vrim.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reinterpretShape(PFS2, 0).reinterpretAsFloats().reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -276,8 +276,8 @@ public class CVdotCV {
 			// vrim is ([?, x[0].im * y.re + x[0].re * y.im], ...)
 			final FloatVector vrim = vmulyre.add(vmulximswap);
 
-			re += vrre.blend(ZERO, MASK_C_IM).addLanes();
-			im += vrim.blend(ZERO, MASK_C_RE).addLanes();
+			re += vrre.blend(ZERO, MASK_C_IM).reduceLanes(VectorOperators.ADD);
+			im += vrim.blend(ZERO, MASK_C_RE).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -408,8 +408,8 @@ public class CVdotCV {
 		}
 
 		if (needLanes) {
-			re += vre.addLanes(MASK_C_RE);
-			im += vim.addLanes(MASK_C_IM);
+			re += vre.reduceLanes(VectorOperators.ADD, MASK_C_RE);
+			im += vim.reduceLanes(VectorOperators.ADD, MASK_C_IM);
 		}
 
 		z[0] = re;
@@ -469,8 +469,8 @@ public class CVdotCV {
 		}
 
 		if (needLanes) {
-			re += vre.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reshape(PFS2).addLanes();
-			im += vim.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reshape(PFS2).addLanes();
+			re += vre.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reinterpretShape(PFS2, 0).reinterpretAsFloats().reduceLanes(VectorOperators.ADD);
+			im += vim.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reinterpretShape(PFS2, 0).reinterpretAsFloats().reduceLanes(VectorOperators.ADD);
 		}
 
 		z[0] = re;
@@ -530,8 +530,8 @@ public class CVdotCV {
 		}
 
 		if (needLanes) {
-			re += vre.blend(ZERO, MASK_C_IM).addLanes();
-			im += vim.blend(ZERO, MASK_C_RE).addLanes();
+			re += vre.blend(ZERO, MASK_C_IM).reduceLanes(VectorOperators.ADD);
+			im += vim.blend(ZERO, MASK_C_RE).reduceLanes(VectorOperators.ADD);
 		}
 
 		z[0] = re;

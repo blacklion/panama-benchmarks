@@ -60,7 +60,7 @@ public final class VOVec {
 		And some one-complex-return function with "offset" result placement
 	 */
 	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
-	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
+	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.vectorBitSize() / 2));
 	private final static int EPV = PFS.length();
 	private final static int EPV2 = EPV / 2;
 	private final static int EPVx2 = EPV * 2;
@@ -110,54 +110,54 @@ public final class VOVec {
 		MASK_SECOND_HALF = VectorMask.fromArray(PFS, secondhalf, 0);
 
 		// [r0, r1, ...] -> [(r0, ?), (r1, ?), ...], take ? from last element for now
-		SHUFFLE_RV_TO_CV_RE = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2) : (EPV - 1));
+		SHUFFLE_RV_TO_CV_RE = VectorShuffle.fromOp(PFS, i -> (i % 2 == 0) ? (i / 2) : (EPV - 1));
 		// [r0, r1, ...] -> [(r0, r0), (r1, r1), ...]
-		SHUFFLE_RV_TO_CV_BOTH = VectorShuffle.shuffle(PFS, i -> i / 2);
+		SHUFFLE_RV_TO_CV_BOTH = VectorShuffle.fromOp(PFS, i -> i / 2);
 
 		// [r0, r1, ..., r_len] -> [(r0, ?), (r1, ?), ... (r_{len/2}, ?)]
-		SHUFFLE_RV_TO_CV_RE_LOW = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2) : 0);
+		SHUFFLE_RV_TO_CV_RE_LOW = VectorShuffle.fromOp(PFS, i -> (i % 2 == 0) ? (i / 2) : 0);
 		// [r0, r1, ..., r_len] -> [(?, r0), (?, r1), ... (?, r_{len/2})]
-		SHUFFLE_RV_TO_CV_IM_LOW = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? 0 : (i / 2));
+		SHUFFLE_RV_TO_CV_IM_LOW = VectorShuffle.fromOp(PFS, i -> (i % 2 == 0) ? 0 : (i / 2));
 
 		// [..., r_{len/2} ..., r_len] -> [(r_{len/2}, ?), ..., (r_len, ?)]
-		SHUFFLE_RV_TO_CV_RE_HIGH = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2 + EPV / 2) : 0);
+		SHUFFLE_RV_TO_CV_RE_HIGH = VectorShuffle.fromOp(PFS, i -> (i % 2 == 0) ? (i / 2 + EPV / 2) : 0);
 		// [..., r_{len/2} ..., r_len] -> [(?, r_{len/2}), ..., (?, r_len)]
-		SHUFFLE_RV_TO_CV_IM_HIGH = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? 0 : (i / 2 + EPV / 2));
+		SHUFFLE_RV_TO_CV_IM_HIGH = VectorShuffle.fromOp(PFS, i -> (i % 2 == 0) ? 0 : (i / 2 + EPV / 2));
 
 		// [re, im] -> [(re, im), (re, im), (re, im), ...]
-		SHUFFLE_CS_TO_CV_SPREAD = VectorShuffle.shuffle(PFS, i -> i % 2);
+		SHUFFLE_CS_TO_CV_SPREAD = VectorShuffle.fromOp(PFS, i -> i % 2);
 
 		// [(re0, im0), (re1, im1), ...] -> [(re0, re0), (re1, re1), ...]
-		SHUFFLE_CV_SPREAD_RE = VectorShuffle.shuffle(PFS, i -> i - i % 2);
+		SHUFFLE_CV_SPREAD_RE = VectorShuffle.fromOp(PFS, i -> i - i % 2);
 		// [(re0, im0), (re1, im1), ...] -> [(im0, im0), (im1, im1), ...]
-		SHUFFLE_CV_SPREAD_IM = VectorShuffle.shuffle(PFS, i -> i - i % 2 + 1);
+		SHUFFLE_CV_SPREAD_IM = VectorShuffle.fromOp(PFS, i -> i - i % 2 + 1);
 
 		// [(re0, im0), (re1, im1), ...] -> [re0, re1, ..., re_len, ?, ...]
-		SHUFFLE_CV_TO_CV_PACK_RE_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
+		SHUFFLE_CV_TO_CV_PACK_RE_FIRST = VectorShuffle.fromOp(PFS, i -> (i < EPV2) ? i * 2 : 0);
 		// [(re0, im0), (re1, im1), ...] -> [im0, im1, ..., im_len, ?, ...]
-		SHUFFLE_CV_TO_CV_PACK_IM_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
+		SHUFFLE_CV_TO_CV_PACK_IM_FIRST = VectorShuffle.fromOp(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
 		// [(re0, im0), (re1, im1), ...] -> [?, ..., re0, re1, ..., re_len]
-		SHUFFLE_CV_TO_CV_PACK_RE_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
+		SHUFFLE_CV_TO_CV_PACK_RE_SECOND = VectorShuffle.fromOp(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
 		// [(re0, im0), (re1, im1), ...] -> [?, ..., im0, im1, ..., im_len]
-		SHUFFLE_CV_TO_CV_PACK_IM_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1 : 0);
+		SHUFFLE_CV_TO_CV_PACK_IM_SECOND = VectorShuffle.fromOp(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1 : 0);
 
 		// [re0, re1, re2, ...] -> [(re0, ?), (re1, ?), ..., (re_{len/2}, ?)]
-		SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? i / 2 : 0);
+		SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST = VectorShuffle.fromOp(PFS, i -> (i % 2 == 0) ? i / 2 : 0);
 		// [im0, im1, im2, ...] -> [(?, im0), (?, im1), ..., (?, im_{len/2})]
-		SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST = VectorShuffle.shuffle(PFS, i -> (i % 2 == 1) ? i / 2 : 0);
+		SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST = VectorShuffle.fromOp(PFS, i -> (i % 2 == 1) ? i / 2 : 0);
 		// [..., re_{len/2}, ..., re_len] -> [(re_{len/2}, ?), ..., (re_len, ?)]
-		SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? i / 2 + EPV2 : 0);
+		SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND = VectorShuffle.fromOp(PFS, i -> (i % 2 == 0) ? i / 2 + EPV2 : 0);
 		// [..., im_{len/2}, ..., im_len] -> [(?, im_{len/2}), ..., (?, im_len)]
-		SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND = VectorShuffle.shuffle(PFS, i -> (i % 2 == 1) ? i / 2 + EPV2 : 0);
+		SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND = VectorShuffle.fromOp(PFS, i -> (i % 2 == 1) ? i / 2 + EPV2 : 0);
 
 		// [(re0, im0), (re1, im1), ...] -> [(im0, re0), (im1, re1), ...]
-		SHUFFLE_CV_SWAP_RE_IM = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? i + 1 : i - 1);
+		SHUFFLE_CV_SWAP_RE_IM = VectorShuffle.fromOp(PFS, i -> (i % 2 == 0) ? i + 1 : i - 1);
 
 		// [(re0, im0), (re1, im1), ...] -> [re0, re1, ...]
-		SHUFFLE_CV_TO_CV_FRONT_RE = VectorShuffle.shuffle(PFS, i -> i * 2 < EPV ? i * 2 : i);
+		SHUFFLE_CV_TO_CV_FRONT_RE = VectorShuffle.fromOp(PFS, i -> i * 2 < EPV ? i * 2 : i);
 
 		// [(re0, im0), (re1, im1), ...] -> [im0, im1, ...]
-		SHUFFLE_CV_TO_CV_FRONT_IM = VectorShuffle.shuffle(PFS, i -> i * 2 + 1 < EPV ? i * 2 + 1 : i);
+		SHUFFLE_CV_TO_CV_FRONT_IM = VectorShuffle.fromOp(PFS, i -> i * 2 + 1 < EPV ? i * 2 + 1 : i);
 	}
 
 	public static void rv_add_rs_i(float z[], int zOffset, float x, int count) {
@@ -215,7 +215,7 @@ public final class VOVec {
 		while (count >= EPV2) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
-			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE);
+			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_RE);
 			vz.add(vx).intoArray(z, zOffset);
 
 			xOffset += EPV2;
@@ -233,7 +233,7 @@ public final class VOVec {
 		FloatVector vx = null;
 		//@DONE: It is faster than FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0)
 		if (count >= EPV2)
-			vx = FloatVector.fromArray(FS64, x, 0).reshape(PFS).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV_SPREAD);
+			vx = FloatVector.fromArray(FS64, x, 0).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_CS_TO_CV_SPREAD);
 
 		zOffset <<= 1;
 
@@ -336,7 +336,7 @@ public final class VOVec {
 		while (count >= EPV2) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			//@DONE: It is faster than FloatVector.fromArray(PFS, y, yOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
-			final FloatVector vy = FloatVector.fromArray(PFS2, y, yOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE);
+			final FloatVector vy = FloatVector.fromArray(PFS2, y, yOffset).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_RE);
 			vx.add(vy).intoArray(z, zOffset);
 
 			xOffset += EPV;
@@ -358,7 +358,7 @@ public final class VOVec {
 		FloatVector vy = null;
 		//@DONE: It is faster than FloatVector.fromArray(PFS, y, 0, LOAD_CS_TO_CV_SPREAD, 0)
 		if (count >= EPV2)
-			vy = FloatVector.fromArray(FS64, y, 0).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV_SPREAD);
+			vy = FloatVector.fromArray(FS64, y, 0).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_CS_TO_CV_SPREAD);
 
 		xOffset <<= 1;
 		zOffset <<= 1;
@@ -461,7 +461,7 @@ public final class VOVec {
 		while (count >= EPV2) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
-			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE);
+			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_RE);
 			vz.sub(vx).intoArray(z, zOffset);
 
 			xOffset += EPV2;
@@ -479,7 +479,7 @@ public final class VOVec {
 		FloatVector vx = null;
 		//@DONE: It is faster than FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0)
 		if (count >= EPV2)
-			vx = FloatVector.fromArray(FS64, x, 0).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV_SPREAD);
+			vx = FloatVector.fromArray(FS64, x, 0).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_CS_TO_CV_SPREAD);
 
 		zOffset <<= 1;
 
@@ -626,7 +626,7 @@ public final class VOVec {
 		while (count >= EPV2) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			//@DONE: It is faster than FloatVector.fromArray(PFS, y, yOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
-			final FloatVector vy = FloatVector.fromArray(PFS2, y, yOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE);
+			final FloatVector vy = FloatVector.fromArray(PFS2, y, yOffset).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_RE);
 			vx.sub(vy).intoArray(z, zOffset);
 
 			xOffset += EPV;
@@ -649,7 +649,7 @@ public final class VOVec {
 
 		while (count >= EPV2) {
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
-			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE);
+			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_RE);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
 			vx.sub(vy).intoArray(z, zOffset);
 
@@ -672,7 +672,7 @@ public final class VOVec {
 		FloatVector vy = null;
 		//@DONE: It is faster than FloatVector.fromArray(PFS, y, 0, LOAD_CS_TO_CV_SPREAD, 0)
 		if (count >= EPV2)
-			vy = FloatVector.fromArray(FS64, y, 0).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV_SPREAD);
+			vy = FloatVector.fromArray(FS64, y, 0).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_CS_TO_CV_SPREAD);
 
 		xOffset <<= 1;
 		zOffset <<= 1;
@@ -698,7 +698,7 @@ public final class VOVec {
 		FloatVector vx = null;
 		//@DONE: It is faster than FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0)
 		if (count >= EPV2)
-			vx = FloatVector.fromArray(FS64, x, 0).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV_SPREAD);
+			vx = FloatVector.fromArray(FS64, x, 0).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_CS_TO_CV_SPREAD);
 
 		yOffset <<= 1;
 		zOffset <<= 1;
@@ -796,7 +796,7 @@ public final class VOVec {
 
 		while (count >= EPV2) {
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_RV_TO_CV_BOTH, 0);
-			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
+			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_BOTH);
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
 			vz.mul(vx).intoArray(z, zOffset);
 
@@ -977,7 +977,7 @@ public final class VOVec {
 		while (count >= EPV2) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			//@DONE: It is faster than FloatVector.fromArray(PFS, y, yOffset, LOAD_RV_TO_CV_BOTH, 0);
-			final FloatVector vy = FloatVector.fromArray(PFS2, y, yOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
+			final FloatVector vy = FloatVector.fromArray(PFS2, y, yOffset).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_BOTH);
 			vx.mul(vy).intoArray(z, zOffset);
 			yOffset += EPV2;
 			xOffset += EPV;
@@ -1152,7 +1152,7 @@ public final class VOVec {
 
 		while (count >= EPV2) {
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_RV_TO_CV_BOTH, 0);
-			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
+			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_BOTH);
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
 			vz.div(vx).intoArray(z, zOffset);
 
@@ -1408,7 +1408,7 @@ public final class VOVec {
 		while (count >= EPV2) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			//@DONE: It is faster than FloatVector.fromArray(PFS, y, yOffset, LOAD_RV_TO_CV_BOTH, 0);
-			final FloatVector vy = FloatVector.fromArray(PFS2, y, yOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
+			final FloatVector vy = FloatVector.fromArray(PFS2, y, yOffset).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_BOTH);
 			vx.div(vy).intoArray(z, zOffset);
 
 			yOffset += EPV2;
@@ -1441,7 +1441,7 @@ public final class VOVec {
 
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
 			// vx is [(x[0], 0), (x[1], 0), ...]
-			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE);
+			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_RE);
 
 			// vmulxre is [(x[0] * y[0].re, 0), (x[1] * y[1].re, 0), ...]
 			final FloatVector vmulxre = vx.mul(vyre);
@@ -1532,7 +1532,7 @@ public final class VOVec {
 		FloatVector vx = null;
 		//@DONE: It is faster than FloatVector.fromArray(PFS, x, 0, LOAD_CS_TO_CV_SPREAD, 0)
 		if (count >= EPV2)
-			vx = FloatVector.fromArray(FS64, x, 0).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV_SPREAD);
+			vx = FloatVector.fromArray(FS64, x, 0).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_CS_TO_CV_SPREAD);
 
 		zOffset <<= 1;
 		yOffset <<= 1;
@@ -1638,9 +1638,9 @@ public final class VOVec {
 
 		while (count >= EPV2) {
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_RV_TO_CV_BOTH, 0);
-			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
+			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_BOTH);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
-			vx.mul(vy.neg(MASK_C_IM)).intoArray(z, zOffset);
+			vx.mul(vy.lanewise(VectorOperators.NEG, MASK_C_IM)).intoArray(z, zOffset);
 
 			xOffset += EPV2;
 			yOffset += EPV;
@@ -1763,7 +1763,7 @@ public final class VOVec {
 
 		while (count >= EPV2) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-			vz.neg(MASK_C_IM).intoArray(z, zOffset);
+			vz.lanewise(VectorOperators.NEG, MASK_C_IM).intoArray(z, zOffset);
 
 			zOffset += EPV;
 			count -= EPV2;
@@ -1782,7 +1782,7 @@ public final class VOVec {
 
 		while (count >= EPV2) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			vx.neg(MASK_C_IM).intoArray(z, zOffset);
+			vx.lanewise(VectorOperators.NEG, MASK_C_IM).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
@@ -1803,8 +1803,8 @@ public final class VOVec {
 			//@DONE: check, do we need pack and process twice elements, and save result twice
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, LOAD_RV_TO_CV_BOTH, 0);
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			final FloatVector vzre = vx.cos();
-			final FloatVector vzim = vx.sin();
+			final FloatVector vzre = vx.lanewise(VectorOperators.COS);
+			final FloatVector vzim = vx.lanewise(VectorOperators.SIN);
 			// And now we should combine TWO z vectors from re/im, as they are packed without empty slots
 			vzre.rearrange(SHUFFLE_RV_TO_CV_RE_LOW).blend(vzim.rearrange(SHUFFLE_RV_TO_CV_IM_LOW), MASK_C_IM).intoArray(z, zOffset);
 			vzre.rearrange(SHUFFLE_RV_TO_CV_RE_HIGH).blend(vzim.rearrange(SHUFFLE_RV_TO_CV_IM_HIGH), MASK_C_IM).intoArray(z, zOffset + EPV);
@@ -1817,8 +1817,8 @@ public final class VOVec {
 		// If we have half-vector
 		if (count >= EPV2) {
 			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset);
-			final FloatVector vzre = vx.cos().reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
-			final FloatVector vzim = vx.sin().reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
+			final FloatVector vzre = vx.lanewise(VectorOperators.COS).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_BOTH);
+			final FloatVector vzim = vx.lanewise(VectorOperators.SIN).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_BOTH);
 			vzre.blend(vzim, MASK_C_IM).intoArray(z, zOffset);
 
 			xOffset += EPV2;
@@ -1837,7 +1837,7 @@ public final class VOVec {
 	public static void rv_exp_i(float z[], int zOffset, int count) {
 		while (count >= EPV) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-			vz.exp().intoArray(z, zOffset);
+			vz.lanewise(VectorOperators.EXP).intoArray(z, zOffset);
 
 			zOffset += EPV;
 			count -= EPV;
@@ -1868,11 +1868,11 @@ public final class VOVec {
 			final FloatVector vz2im = vz2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
 
 			// Combine them
-			final FloatVector vzreexp = vz1re.blend(vz2re, MASK_SECOND_HALF).exp();
+			final FloatVector vzreexp = vz1re.blend(vz2re, MASK_SECOND_HALF).lanewise(VectorOperators.EXP);
 			final FloatVector vzim = vz1im.blend(vz2im, MASK_SECOND_HALF);
 
-			final FloatVector vrre = vzreexp.mul(vzim.cos());
-			final FloatVector vrim = vzreexp.mul(vzim.sin());
+			final FloatVector vrre = vzreexp.mul(vzim.lanewise(VectorOperators.COS));
+			final FloatVector vrim = vzreexp.mul(vzim.lanewise(VectorOperators.SIN));
 
 			// And combine & store twice
 			vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST), MASK_C_IM).intoArray(z, zOffset);
@@ -1896,7 +1896,7 @@ public final class VOVec {
 	public static void rv_exp(float z[], int zOffset, float x[], int xOffset, int count) {
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			vx.exp().intoArray(z, zOffset);
+			vx.lanewise(VectorOperators.EXP).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
@@ -1927,11 +1927,11 @@ public final class VOVec {
 			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
 
 			// Combine them
-			final FloatVector vxreexp = vx1re.blend(vx2re, MASK_SECOND_HALF).exp();
+			final FloatVector vxreexp = vx1re.blend(vx2re, MASK_SECOND_HALF).lanewise(VectorOperators.EXP);
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-			final FloatVector vrre = vxreexp.mul(vxim.cos());
-			final FloatVector vrim = vxreexp.mul(vxim.sin());
+			final FloatVector vrre = vxreexp.mul(vxim.lanewise(VectorOperators.COS));
+			final FloatVector vrim = vxreexp.mul(vxim.lanewise(VectorOperators.SIN));
 
 			// And combine & store twice
 			vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST), MASK_C_IM).intoArray(z, zOffset);
@@ -2020,7 +2020,7 @@ public final class VOVec {
 			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-			vxre.hypot(vxim).intoArray(z, zOffset);
+			vxre.lanewise(VectorOperators.HYPOT, vxim).intoArray(z, zOffset);
 			// We load twice as much complex numbers
 			xOffset += EPV * 2;
 			zOffset += EPV;
@@ -2050,7 +2050,7 @@ public final class VOVec {
 			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-			vxim.atan2(vxre).intoArray(z, zOffset);
+			vxim.lanewise(VectorOperators.ATAN2, vxre).intoArray(z, zOffset);
 			// We load twice as much complex numbers
 			xOffset += EPV * 2;
 			zOffset += EPV;
@@ -2085,7 +2085,7 @@ public final class VOVec {
 			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-			vxim.atan2(vxre).mul(vy).intoArray(z, zOffset);
+			vxim.lanewise(VectorOperators.ATAN2, vxre).mul(vy).intoArray(z, zOffset);
 
 			// We load twice as much complex numbers
 			xOffset += EPV * 2;
@@ -2132,7 +2132,7 @@ public final class VOVec {
 		zOffset <<= 1;
 		while (count >= EPV2) {
 			//@DONE: It is faster than FloatVector.fromArray(PFS, x, xOffset, MASK_C_RE, LOAD_RV_TO_CV_RE, 0);
-			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE);
+			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_RE);
 			vx.intoArray(z, zOffset);
 
 			xOffset += EPV2;
@@ -2161,8 +2161,8 @@ public final class VOVec {
 			final FloatVector vzim = vz.rearrange(SHUFFLE_CV_SPREAD_IM);
 
 			//@DONE: Masks are insanely expensive here
-			final FloatVector vrre = vzre.hypot(vzim);
-			final FloatVector vrim = vzim.atan2(vzre);
+			final FloatVector vrre = vzre.lanewise(VectorOperators.HYPOT, vzim);
+			final FloatVector vrim = vzim.lanewise(VectorOperators.ATAN2, vzre);
 
 			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
 
@@ -2194,8 +2194,8 @@ public final class VOVec {
 			final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
 
 			//@DONE: Masks are insanely expensive here
-			final FloatVector vrre = vxre.hypot(vxim);
-			final FloatVector vrim = vxim.atan2(vxre);
+			final FloatVector vrre = vxre.lanewise(VectorOperators.HYPOT, vxim);
+			final FloatVector vrim = vxim.lanewise(VectorOperators.ATAN2, vxre);
 
 			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
 
@@ -2226,8 +2226,8 @@ public final class VOVec {
 			final FloatVector vzim = vz.rearrange(SHUFFLE_CV_SPREAD_IM);
 
 			//@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
-			final FloatVector vrre = vzre.mul(vzim.cos());
-			final FloatVector vrim = vzre.mul(vzim.sin());
+			final FloatVector vrre = vzre.mul(vzim.lanewise(VectorOperators.COS));
+			final FloatVector vrim = vzre.mul(vzim.lanewise(VectorOperators.SIN));
 
 			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
 
@@ -2260,8 +2260,8 @@ public final class VOVec {
 			final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
 
 			//@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
-			final FloatVector vrre = vxre.mul(vxim.cos());
-			final FloatVector vrim = vxre.mul(vxim.sin());
+			final FloatVector vrre = vxre.mul(vxim.lanewise(VectorOperators.COS));
+			final FloatVector vrim = vxre.mul(vxim.lanewise(VectorOperators.SIN));
 
 			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
 
@@ -2282,7 +2282,7 @@ public final class VOVec {
 		float sum = 0.0f;
 
 		while (count >= EPV) {
-			sum += FloatVector.fromArray(PFS, x, xOffset).addLanes();
+			sum += FloatVector.fromArray(PFS, x, xOffset).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			count -= EPV;
@@ -2303,8 +2303,8 @@ public final class VOVec {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 
 			// It is faster than addLanes(MASK)
-			re += vx.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reshape(PFS2).addLanes();
-			im += vx.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reshape(PFS2).addLanes();
+			re += vx.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reinterpretShape(PFS2, 0).reinterpretAsFloats().reduceLanes(VectorOperators.ADD);
+			im += vx.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reinterpretShape(PFS2, 0).reinterpretAsFloats().reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			count -= EPV2;
@@ -2330,8 +2330,8 @@ public final class VOVec {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 
 			// It is faster than addLanes(MASK)
-			re += vx.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reshape(PFS2).addLanes();
-			im += vx.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reshape(PFS2).addLanes();
+			re += vx.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reinterpretShape(PFS2, 0).reinterpretAsFloats().reduceLanes(VectorOperators.ADD);
+			im += vx.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reinterpretShape(PFS2, 0).reinterpretAsFloats().reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			count -= EPV2;
@@ -2362,7 +2362,7 @@ public final class VOVec {
 			final FloatVector vy4 = FloatVector.fromArray(PFS, y, yOffset + EPVx3);
 
 			// Strange, but it is better than 3 fma and one mul
-			sum += vx1.fma(vy1, vx2.mul(vy2)).add(vx3.fma(vy3, vx4.mul(vy4))).addLanes();
+			sum += vx1.fma(vy1, vx2.mul(vy2)).add(vx3.fma(vy3, vx4.mul(vy4))).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPVx4;
 			yOffset += EPVx4;
@@ -2372,7 +2372,7 @@ public final class VOVec {
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
-			sum += vx.mul(vy).addLanes();
+			sum += vx.mul(vy).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -2405,8 +2405,8 @@ public final class VOVec {
 			final FloatVector vyre = vy1re.blend(vy2re, MASK_SECOND_HALF);
 			final FloatVector vyim = vy1im.blend(vy2im, MASK_SECOND_HALF);
 
-			re += vx.mul(vyre).addLanes();
-			im += vx.mul(vyim).addLanes();
+			re += vx.mul(vyre).reduceLanes(VectorOperators.ADD);
+			im += vx.mul(vyim).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			yOffset += EPV * 2; // We load twice as much complex numbers
@@ -2444,8 +2444,8 @@ public final class VOVec {
 			final FloatVector vyre = vy1re.blend(vy2re, MASK_SECOND_HALF);
 			final FloatVector vyim = vy1im.blend(vy2im, MASK_SECOND_HALF);
 
-			re += vx.mul(vyre).addLanes();
-			im += vx.mul(vyim).addLanes();
+			re += vx.mul(vyre).reduceLanes(VectorOperators.ADD);
+			im += vx.mul(vyim).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			yOffset += EPV * 2; // We load twice as much complex numbers
@@ -2495,8 +2495,8 @@ public final class VOVec {
 
 			// It is faster than addLanes(MASK)
 			// And it is same as reshuffle + reshape, but easier to understand
-			re += vrre.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reshape(PFS2).addLanes();
-			im += vrim.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reshape(PFS2).addLanes();
+			re += vrre.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reinterpretShape(PFS2, 0).reinterpretAsFloats().reduceLanes(VectorOperators.ADD);
+			im += vrim.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reinterpretShape(PFS2, 0).reinterpretAsFloats().reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -2549,8 +2549,8 @@ public final class VOVec {
 			final FloatVector vrim = vmulyre.add(vmulximswap);
 
 			// It is faster than addLanes(MASK)
-			re += vrre.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reshape(PFS2).addLanes();
-			im += vrim.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reshape(PFS2).addLanes();
+			re += vrre.rearrange(SHUFFLE_CV_TO_CV_FRONT_RE).reinterpretShape(PFS2, 0).reinterpretAsFloats().reduceLanes(VectorOperators.ADD);
+			im += vrim.rearrange(SHUFFLE_CV_TO_CV_FRONT_IM).reinterpretShape(PFS2, 0).reinterpretAsFloats().reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -2601,7 +2601,7 @@ public final class VOVec {
 		float max = Float.NEGATIVE_INFINITY;
 
 		while (count >= EPV) {
-			float localMax = FloatVector.fromArray(PFS, x, xOffset).maxLanes();
+			float localMax = FloatVector.fromArray(PFS, x, xOffset).reduceLanes(VectorOperators.MAX);
 			if (max < localMax)
 				max = localMax;
 
@@ -2772,7 +2772,7 @@ public final class VOVec {
 			final FloatVector vzabs = vzre.fma(vzre, vzim.mul(vzim));
 			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 
-			VectorMask<Float> xGz = vxabs.greaterThan(vzabs);
+			VectorMask<Float> xGz = vxabs.compare(VectorOperators.GT, vzabs);
 			vx.intoArray(z, zOffset, xGz);
 
 			xOffset += EPV;
@@ -2815,7 +2815,7 @@ public final class VOVec {
 			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 			final FloatVector vyabs = vyre.fma(vyre, vyim.mul(vyim));
 
-			VectorMask<Float> xGy = vxabs.greaterThan(vyabs);
+			VectorMask<Float> xGy = vxabs.compare(VectorOperators.GT, vyabs);
 			vy.blend(vx, xGy).intoArray(z, zOffset);
 
 			xOffset += EPV;
@@ -2842,7 +2842,7 @@ public final class VOVec {
 		float min = Float.POSITIVE_INFINITY;
 
 		while (count >= EPV) {
-			float localMin = FloatVector.fromArray(PFS, x, xOffset).minLanes();
+			float localMin = FloatVector.fromArray(PFS, x, xOffset).reduceLanes(VectorOperators.MIN);
 			if (min > localMin)
 				min = localMin;
 			xOffset += EPV;
@@ -2964,7 +2964,7 @@ public final class VOVec {
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
 			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
-			float localMin = vxabs.minLanes();
+			float localMin = vxabs.reduceLanes(VectorOperators.MIN);
 
 			vxabs.intoArray(aabs, 0);
 			for (int j = 0; j < EPV; j++) {
@@ -3014,7 +3014,7 @@ public final class VOVec {
 			final FloatVector vzabs = vzre.fma(vzre, vzim.mul(vzim));
 			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 
-			VectorMask<Float> xLz = vxabs.lessThan(vzabs);
+			VectorMask<Float> xLz = vxabs.compare(VectorOperators.LT, vzabs);
 			vx.intoArray(z, zOffset, xLz);
 
 			xOffset += EPV;
@@ -3057,7 +3057,7 @@ public final class VOVec {
 			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 			final FloatVector vyabs = vyre.fma(vyre, vyim.mul(vyim));
 
-			VectorMask<Float> xLy = vxabs.lessThan(vyabs);
+			VectorMask<Float> xLy = vxabs.compare(VectorOperators.LT, vyabs);
 			vy.blend(vx, xLy).intoArray(z, zOffset);
 
 			xOffset += EPV;
@@ -3085,7 +3085,7 @@ public final class VOVec {
 		int i = -1;
 
 		while (count >= EPV) {
-			float localMax = FloatVector.fromArray(PFS, x, xOffset).maxLanes();
+			float localMax = FloatVector.fromArray(PFS, x, xOffset).reduceLanes(VectorOperators.MAX);
 			if (max < localMax) {
 				max = localMax;
 				i = xOffset;
@@ -3168,7 +3168,7 @@ public final class VOVec {
 		int i = -1;
 
 		while (count >= EPV) {
-			float localMin = FloatVector.fromArray(PFS, x, xOffset).minLanes();
+			float localMin = FloatVector.fromArray(PFS, x, xOffset).reduceLanes(VectorOperators.MIN);
 			if (min > localMin) {
 				min = localMin;
 				i = xOffset;
@@ -3390,7 +3390,7 @@ public final class VOVec {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
 
 			// Rearrange of vx gives zeroes in im-parts and it could be added without any masks or blends
-			vz.fma(va1, vx.mul(va2).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE)).intoArray(z, zOffset);
+			vz.fma(va1, vx.mul(va2).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_RE)).intoArray(z, zOffset);
 
 			xOffset += EPV2;
 			zOffset += EPV;
@@ -3421,7 +3421,7 @@ public final class VOVec {
 			final FloatVector vy = FloatVector.fromArray(PFS2, y, yOffset);
 
 			// Rearrange of vy gives zeroes in im-parts and it could be added without any masks or blends
-			vx.fma(va1, vy.mul(va2).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE)).intoArray(z, zOffset);
+			vx.fma(va1, vy.mul(va2).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_RE)).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			yOffset += EPV2;
@@ -3441,7 +3441,7 @@ public final class VOVec {
 	public static void rv_10log10_i(float z[], int zOffset, int count) {
 		while (count >= EPV) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-			vz.abs().log10().mul(10.0f).intoArray(z, zOffset);
+			vz.abs().lanewise(VectorOperators.LOG10).mul(10.0f).intoArray(z, zOffset);
 
 			zOffset += EPV;
 			count -= EPV;
@@ -3456,7 +3456,7 @@ public final class VOVec {
 	public static void rv_10log10(float z[], int zOffset, float x[], int xOffset, int count) {
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			vx.abs().log10().mul(10.0f).intoArray(z, zOffset);
+			vx.abs().lanewise(VectorOperators.LOG10).mul(10.0f).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
@@ -3472,7 +3472,7 @@ public final class VOVec {
 
 		while (count >= EPV) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-			vz.abs().log10().mul(10.0f).sub(base).intoArray(z, zOffset);
+			vz.abs().lanewise(VectorOperators.LOG10).mul(10.0f).sub(base).intoArray(z, zOffset);
 
 			zOffset += EPV;
 			count -= EPV;
@@ -3489,7 +3489,7 @@ public final class VOVec {
 
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			vx.abs().log10().mul(10.0f).sub(base).intoArray(z, zOffset);
+			vx.abs().lanewise(VectorOperators.LOG10).mul(10.0f).sub(base).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
@@ -3519,7 +3519,7 @@ public final class VOVec {
 
 			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 
-			vxabs.log10().mul(5.0f).intoArray(z, zOffset);
+			vxabs.lanewise(VectorOperators.LOG10).mul(5.0f).intoArray(z, zOffset);
 
 			// We load twice as much complex numbers
 			xOffset += EPV * 2;
@@ -3554,7 +3554,7 @@ public final class VOVec {
 
 			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 
-			vxabs.log10().mul(5.0f).sub(base).intoArray(z, zOffset);
+			vxabs.lanewise(VectorOperators.LOG10).mul(5.0f).sub(base).intoArray(z, zOffset);
 
 			// We load twice as much complex numbers
 			xOffset += EPV * 2;
@@ -3572,7 +3572,7 @@ public final class VOVec {
 	public static void rv_20log10_i(float z[], int zOffset, int count) {
 		while (count >= EPV) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-			vz.abs().log10().mul(20.0f).intoArray(z, zOffset);
+			vz.abs().lanewise(VectorOperators.LOG10).mul(20.0f).intoArray(z, zOffset);
 
 			zOffset += EPV;
 			count -= EPV;
@@ -3587,7 +3587,7 @@ public final class VOVec {
 	public static void rv_20log10(float z[], int zOffset, float x[], int xOffset, int count) {
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			vx.abs().log10().mul(20.0f).intoArray(z, zOffset);
+			vx.abs().lanewise(VectorOperators.LOG10).mul(20.0f).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
@@ -3603,7 +3603,7 @@ public final class VOVec {
 
 		while (count >= EPV) {
 			final FloatVector vz = FloatVector.fromArray(PFS, z, zOffset);
-			vz.abs().log10().mul(20.0f).sub(base).intoArray(z, zOffset);
+			vz.abs().lanewise(VectorOperators.LOG10).mul(20.0f).sub(base).intoArray(z, zOffset);
 
 			zOffset += EPV;
 			count -= EPV;
@@ -3620,7 +3620,7 @@ public final class VOVec {
 
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			vx.abs().log10().mul(20.0f).sub(base).intoArray(z, zOffset);
+			vx.abs().lanewise(VectorOperators.LOG10).mul(20.0f).sub(base).intoArray(z, zOffset);
 
 			xOffset += EPV;
 			zOffset += EPV;
@@ -3650,7 +3650,7 @@ public final class VOVec {
 
 			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 
-			vxabs.log10().mul(10.0f).intoArray(z, zOffset);
+			vxabs.lanewise(VectorOperators.LOG10).mul(10.0f).intoArray(z, zOffset);
 
 			// We load twice as much complex numbers
 			xOffset += EPV * 2;
@@ -3685,7 +3685,7 @@ public final class VOVec {
 
 			final FloatVector vxabs = vxre.fma(vxre, vxim.mul(vxim));
 
-			vxabs.log10().mul(10.0f).sub(base).intoArray(z, zOffset);
+			vxabs.lanewise(VectorOperators.LOG10).mul(10.0f).sub(base).intoArray(z, zOffset);
 
 			// We load twice as much complex numbers
 			xOffset += EPV * 2;

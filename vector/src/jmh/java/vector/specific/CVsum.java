@@ -44,7 +44,7 @@ public class CVsum {
 
 	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
 	private final static int EPV = PFS.length();
-	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
+	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.vectorBitSize() / 2));
 	private final static int EPV2 = PFS2.length();
 
 	private final static VectorMask<Float> MASK_SECOND_HALF;
@@ -62,13 +62,13 @@ public class CVsum {
 		MASK_SECOND_HALF = VectorMask.fromArray(PFS, secondhalf, 0);
 
 		// [(re0, im0), (re1, im1), ...] -> [re0, re1, ..., re_len, ?, ...]
-		SHUFFLE_CV_TO_CV_PACK_RE_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
+		SHUFFLE_CV_TO_CV_PACK_RE_FIRST = VectorShuffle.fromOp(PFS, i -> (i < EPV2) ? i * 2 : 0);
 		// [(re0, im0), (re1, im1), ...] -> [im0, im1, ..., im_len, ?, ...]
-		SHUFFLE_CV_TO_CV_PACK_IM_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
+		SHUFFLE_CV_TO_CV_PACK_IM_FIRST = VectorShuffle.fromOp(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
 		// [(re0, im0), (re1, im1), ...] -> [?, ..., re0, re1, ..., re_len]
-		SHUFFLE_CV_TO_CV_PACK_RE_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
+		SHUFFLE_CV_TO_CV_PACK_RE_SECOND = VectorShuffle.fromOp(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
 		// [(re0, im0), (re1, im1), ...] -> [?, ..., im0, im1, ..., im_len]
-		SHUFFLE_CV_TO_CV_PACK_IM_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1 : 0);
+		SHUFFLE_CV_TO_CV_PACK_IM_SECOND = VectorShuffle.fromOp(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1 : 0);
 	}
 
 	private float x[];
@@ -123,8 +123,8 @@ public class CVsum {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 
 			// It is faster than addLanes(MASK)
-			re += vx.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST).reshape(PFS2).addLanes();
-			im += vx.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST).reshape(PFS2).addLanes();
+			re += vx.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST).reinterpretShape(PFS2, 0).reinterpretAsFloats().reduceLanes(VectorOperators.ADD);
+			im += vx.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST).reinterpretShape(PFS2, 0).reinterpretAsFloats().reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			count -= EPV2;
@@ -157,8 +157,8 @@ public class CVsum {
 			final FloatVector vxre = vx1re.blend(vx2re, MASK_SECOND_HALF);
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-			re += vxim.addLanes();
-			im += vxre.addLanes();
+			re += vxim.reduceLanes(VectorOperators.ADD);
+			im += vxre.reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			count -= EPV2;
@@ -194,8 +194,8 @@ public class CVsum {
 		}
 
 		if (needLanes) {
-			re += vsum.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST).reshape(PFS2).addLanes();
-			im += vsum.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST).reshape(PFS2).addLanes();
+			re += vsum.rearrange(SHUFFLE_CV_TO_CV_PACK_RE_FIRST).reinterpretShape(PFS2, 0).reinterpretAsFloats().reduceLanes(VectorOperators.ADD);
+			im += vsum.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_FIRST).reinterpretShape(PFS2, 0).reinterpretAsFloats().reduceLanes(VectorOperators.ADD);
 		}
 
 		z[0] = re;

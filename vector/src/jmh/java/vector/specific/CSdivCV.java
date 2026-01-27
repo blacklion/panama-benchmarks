@@ -68,13 +68,13 @@ public class CSdivCV {
 		MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
 
 		// [re, im] -> [(re, im), (re, im), (re, im), ...]
-		SHUFFLE_CS_TO_CV_SPREAD = VectorShuffle.shuffle(PFS, i -> i % 2);
+		SHUFFLE_CS_TO_CV_SPREAD = VectorShuffle.fromOp(PFS, i -> i % 2);
 		// [(re0, im0), (re1, im1), ...] -> [(re0, re0), (re1, re1), ...]
-		SHUFFLE_CV_SPREAD_RE = VectorShuffle.shuffle(PFS, i -> i - i % 2);
+		SHUFFLE_CV_SPREAD_RE = VectorShuffle.fromOp(PFS, i -> i - i % 2);
 		// [(re0, im0), (re1, im1), ...] -> [(im0, im0), (im1, im1), ...]
-		SHUFFLE_CV_SPREAD_IM = VectorShuffle.shuffle(PFS, i -> i - i % 2 + 1);
+		SHUFFLE_CV_SPREAD_IM = VectorShuffle.fromOp(PFS, i -> i - i % 2 + 1);
 		// [(re0, im0), (re1, im1), ...] -> [(im0, re0), (im1, re1), ...]
-		SHUFFLE_CV_SWAP_RE_IM = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? i + 1 : i - 1);
+		SHUFFLE_CV_SWAP_RE_IM = VectorShuffle.fromOp(PFS, i -> (i % 2 == 0) ? i + 1 : i - 1);
 
 		LOAD_CS_TO_CV_SPREAD = SHUFFLE_CS_TO_CV_SPREAD.toArray();
 		LOAD_CV_TO_CV_SPREAD_RE = SHUFFLE_CV_SPREAD_RE.toArray();
@@ -182,7 +182,7 @@ public class CSdivCV {
 	private static void cs_div_cv_2(float z[], int zOffset, float x[], float y[], int yOffset, int count) {
 		FloatVector vx = null;
 		if (count >= EPV2)
-			vx = FloatVector.fromArray(FS64, x, 0).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV_SPREAD);
+			vx = FloatVector.fromArray(FS64, x, 0).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_CS_TO_CV_SPREAD);
 
 		zOffset <<= 1;
 		yOffset <<= 1;
@@ -278,7 +278,7 @@ public class CSdivCV {
 	private static void cs_div_cv_4(float z[], int zOffset, float x[], float y[], int yOffset, int count) {
 		FloatVector vx = null;
 		if (count >= EPV2)
-			vx = FloatVector.fromArray(FS64, x, 0).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV_SPREAD);
+			vx = FloatVector.fromArray(FS64, x, 0).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_CS_TO_CV_SPREAD);
 
 		zOffset <<= 1;
 		yOffset <<= 1;

@@ -28,6 +28,7 @@
 package vector.specific;
 
 import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
@@ -84,7 +85,7 @@ public class RVsum {
 		float sum = 0.0f;
 
 		while (count >= EPV) {
-			sum += FloatVector.fromArray(PFS, x, xOffset).addLanes();
+			sum += FloatVector.fromArray(PFS, x, xOffset).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			count -= EPV;
@@ -106,7 +107,7 @@ public class RVsum {
 			count -= EPV;
 		}
 
-		float sum = needLanes ? vsum.addLanes() : 0.0f;
+		float sum = needLanes ? vsum.reduceLanes(VectorOperators.ADD) : 0.0f;
 		while (count-- > 0)
 			sum += x[xOffset++];
 		return sum;

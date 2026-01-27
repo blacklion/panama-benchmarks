@@ -43,7 +43,7 @@ public class RVexpi {
 
 	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
 	private final static int EPV = PFS.length();
-	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
+	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.vectorBitSize() / 2));
 	private final static int EPV2 = PFS2.length();
 
 	private final static VectorMask<Float> MASK_C_IM;
@@ -62,15 +62,15 @@ public class RVexpi {
 		MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
 
 		// [r0, r1, ...] -> [(r0, r0), (r1, r1), ...]
-		SHUFFLE_RV_TO_CV_BOTH = VectorShuffle.shuffle(PFS, i -> i / 2);
+		SHUFFLE_RV_TO_CV_BOTH = VectorShuffle.fromOp(PFS, i -> i / 2);
 		// [r0, r1, ..., r_len] -> [(r0, ?), (r1, ?), ... (r_{len/2}, ?)]
-		SHUFFLE_RV_TO_CV_RE_LOW = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2) : 0);
+		SHUFFLE_RV_TO_CV_RE_LOW = VectorShuffle.fromOp(PFS, i -> (i % 2 == 0) ? (i / 2) : 0);
 		// [r0, r1, ..., r_len] -> [(?, r0), (?, r1), ... (?, r_{len/2})]
-		SHUFFLE_RV_TO_CV_IM_LOW = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? 0 : (i / 2));
+		SHUFFLE_RV_TO_CV_IM_LOW = VectorShuffle.fromOp(PFS, i -> (i % 2 == 0) ? 0 : (i / 2));
 		// [..., r_{len/2} ..., r_len] -> [(r_{len/2}, ?), ..., (r_len, ?)]
-		SHUFFLE_RV_TO_CV_RE_HIGH = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2 + EPV / 2) : 0);
+		SHUFFLE_RV_TO_CV_RE_HIGH = VectorShuffle.fromOp(PFS, i -> (i % 2 == 0) ? (i / 2 + EPV / 2) : 0);
 		// [..., r_{len/2} ..., r_len] -> [(?, r_{len/2}), ..., (?, r_len)]
-		SHUFFLE_RV_TO_CV_IM_HIGH = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? 0 : (i / 2 + EPV / 2));
+		SHUFFLE_RV_TO_CV_IM_HIGH = VectorShuffle.fromOp(PFS, i -> (i % 2 == 0) ? 0 : (i / 2 + EPV / 2));
 	}
 
 	private float x[];
@@ -134,9 +134,9 @@ public class RVexpi {
 	private static void rv_expi_1(float z[], int zOffset, float x[], int xOffset, int count) {
 		zOffset <<= 1;
 		while (count >= EPV2) {
-			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
-			final FloatVector vzre = vx.cos();
-			final FloatVector vzim = vx.sin();
+			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_BOTH);
+			final FloatVector vzre = vx.lanewise(VectorOperators.COS);
+			final FloatVector vzim = vx.lanewise(VectorOperators.SIN);
 			vzre.blend(vzim, MASK_C_IM).intoArray(z, zOffset);
 
 			xOffset += EPV2;
@@ -155,8 +155,8 @@ public class RVexpi {
 		zOffset <<= 1;
 		while (count >= EPV2) {
 			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset);
-			final FloatVector vzre = vx.cos().reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
-			final FloatVector vzim = vx.sin().reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
+			final FloatVector vzre = vx.lanewise(VectorOperators.COS).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_BOTH);
+			final FloatVector vzim = vx.lanewise(VectorOperators.SIN).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_BOTH);
 			vzre.blend(vzim, MASK_C_IM).intoArray(z, zOffset);
 
 			xOffset += EPV2;
@@ -175,8 +175,8 @@ public class RVexpi {
 		zOffset <<= 1;
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			final FloatVector vzre = vx.cos();
-			final FloatVector vzim = vx.sin();
+			final FloatVector vzre = vx.lanewise(VectorOperators.COS);
+			final FloatVector vzim = vx.lanewise(VectorOperators.SIN);
 			// And now we should combine TWO z vectors from re/im, as they are packed without empty slots
 			vzre.rearrange(SHUFFLE_RV_TO_CV_RE_LOW).blend(vzim.rearrange(SHUFFLE_RV_TO_CV_IM_LOW), MASK_C_IM).intoArray(z, zOffset);
 			vzre.rearrange(SHUFFLE_RV_TO_CV_RE_HIGH).blend(vzim.rearrange(SHUFFLE_RV_TO_CV_IM_HIGH), MASK_C_IM).intoArray(z, zOffset + EPV);
@@ -198,8 +198,8 @@ public class RVexpi {
 		zOffset <<= 1;
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			final FloatVector vzre = vx.cos();
-			final FloatVector vzim = vx.sin();
+			final FloatVector vzre = vx.lanewise(VectorOperators.COS);
+			final FloatVector vzim = vx.lanewise(VectorOperators.SIN);
 			// And now we should combine TWO z vectors from re/im, as they are packed without empty slots
 			vzre.rearrange(SHUFFLE_RV_TO_CV_RE_LOW).blend(vzim.rearrange(SHUFFLE_RV_TO_CV_IM_LOW), MASK_C_IM).intoArray(z, zOffset);
 			vzre.rearrange(SHUFFLE_RV_TO_CV_RE_HIGH).blend(vzim.rearrange(SHUFFLE_RV_TO_CV_IM_HIGH), MASK_C_IM).intoArray(z, zOffset + EPV);
@@ -211,9 +211,9 @@ public class RVexpi {
 		}
 		// If we have half-vector
 		if (count >= EPV2) {
-			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
-			final FloatVector vzre = vx.cos();
-			final FloatVector vzim = vx.sin();
+			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_BOTH);
+			final FloatVector vzre = vx.lanewise(VectorOperators.COS);
+			final FloatVector vzim = vx.lanewise(VectorOperators.SIN);
 			vzre.blend(vzim, MASK_C_IM).intoArray(z, zOffset);
 
 			xOffset += EPV2;
@@ -232,8 +232,8 @@ public class RVexpi {
 		zOffset <<= 1;
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
-			final FloatVector vzre = vx.cos();
-			final FloatVector vzim = vx.sin();
+			final FloatVector vzre = vx.lanewise(VectorOperators.COS);
+			final FloatVector vzim = vx.lanewise(VectorOperators.SIN);
 			// And now we should combine TWO z vectors from re/im, as they are packed without empty slots
 			vzre.rearrange(SHUFFLE_RV_TO_CV_RE_LOW).blend(vzim.rearrange(SHUFFLE_RV_TO_CV_IM_LOW), MASK_C_IM).intoArray(z, zOffset);
 			vzre.rearrange(SHUFFLE_RV_TO_CV_RE_HIGH).blend(vzim.rearrange(SHUFFLE_RV_TO_CV_IM_HIGH), MASK_C_IM).intoArray(z, zOffset + EPV);
@@ -246,8 +246,8 @@ public class RVexpi {
 		// If we have half-vector
 		if (count >= EPV2) {
 			final FloatVector vx = FloatVector.fromArray(PFS2, x, xOffset);
-			final FloatVector vzre = vx.cos().reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
-			final FloatVector vzim = vx.sin().reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH);
+			final FloatVector vzre = vx.lanewise(VectorOperators.COS).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_BOTH);
+			final FloatVector vzim = vx.lanewise(VectorOperators.SIN).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_BOTH);
 			vzre.blend(vzim, MASK_C_IM).intoArray(z, zOffset);
 
 			xOffset += EPV2;

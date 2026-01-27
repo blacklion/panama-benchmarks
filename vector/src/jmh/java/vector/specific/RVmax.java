@@ -28,11 +28,13 @@
 package vector.specific;
 
 import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
+import java.util.Vector;
 
 /** @noinspection CStyleArrayDeclaration, SameParameterValue */
 @Fork(2)
@@ -87,7 +89,7 @@ public class RVmax {
 		float max = Float.NEGATIVE_INFINITY;
 
 		while (count >= EPV) {
-			float localMax = FloatVector.fromArray(PFS, x, xOffset).maxLanes();
+			float localMax = FloatVector.fromArray(PFS, x, xOffset).reduceLanes(VectorOperators.MAX);
 			if (max < localMax)
 				max = localMax;
 
@@ -112,7 +114,7 @@ public class RVmax {
 			count -= EPV;
 		}
 
-		float max = needLanes ? vmax.maxLanes() : Float.NEGATIVE_INFINITY;
+		float max = needLanes ? vmax.reduceLanes(VectorOperators.MAX) : Float.NEGATIVE_INFINITY;
 		while (count-- > 0) {
 			if (max < x[xOffset])
 				max = x[xOffset];

@@ -29,6 +29,7 @@ package vector.micro;
 
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorMask;
+import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
@@ -90,21 +91,21 @@ public class MaskedArithmeticOps {
 
 	@Benchmark
 	public void cossinWithMask(Blackhole bh) {
-		bh.consume(vx.cos(MASK_C_RE).blend(vx.sin(MASK_C_IM), MASK_C_IM));
+		bh.consume(vx.lanewise(VectorOperators.COS, MASK_C_RE).blend(vx.lanewise(VectorOperators.SIN, MASK_C_IM), MASK_C_IM));
 	}
 
 	@Benchmark
 	public void cossin(Blackhole bh) {
-		bh.consume(vx.cos().blend(vx.sin(), MASK_C_IM));
+		bh.consume(vx.lanewise(VectorOperators.COS).blend(vx.lanewise(VectorOperators.SIN), MASK_C_IM));
 	}
 
 	@Benchmark
 	public void hypotatan2WithMask(Blackhole bh) {
-		bh.consume(vx.hypot(vy, MASK_C_RE).blend(vx.atan2(vy, MASK_C_IM), MASK_C_IM));
+		bh.consume(vx.lanewise(VectorOperators.HYPOT, vy, MASK_C_RE).blend(vx.lanewise(VectorOperators.ATAN2, vy, MASK_C_IM), MASK_C_IM));
 	}
 
 	@Benchmark
 	public void hypotatan2(Blackhole bh) {
-		bh.consume(vx.hypot(vy).blend(vx.atan2(vy), MASK_C_IM));
+		bh.consume(vx.lanewise(VectorOperators.HYPOT, vy).blend(vx.lanewise(VectorOperators.ATAN2, vy), MASK_C_IM));
 	}
 }

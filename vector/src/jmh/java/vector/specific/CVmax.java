@@ -44,7 +44,7 @@ public class CVmax {
 
 	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
 	private final static int EPV = PFS.length();
-	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
+	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.vectorBitSize() / 2));
 	private final static int EPV2 = PFS2.length();
 
 	private final static VectorMask<Float> MASK_SECOND_HALF;
@@ -60,13 +60,13 @@ public class CVmax {
 		MASK_SECOND_HALF = VectorMask.fromArray(PFS, sh, 0);
 
 		// [(re0, im0), (re1, im1), ...] -> [re0, re1, ..., re_len, ?, ...]
-		SHUFFLE_CV_TO_CV_PACK_RE_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
+		SHUFFLE_CV_TO_CV_PACK_RE_FIRST = VectorShuffle.fromOp(PFS, i -> (i < EPV2) ? i * 2 : 0);
 		// [(re0, im0), (re1, im1), ...] -> [im0, im1, ..., im_len, ?, ...]
-		SHUFFLE_CV_TO_CV_PACK_IM_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
+		SHUFFLE_CV_TO_CV_PACK_IM_FIRST = VectorShuffle.fromOp(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
 		// [(re0, im0), (re1, im1), ...] -> [?, ..., re0, re1, ..., re_len]
-		SHUFFLE_CV_TO_CV_PACK_RE_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
+		SHUFFLE_CV_TO_CV_PACK_RE_SECOND = VectorShuffle.fromOp(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
 		// [(re0, im0), (re1, im1), ...] -> [?, ..., im0, im1, ..., im_len]
-		SHUFFLE_CV_TO_CV_PACK_IM_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1 : 0);
+		SHUFFLE_CV_TO_CV_PACK_IM_SECOND = VectorShuffle.fromOp(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1 : 0);
 	}
 
 	private float x[];
@@ -138,7 +138,7 @@ public class CVmax {
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
-			float localMax = vxabs.maxLanes();
+			float localMax = vxabs.reduceLanes(VectorOperators.MAX);
 			if (max < localMax) {
 				// Find it now
 				for (int j = 0; j < EPV; j++) {
@@ -187,7 +187,7 @@ public class CVmax {
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
-			float localMax = vxabs.maxLanes();
+			float localMax = vxabs.reduceLanes(VectorOperators.MAX);
 			if (max < localMax) {
 				vmax = vxabs;
 				i = xOffset;
@@ -287,7 +287,7 @@ public class CVmax {
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
 			final FloatVector vxabs = vxre.mul(vxre).add(vxim.mul(vxim));
-			float localMax = vxabs.maxLanes();
+			float localMax = vxabs.reduceLanes(VectorOperators.MAX);
 			if (max < localMax) {
 				vmax = vxabs;
 				i = xOffset;

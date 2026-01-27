@@ -48,7 +48,7 @@ public class LoadCStoCV {
 	private final static int EPV = PFS.length();
 	private final static VectorSpecies<Float> FS64 = FloatVector.SPECIES_64;
 
-	private final static VectorShuffle<Float> SHUFFLE_CS_TO_CV = VectorShuffle.shuffle(PFS, i -> i % 2);
+	private final static VectorShuffle<Float> SHUFFLE_CS_TO_CV = VectorShuffle.fromOp(PFS, i -> i % 2);
 	private final static int[] LOAD_CS_TO_CV_SPREAD = SHUFFLE_CS_TO_CV.toArray();
 
 	private float x[];
@@ -70,6 +70,6 @@ public class LoadCStoCV {
 
 	@Benchmark
 	public void load_reshape_shuffle(Blackhole bh) {
-		bh.consume(FloatVector.fromArray(FS64, x, 0).reshape(PFS).rearrange(SHUFFLE_CS_TO_CV));
+		bh.consume(FloatVector.fromArray(FS64, x, 0).reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_CS_TO_CV));
 	}
 }

@@ -44,7 +44,7 @@ public class LoadRVtoCVRE {
 
 	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
 	private final static int EPV = PFS.length();
-	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
+	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.vectorBitSize() / 2));
 
 
 	private final static VectorMask<Float> MASK_C_RE;
@@ -64,8 +64,8 @@ public class LoadRVtoCVRE {
 		MASK_C_RE = VectorMask.fromArray(PFS, alter, 0);
 		MASK_C_IM = VectorMask.fromArray(PFS, alter, 1);
 
-		SHUFFLE_RV_TO_CV_RE = VectorShuffle.shuffle(PFS, i -> i / 2);
-		SHUFFLE_RV_TO_CV_RE_ZERO = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? (i / 2) : (EPV - 1));
+		SHUFFLE_RV_TO_CV_RE = VectorShuffle.fromOp(PFS, i -> i / 2);
+		SHUFFLE_RV_TO_CV_RE_ZERO = VectorShuffle.fromOp(PFS, i -> (i % 2 == 0) ? (i / 2) : (EPV - 1));
 
 		LOAD_RV_TO_CV_RE = SHUFFLE_RV_TO_CV_RE.toArray();
 	}
@@ -85,18 +85,18 @@ public class LoadRVtoCVRE {
 
 	@Benchmark
 	public void load_with_spread(Blackhole bh) {
-		bh.consume(FloatVector.fromArray(PFS, x, 0, MASK_C_RE, LOAD_RV_TO_CV_RE, 0));
+		bh.consume(FloatVector.fromArray(PFS, x, 0, LOAD_RV_TO_CV_RE, 0));
 	}
 
 	@Benchmark
 	public void load_simple_shuffle_blend(Blackhole bh) {
 		final FloatVector vr = FloatVector.fromArray(PFS2, x, 0);
-		bh.consume(vr.reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE).blend(ZERO, MASK_C_IM));
+		bh.consume(vr.reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_RE).blend(ZERO, MASK_C_IM));
 	}
 
 	@Benchmark
 	public void load_simple_shuffle(Blackhole bh) {
 		final FloatVector vr = FloatVector.fromArray(PFS2, x, 0);
-		bh.consume(vr.reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_RE_ZERO));
+		bh.consume(vr.reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_RE_ZERO));
 	}
 }

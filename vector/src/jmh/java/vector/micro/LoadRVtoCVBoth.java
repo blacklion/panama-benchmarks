@@ -47,14 +47,14 @@ public class LoadRVtoCVBoth {
 
 	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
 	private final static int EPV = PFS.length();
-	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
+	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.vectorBitSize() / 2));
 
 	private final static VectorShuffle<Float> SHUFFLE_RV_TO_CV_BOTH;
 	private final static int[] LOAD_RV_TO_CV_BOTH;
 
 	static {
 		// [r0, r1, ...] -> [(r0, r0), (r1, r1), ...]
-		SHUFFLE_RV_TO_CV_BOTH = VectorShuffle.shuffle(PFS, i -> i / 2);
+		SHUFFLE_RV_TO_CV_BOTH = VectorShuffle.fromOp(PFS, i -> i / 2);
 
 		LOAD_RV_TO_CV_BOTH = SHUFFLE_RV_TO_CV_BOTH.toArray();
 	}
@@ -80,6 +80,6 @@ public class LoadRVtoCVBoth {
 	@Benchmark
 	public void load_simple_shuffle(Blackhole bh) {
 		final FloatVector vr = FloatVector.fromArray(PFS2, x, 0);
-		bh.consume(vr.reshape(PFS).rearrange(SHUFFLE_RV_TO_CV_BOTH));
+		bh.consume(vr.reinterpretShape(PFS, 0).reinterpretAsFloats().rearrange(SHUFFLE_RV_TO_CV_BOTH));
 	}
 }

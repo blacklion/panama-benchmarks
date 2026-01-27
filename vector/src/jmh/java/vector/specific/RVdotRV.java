@@ -28,6 +28,7 @@
 package vector.specific;
 
 import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
@@ -126,7 +127,7 @@ public class RVdotRV {
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
-			sum += vx.mul(vy).addLanes();
+			sum += vx.mul(vy).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -148,8 +149,8 @@ public class RVdotRV {
 			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
 			final FloatVector vy2 = FloatVector.fromArray(PFS, y, yOffset + EPV);
 
-			// sum += vx1.mul(vy1).add(vx2.mul(vy2)).addLanes();
-			sum += vx1.fma(vy1, vx2.mul(vy2)).addLanes();
+			// sum += vx1.mul(vy1).add(vx2.mul(vy2)).reduceLanes(VectorOperators.ADD);
+			sum += vx1.fma(vy1, vx2.mul(vy2)).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPVx2;
 			yOffset += EPVx2;
@@ -159,7 +160,7 @@ public class RVdotRV {
 		if (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
-			sum += vx.mul(vy).addLanes();
+			sum += vx.mul(vy).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -185,9 +186,9 @@ public class RVdotRV {
 			final FloatVector vx4 = FloatVector.fromArray(PFS, x, xOffset + EPVx3);
 			final FloatVector vy4 = FloatVector.fromArray(PFS, y, yOffset + EPVx3);
 
-			// sum += vx1.mul(vy1).add(vx2.mul(vy2)).add(vx3.mul(vy3)).add(vx4.mul(vy4)).addLanes();
+			// sum += vx1.mul(vy1).add(vx2.mul(vy2)).add(vx3.mul(vy3)).add(vx4.mul(vy4)).reduceLanes(VectorOperators.ADD);
 			// Strange, but it is better than 3 fma and one mul
-			sum += vx1.fma(vy1, vx2.mul(vy2)).add(vx3.fma(vy3, vx4.mul(vy4))).addLanes();
+			sum += vx1.fma(vy1, vx2.mul(vy2)).add(vx3.fma(vy3, vx4.mul(vy4))).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPVx4;
 			yOffset += EPVx4;
@@ -197,7 +198,7 @@ public class RVdotRV {
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
-			sum += vx.mul(vy).addLanes();
+			sum += vx.mul(vy).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -223,9 +224,9 @@ public class RVdotRV {
 			final FloatVector vx4 = FloatVector.fromArray(PFS, x, xOffset + EPVx3);
 			final FloatVector vy4 = FloatVector.fromArray(PFS, y, yOffset + EPVx3);
 
-			// sum += vx1.mul(vy1).add(vx2.mul(vy2)).add(vx3.mul(vy3)).add(vx4.mul(vy4)).addLanes();
+			// sum += vx1.mul(vy1).add(vx2.mul(vy2)).add(vx3.mul(vy3)).add(vx4.mul(vy4)).reduceLanes(VectorOperators.ADD);
 			// Strange, but it is better than 3 fma and one mul
-			sum += vx1.fma(vy1, vx2.mul(vy2)).add(vx3.fma(vy3, vx4.mul(vy4))).addLanes();
+			sum += vx1.fma(vy1, vx2.mul(vy2)).add(vx3.fma(vy3, vx4.mul(vy4))).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPVx4;
 			yOffset += EPVx4;
@@ -238,8 +239,8 @@ public class RVdotRV {
 			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
 			final FloatVector vy2 = FloatVector.fromArray(PFS, y, yOffset + EPV);
 
-			// sum += vx1.mul(vy1).add(vx2.mul(vy2)).addLanes();
-			sum += vx1.fma(vy1, vx2.mul(vy2)).addLanes();
+			// sum += vx1.mul(vy1).add(vx2.mul(vy2)).reduceLanes(VectorOperators.ADD);
+			sum += vx1.fma(vy1, vx2.mul(vy2)).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPVx2;
 			yOffset += EPVx2;
@@ -249,7 +250,7 @@ public class RVdotRV {
 		if (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
-			sum += vx.mul(vy).addLanes();
+			sum += vx.mul(vy).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -271,7 +272,7 @@ public class RVdotRV {
 			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
 			final FloatVector vy2 = FloatVector.fromArray(PFS, y, yOffset + EPV);
 
-			sum += vx1.mul(vy1).add(vx2.mul(vy2)).addLanes();
+			sum += vx1.mul(vy1).add(vx2.mul(vy2)).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPVx2;
 			yOffset += EPVx2;
@@ -281,7 +282,7 @@ public class RVdotRV {
 		if (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
-			sum += vx.mul(vy).addLanes();
+			sum += vx.mul(vy).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -307,7 +308,7 @@ public class RVdotRV {
 			final FloatVector vx4 = FloatVector.fromArray(PFS, x, xOffset + EPVx3);
 			final FloatVector vy4 = FloatVector.fromArray(PFS, y, yOffset + EPVx3);
 
-			sum += vx1.mul(vy1).add(vx2.mul(vy2)).add(vx3.mul(vy3)).add(vx4.mul(vy4)).addLanes();
+			sum += vx1.mul(vy1).add(vx2.mul(vy2)).add(vx3.mul(vy3)).add(vx4.mul(vy4)).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPVx4;
 			yOffset += EPVx4;
@@ -317,7 +318,7 @@ public class RVdotRV {
 		while (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
-			sum += vx.mul(vy).addLanes();
+			sum += vx.mul(vy).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -343,7 +344,7 @@ public class RVdotRV {
 			final FloatVector vx4 = FloatVector.fromArray(PFS, x, xOffset + EPVx3);
 			final FloatVector vy4 = FloatVector.fromArray(PFS, y, yOffset + EPVx3);
 
-			sum += vx1.mul(vy1).add(vx2.mul(vy2)).add(vx3.mul(vy3)).add(vx4.mul(vy4)).addLanes();
+			sum += vx1.mul(vy1).add(vx2.mul(vy2)).add(vx3.mul(vy3)).add(vx4.mul(vy4)).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPVx4;
 			yOffset += EPVx4;
@@ -356,7 +357,7 @@ public class RVdotRV {
 			final FloatVector vx2 = FloatVector.fromArray(PFS, x, xOffset + EPV);
 			final FloatVector vy2 = FloatVector.fromArray(PFS, y, yOffset + EPV);
 
-			sum += vx1.mul(vy1).add(vx2.mul(vy2)).addLanes();
+			sum += vx1.mul(vy1).add(vx2.mul(vy2)).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPVx2;
 			yOffset += EPVx2;
@@ -366,7 +367,7 @@ public class RVdotRV {
 		if (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
-			sum += vx.mul(vy).addLanes();
+			sum += vx.mul(vy).reduceLanes(VectorOperators.ADD);
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -398,7 +399,7 @@ public class RVdotRV {
 			sum += x[xOffset++] * y[yOffset++];
 
 		if (needLanes)
-			sum += vsum.addLanes();
+			sum += vsum.reduceLanes(VectorOperators.ADD);
 
 		return sum;
 	}
@@ -425,7 +426,7 @@ public class RVdotRV {
 		if (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
-			vsum1 = vsum1.add(vx.mul(vy).addLanes());
+			vsum1 = vsum1.add(vx.mul(vy).reduceLanes(VectorOperators.ADD));
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -437,7 +438,7 @@ public class RVdotRV {
 			sum += x[xOffset++] * y[yOffset++];
 
 		if (needLanes)
-			sum += vsum1.addLanes() + vsum2.addLanes();
+			sum += vsum1.reduceLanes(VectorOperators.ADD) + vsum2.reduceLanes(VectorOperators.ADD);
 
 		return sum;
 	}
@@ -484,7 +485,7 @@ public class RVdotRV {
 			sum += x[xOffset++] * y[yOffset++];
 
 		if (needLanes)
-			sum += vsum1.addLanes() + vsum2.addLanes() + vsum3.addLanes() + vsum4.addLanes();
+			sum += vsum1.reduceLanes(VectorOperators.ADD) + vsum2.reduceLanes(VectorOperators.ADD) + vsum3.reduceLanes(VectorOperators.ADD) + vsum4.reduceLanes(VectorOperators.ADD);
 
 		return sum;
 	}
@@ -545,7 +546,7 @@ public class RVdotRV {
 			sum += x[xOffset++] * y[yOffset++];
 
 		if (needLanes)
-			sum += vsum1.addLanes() + vsum2.addLanes() + vsum3.addLanes() + vsum4.addLanes();
+			sum += vsum1.reduceLanes(VectorOperators.ADD) + vsum2.reduceLanes(VectorOperators.ADD) + vsum3.reduceLanes(VectorOperators.ADD) + vsum4.reduceLanes(VectorOperators.ADD);
 
 		return sum;
 	}
@@ -572,7 +573,7 @@ public class RVdotRV {
 		if (count >= EPV) {
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			final FloatVector vy = FloatVector.fromArray(PFS, y, yOffset);
-			vsum1 = vsum1.add(vx.mul(vy).addLanes());
+			vsum1 = vsum1.add(vx.mul(vy).reduceLanes(VectorOperators.ADD));
 
 			xOffset += EPV;
 			yOffset += EPV;
@@ -584,7 +585,7 @@ public class RVdotRV {
 			sum += x[xOffset++] * y[yOffset++];
 
 		if (needLanes)
-			sum += vsum1.add(vsum2).addLanes();
+			sum += vsum1.add(vsum2).reduceLanes(VectorOperators.ADD);
 
 		return sum;
 	}
@@ -631,7 +632,7 @@ public class RVdotRV {
 			sum += x[xOffset++] * y[yOffset++];
 
 		if (needLanes)
-			sum += vsum1.add(vsum2).add(vsum3.add(vsum4)).addLanes();
+			sum += vsum1.add(vsum2).add(vsum3.add(vsum4)).reduceLanes(VectorOperators.ADD);
 
 		return sum;
 	}
@@ -692,7 +693,7 @@ public class RVdotRV {
 			sum += x[xOffset++] * y[yOffset++];
 
 		if (needLanes)
-			sum += vsum1.add(vsum2).add(vsum3.add(vsum4)).addLanes();
+			sum += vsum1.add(vsum2).add(vsum3.add(vsum4)).reduceLanes(VectorOperators.ADD);
 
 		return sum;
 	}

@@ -44,7 +44,7 @@ public class CVexp {
 
 	private final static VectorSpecies<Float> PFS = FloatVector.SPECIES_PREFERRED;
 	private final static int EPV = PFS.length();
-	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.bitSize() / 2));
+	private final static VectorSpecies<Float> PFS2 = VectorSpecies.of(Float.TYPE, VectorShape.forBitSize(PFS.vectorBitSize() / 2));
 	private final static int EPV2 = PFS2.length();
 
 	private final static VectorMask<Float> MASK_C_IM;
@@ -73,25 +73,25 @@ public class CVexp {
 		MASK_SECOND_HALF = VectorMask.fromArray(PFS, sh, 0);
 
 		// [(re0, im0), (re1, im1), ...] -> [(re0, re0), (re1, re1), ...]
-		SHUFFLE_CV_SPREAD_RE = VectorShuffle.shuffle(PFS, i -> i - i % 2);
+		SHUFFLE_CV_SPREAD_RE = VectorShuffle.fromOp(PFS, i -> i - i % 2);
 		// [(re0, im0), (re1, im1), ...] -> [(im0, im0), (im1, im1), ...]
-		SHUFFLE_CV_SPREAD_IM = VectorShuffle.shuffle(PFS, i -> i - i % 2 + 1);
+		SHUFFLE_CV_SPREAD_IM = VectorShuffle.fromOp(PFS, i -> i - i % 2 + 1);
 		// [(re0, im0), (re1, im1), ...] -> [re0, re1, ..., re_len, ?, ...]
-		SHUFFLE_CV_TO_CV_PACK_RE_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 : 0);
+		SHUFFLE_CV_TO_CV_PACK_RE_FIRST = VectorShuffle.fromOp(PFS, i -> (i < EPV2) ? i * 2 : 0);
 		// [(re0, im0), (re1, im1), ...] -> [im0, im1, ..., im_len, ?, ...]
-		SHUFFLE_CV_TO_CV_PACK_IM_FIRST = VectorShuffle.shuffle(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
+		SHUFFLE_CV_TO_CV_PACK_IM_FIRST = VectorShuffle.fromOp(PFS, i -> (i < EPV2) ? i * 2 + 1 : 0);
 		// [(re0, im0), (re1, im1), ...] -> [?, ..., re0, re1, ..., re_len]
-		SHUFFLE_CV_TO_CV_PACK_RE_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
+		SHUFFLE_CV_TO_CV_PACK_RE_SECOND = VectorShuffle.fromOp(PFS, i -> (i >= EPV2) ? i * 2 - EPV : 0);
 		// [(re0, im0), (re1, im1), ...] -> [?, ..., im0, im1, ..., im_len]
-		SHUFFLE_CV_TO_CV_PACK_IM_SECOND = VectorShuffle.shuffle(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1 : 0);
+		SHUFFLE_CV_TO_CV_PACK_IM_SECOND = VectorShuffle.fromOp(PFS, i -> (i >= EPV2) ? i * 2 - EPV + 1 : 0);
 		// [re0, re1, re2, ...] -> [(re0, ?), (re1, ?), ..., (re_{len/2}, ?)]
-		SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? i / 2 : 0);
+		SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST = VectorShuffle.fromOp(PFS, i -> (i % 2 == 0) ? i / 2 : 0);
 		// [im0, im1, im2, ...] -> [(?, im0), (?, im1), ..., (?, im_{len/2})]
-		SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST = VectorShuffle.shuffle(PFS, i -> (i % 2 == 1) ? i / 2 : 0);
+		SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST = VectorShuffle.fromOp(PFS, i -> (i % 2 == 1) ? i / 2 : 0);
 		// [..., re_{len/2}, ..., re_len] -> [(re_{len/2}, ?), ..., (re_len, ?)]
-		SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND = VectorShuffle.shuffle(PFS, i -> (i % 2 == 0) ? i / 2 + EPV2 : 0);
+		SHUFFLE_CV_TO_CV_UNPACK_RE_SECOND = VectorShuffle.fromOp(PFS, i -> (i % 2 == 0) ? i / 2 + EPV2 : 0);
 		// [..., im_{len/2}, ..., im_len] -> [(?, im_{len/2}), ..., (?, im_len)]
-		SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND = VectorShuffle.shuffle(PFS, i -> (i % 2 == 1) ? i / 2 + EPV2 : 0);
+		SHUFFLE_CV_TO_CV_UNPACK_IM_SECOND = VectorShuffle.fromOp(PFS, i -> (i % 2 == 1) ? i / 2 + EPV2 : 0);
 	}
 
 	private float x[];
@@ -146,13 +146,13 @@ public class CVexp {
 			// vx is [(x[0].re, x[0].im), (x[1].re, x[1].im), ...]
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			// vxreexp is [(exp(x[0].re), exp(x[0].re)), (exp(x[1].re), exp(x[1].re)), ...]
-			final FloatVector vxreexp = vx.rearrange(SHUFFLE_CV_SPREAD_RE).exp();
+			final FloatVector vxreexp = vx.rearrange(SHUFFLE_CV_SPREAD_RE).lanewise(VectorOperators.EXP);
 			// vxim is [(x[0].im, x[0].im), (x[1].im, x[1].im), ...]
 			final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
 
 			//@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
-			final FloatVector vrre = vxreexp.mul(vxim.cos());
-			final FloatVector vrim = vxreexp.mul(vxim.sin());
+			final FloatVector vrre = vxreexp.mul(vxim.lanewise(VectorOperators.COS));
+			final FloatVector vrim = vxreexp.mul(vxim.lanewise(VectorOperators.SIN));
 
 			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
 
@@ -190,11 +190,11 @@ public class CVexp {
 			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
 
 			// Combine them
-			final FloatVector vxreexp = vx1re.blend(vx2re, MASK_SECOND_HALF).exp();
+			final FloatVector vxreexp = vx1re.blend(vx2re, MASK_SECOND_HALF).lanewise(VectorOperators.EXP);
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-			final FloatVector vrre = vxreexp.mul(vxim.cos());
-			final FloatVector vrim = vxreexp.mul(vxim.sin());
+			final FloatVector vrre = vxreexp.mul(vxim.lanewise(VectorOperators.COS));
+			final FloatVector vrim = vxreexp.mul(vxim.lanewise(VectorOperators.SIN));
 
 			// And combine & store twice
 			vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST), MASK_C_IM).intoArray(z, zOffset);
@@ -237,11 +237,11 @@ public class CVexp {
 			final FloatVector vx2im = vx2.rearrange(SHUFFLE_CV_TO_CV_PACK_IM_SECOND);
 
 			// Combine them
-			final FloatVector vxreexp = vx1re.blend(vx2re, MASK_SECOND_HALF).exp();
+			final FloatVector vxreexp = vx1re.blend(vx2re, MASK_SECOND_HALF).lanewise(VectorOperators.EXP);
 			final FloatVector vxim = vx1im.blend(vx2im, MASK_SECOND_HALF);
 
-			final FloatVector vrre = vxreexp.mul(vxim.cos());
-			final FloatVector vrim = vxreexp.mul(vxim.sin());
+			final FloatVector vrre = vxreexp.mul(vxim.lanewise(VectorOperators.COS));
+			final FloatVector vrim = vxreexp.mul(vxim.lanewise(VectorOperators.SIN));
 
 			// And combine & store twice
 			vrre.rearrange(SHUFFLE_CV_TO_CV_UNPACK_RE_FIRST).blend(vrim.rearrange(SHUFFLE_CV_TO_CV_UNPACK_IM_FIRST), MASK_C_IM).intoArray(z, zOffset);
@@ -259,13 +259,13 @@ public class CVexp {
 			// vx is [(x[0].re, x[0].im), (x[1].re, x[1].im), ...]
 			final FloatVector vx = FloatVector.fromArray(PFS, x, xOffset);
 			// vxreexp is [(exp(x[0].re), exp(x[0].re)), (exp(x[1].re), exp(x[1].re)), ...]
-			final FloatVector vxreexp = vx.rearrange(SHUFFLE_CV_SPREAD_RE).exp();
+			final FloatVector vxreexp = vx.rearrange(SHUFFLE_CV_SPREAD_RE).lanewise(VectorOperators.EXP);
 			// vxim is [(x[0].im, x[0].im), (x[1].im, x[1].im), ...]
 			final FloatVector vxim = vx.rearrange(SHUFFLE_CV_SPREAD_IM);
 
 			//@DONE: .cos(MASK_C_IM)/.sin(MASK_C_RE) is much slower
-			final FloatVector vrre = vxreexp.mul(vxim.cos());
-			final FloatVector vrim = vxreexp.mul(vxim.sin());
+			final FloatVector vrre = vxreexp.mul(vxim.lanewise(VectorOperators.COS));
+			final FloatVector vrim = vxreexp.mul(vxim.lanewise(VectorOperators.SIN));
 
 			vrre.blend(vrim, MASK_C_IM).intoArray(z, zOffset);
 
