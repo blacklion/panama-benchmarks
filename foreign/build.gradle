@@ -34,16 +34,19 @@ repositories {
 }
 
 dependencies {
-  implementation 'com.github.wendykierp:JTransforms:3.1'
-  implementation 'net.java.dev.jna:jna:5.2.0'
-  implementation fileTree(include: ['*.jar'], dir: 'libs')
+  implementation 'com.github.wendykierp:JTransforms:3.2'
+  implementation 'net.java.dev.jna:jna:5.18.1'
+}
+
+jmh {
+  jvmArgsPrepend = ['--enable-native-access=ALL-UNNAMED', '--sun-misc-unsafe-memory-access=allow']
 }
 
 task benchmarkJar(type: Jar, dependsOn: jmhJar) {
   manifest {
-	attributes 'Main-Class': 'org.openjdk.jmh.Main'
+    attributes 'Main-Class': 'org.openjdk.jmh.Main'
   }
   from {
-	(jmhJar.outputs.files + configurations.jmh + configurations.jmhRuntime).collect { it.isDirectory() ? it : zipTree(it) }
+    (jmhJar.outputs.files + configurations.jmh + configurations.jmhRuntime).collect { it.isDirectory() ? it : zipTree(it) }
   }
 }

@@ -14,7 +14,7 @@ public class JNAAllocated extends FFTBenchmarkParams {
 	public static class BenchState extends FFTState {
 		DoubleBuffer i;
 		DoubleBuffer o;
-		FFTW3Library.fftw_plan p = null;
+		FFTW3JNALibrary.fftw_plan p = null;
 
 		@Setup(Level.Trial)
 		public void Setup(BenchmarkParams params) {
@@ -30,20 +30,20 @@ public class JNAAllocated extends FFTBenchmarkParams {
 			else
 				o = ByteBuffer.allocateDirect(8 * size * 2).asDoubleBuffer();
 
-			p = FFTW3Library.INSTANCE.fftw_plan_dft_1d(size, i, o, -1, 0);
+			p = FFTW3JNALibrary.INSTANCE.fftw_plan_dft_1d(size, i, o, -1, 0);
 		}
 
 		@TearDown(Level.Trial)
 		public void TearDown() {
 			if (p != null)
-				FFTW3Library.INSTANCE.fftw_destroy_plan(p);
+				FFTW3JNALibrary.INSTANCE.fftw_destroy_plan(p);
 		}
 	}
 
 
 	@Benchmark
 	public void FFTOnly(BenchState state) {
-		FFTW3Library.INSTANCE.fftw_execute(state.p);
+		FFTW3JNALibrary.INSTANCE.fftw_execute(state.p);
 	}
 
 	@Benchmark
@@ -52,7 +52,7 @@ public class JNAAllocated extends FFTBenchmarkParams {
 		// maybe, between two arrays and not four, but still
 		state.i.rewind();
 		state.i.put(state.ji);
-		FFTW3Library.INSTANCE.fftw_execute(state.p);
+		FFTW3JNALibrary.INSTANCE.fftw_execute(state.p);
 		state.o.rewind();
 		state.o.get(state.jo);
 	}

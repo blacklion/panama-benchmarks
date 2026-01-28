@@ -1,57 +1,72 @@
 package foreign;
 
-import org.fftw3.fftw3;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.BenchmarkParams;
 
-import java.foreign.NativeTypes;
-import java.foreign.memory.Array;
-import java.foreign.memory.Pointer;
-
-import static org.fftw3.fftw3_h.*;
+import java.lang.foreign.*;
 
 /**
  * @author Lev Serebryakov
  */
+@State(org.openjdk.jmh.annotations.Scope.Thread)
 public class Panama extends FFTBenchmarkParams {
+	@Param({"false", "true"})
+	public boolean aligned;
 
 	@State(org.openjdk.jmh.annotations.Scope.Thread)
 	public static class BenchState extends FFTState {
-		java.foreign.Scope scope = null;
-		Array<Double> i;
-		Array<Double> o;
-		Pointer<fftw3.fftw_plan_s> p = null;
+
+		FFTW3PanamaLibrary library;
+		Arena arena = null;
+		MemorySegment i;
+		MemorySegment o;
+		MemorySegment plan = null;
 
 		@Setup(Level.Trial)
 		public void Setup(BenchmarkParams params) {
-			Setup(Integer.parseInt(params.getParam("size")), Boolean.parseBoolean(params.getParam("inPlace")));
+			Setup(
+					Integer.parseInt(params.getParam("size")),
+					Boolean.parseBoolean(params.getParam("inPlace")),
+					Boolean.parseBoolean(params.getParam("aligned")));
 		}
 
-		public void Setup(int size, boolean inPlace) {
+		public void Setup(int size, boolean inPlace, boolean aligned) {
 			super.Setup(size, inPlace);
-			scope = scope().fork();
-			i = scope.allocateArray(NativeTypes.DOUBLE, size * 2);
+			library = new FFTW3PanamaLibrary();
+			arena = Arena.ofShared();
+			i = allocateCFVData(size, aligned);
 			if (inPlace)
 				o = i;
 			else
-				o = scope.allocateArray(NativeTypes.DOUBLE, size * 2);
-			Array<Array<Double>> pi = i.elementPointer().cast(NativeTypes.VOID).cast(NativeTypes.DOUBLE.array(2)).withSize(size);
-			Array<Array<Double>> po = o.elementPointer().cast(NativeTypes.VOID).cast(NativeTypes.DOUBLE.array(2)).withSize(size);
-			p = fftw_plan_dft_1d(size, pi.elementPointer(), po.elementPointer(), -1, 0);
+				o = allocateCFVData(size, aligned);
+
+			plan = library.planDFT1D(size, i, o, -1, 0);
 		}
 
 		@TearDown(Level.Trial)
 		public void TearDown() {
-			if (p != null)
-				fftw_destroy_plan(p);
-			if (scope != null)
-				scope.close();
+			if (library != null) {
+				if (plan != null) {
+					library.destroyPlan(plan);
+				}
+				library.close();
+			}
+			if (arena != null)
+				arena.close();
+		}
+
+		private MemorySegment allocateCFVData(int count, boolean aligned) {
+			return arena.allocate(
+					MemoryLayout
+							.sequenceLayout(count, FFTW3PanamaLibrary.DOUBLE_COMPLEX)
+							.withByteAlignment(aligned ? 64 : FFTW3PanamaLibrary.DOUBLE_COMPLEX.byteAlignment())
+			);
 		}
 	}
 
 	@Benchmark
 	public void FFTOnly(BenchState state) {
-		fftw_execute(state.p);
+		state.library.execute(state.plan);
 	}
 
 	@Benchmark
@@ -59,9 +74,16 @@ public class Panama extends FFTBenchmarkParams {
 		// In place or not we need to copy data in and copy data out
 		// maybe, between two arrays and not four, but still
 		for (int i = 0; i < state.size * 2; i++)
-			state.i.set(i, state.ji[0]);
-		fftw_execute(state.p);
+			state.i.setAtIndex(ValueLayout.JAVA_DOUBLE, i, state.ji[0]);
+		state.library.execute(state.plan);
 		for (int i = 0; i < state.size * 2; i++)
-			state.jo[i] = state.o.get(i);
+			state.jo[i] = state.o.getAtIndex(ValueLayout.JAVA_DOUBLE, i);
+	}
+
+	@Benchmark
+	public void FullBatch(BenchState state) {
+		MemorySegment.copy(state.ji, 0, state.i, ValueLayout.JAVA_DOUBLE, 0L, state.size * 2);
+		state.library.execute(state.plan);
+		MemorySegment.copy(state.o, ValueLayout.JAVA_DOUBLE, 0L, state.jo, 0, state.size * 2);
 	}
 }

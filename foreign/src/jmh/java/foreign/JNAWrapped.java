@@ -13,7 +13,7 @@ public class JNAWrapped extends FFTBenchmarkParams {
 	public static class BenchState extends FFTState {
 		DoubleBuffer i;
 		DoubleBuffer o;
-		FFTW3Library.fftw_plan p = null;
+		FFTW3JNALibrary.fftw_plan p = null;
 
 		@Setup(Level.Trial)
 		public void Setup(BenchmarkParams params) {
@@ -27,18 +27,18 @@ public class JNAWrapped extends FFTBenchmarkParams {
 			// inPlace too
 			o = DoubleBuffer.wrap(jo);
 
-			p = FFTW3Library.INSTANCE.fftw_plan_dft_1d(size, i, o, -1, 0);
+			p = FFTW3JNALibrary.INSTANCE.fftw_plan_dft_1d(size, i, o, -1, 0);
 		}
 
 		@TearDown(Level.Trial)
 		public void TearDown() {
 			if (p != null)
-				FFTW3Library.INSTANCE.fftw_destroy_plan(p);
+				FFTW3JNALibrary.INSTANCE.fftw_destroy_plan(p);
 		}
 	}
 
 	@Benchmark
 	public void Full(BenchState state) {
-		FFTW3Library.INSTANCE.fftw_execute_dft(state.p, state.i, state.o);
+		FFTW3JNALibrary.INSTANCE.fftw_execute_dft(state.p, state.i, state.o);
 	}
 }
