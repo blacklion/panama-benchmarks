@@ -2,9 +2,10 @@ package foreign;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
+import java.nio.file.Path;
 
 class FFTW3PanamaLibrary implements AutoCloseable {
-    public static final String PANAMA_LIBRARY_NAME = "libfftw3-3";
+    public static final String PANAMA_LIBRARY_NAME = "libfftw3";
 
     static MemoryLayout DOUBLE_COMPLEX = MemoryLayout.structLayout(
             ValueLayout.JAVA_DOUBLE.withName("re"),
@@ -21,7 +22,14 @@ class FFTW3PanamaLibrary implements AutoCloseable {
         arena = Arena.ofShared();
 
         Linker linker = Linker.nativeLinker();
-        SymbolLookup fftw3lib = SymbolLookup.libraryLookup(PANAMA_LIBRARY_NAME, arena);
+        String libName;
+        if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+            libName = PANAMA_LIBRARY_NAME + ".dll";
+        } else {
+            libName = PANAMA_LIBRARY_NAME;
+        }
+
+        SymbolLookup fftw3lib = SymbolLookup.libraryLookup(libName, arena);
         fftw_plan_dft_1d = linker.downcallHandle(
                 fftw3lib.find("fftw_plan_dft_1d").orElseThrow(),
                 FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS,  ValueLayout.JAVA_INT, ValueLayout.JAVA_INT)
