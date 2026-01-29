@@ -35,55 +35,55 @@ repositories {
 }
 
 dependencies {
-	testImplementation(platform('org.junit:junit-bom:6.0.2'))
-	testImplementation('org.junit.jupiter:junit-jupiter')
-	testRuntimeOnly('org.junit.platform:junit-platform-launcher')
+  testImplementation(platform('org.junit:junit-bom:6.0.2'))
+  testImplementation('org.junit.jupiter:junit-jupiter')
+  testRuntimeOnly('org.junit.platform:junit-platform-launcher')
+}
+
+java {
+  toolchain {
+    languageVersion = JavaLanguageVersion.of(25)
+  }
 }
 
 test {
-	useJUnitPlatform()
+  useJUnitPlatform()
 
-	jvmArgs(['--enable-preview'])
-	jvmArgs(['--add-modules', 'jdk.incubator.vector'])
+  jvmArgs(['--enable-preview'])
+  jvmArgs(['--add-modules', 'jdk.incubator.vector'])
 
-	testLogging {
-		events "passed", "skipped", "failed"
-	}
+  testLogging {
+    events "passed", "skipped", "failed"
+  }
 }
 
 compileJava {
-	options.compilerArgs.addAll(['--enable-preview'])
-	options.compilerArgs.addAll(['--add-modules', 'jdk.incubator.vector'])
+  options.compilerArgs.addAll(['--enable-preview'])
+  options.compilerArgs.addAll(['--add-modules', 'jdk.incubator.vector'])
 }
 
 compileTestJava {
-	options.compilerArgs.addAll(['--enable-preview'])
-	options.compilerArgs.addAll(['--add-modules', 'jdk.incubator.vector'])
+  options.compilerArgs.addAll(['--enable-preview'])
+  options.compilerArgs.addAll(['--add-modules', 'jdk.incubator.vector'])
 }
 
 compileJmhJava {
-	options.compilerArgs.addAll(['--enable-preview'])
-	options.compilerArgs.addAll(['--add-modules', 'jdk.incubator.vector'])
+  options.compilerArgs.addAll(['--enable-preview'])
+  options.compilerArgs.addAll(['--add-modules', 'jdk.incubator.vector'])
 }
 
 application {
-	applicationDefaultJvmArgs = ['--enable-preview', '--add-modules', 'jdk.incubator.vector']
+  applicationDefaultJvmArgs = ['--enable-preview', '--add-modules', 'jdk.incubator.vector']
 }
 
 jmhRunBytecodeGenerator {
-	jvmArgs.addAll(['--enable-preview'])
-	jvmArgs.addAll(['--add-modules', 'jdk.incubator.vector'])
+  jvmArgs.addAll(['--enable-preview'])
+  jvmArgs.addAll(['--add-modules', 'jdk.incubator.vector'])
 }
 
 jmh {
-	jvmArgsPrepend = ['--enable-preview', '--add-modules', 'jdk.incubator.vector']
-}
-
-task benchmarkJar(type: Jar, dependsOn: jmhJar) {
-  manifest {
-	attributes 'Main-Class': 'org.openjdk.jmh.Main'
-  }
-  from {
-	(jmhJar.outputs.files + configurations.jmh + configurations.jmhRuntime).collect { it.isDirectory() ? it : zipTree(it) }
+  jvmArgsPrepend = ['--enable-preview', '--add-modules', 'jdk.incubator.vector']
+  if (project.hasProperty("benchmarks")) {
+    includes = project.property("benchmarks").toString().split("\\s*,\\s*")
   }
 }

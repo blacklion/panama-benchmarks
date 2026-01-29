@@ -49,7 +49,7 @@ class FFTW3PanamaLibrary implements AutoCloseable {
     public MemorySegment planDFT1D(int size, MemorySegment in, MemorySegment out, int sign, int flags) {
         try {
             return (MemorySegment)fftw_plan_dft_1d.invokeExact(size, in, out, sign, flags);
-        } catch (Throwable e) {
+        } catch (Throwable ignored) {
             return null;
         }
     }
@@ -57,13 +57,13 @@ class FFTW3PanamaLibrary implements AutoCloseable {
     public void execute(MemorySegment plan) {
         try {
             fftw_execute.invokeExact(plan);
-        } catch (Throwable _) {}
+        } catch (Throwable ignored) {}
     }
 
     public void destroyPlan(MemorySegment plan) {
         try {
             fftw_destroy_plan.invokeExact(plan);
-        } catch (Throwable _) {}
+        } catch (Throwable ignored) {}
     }
 
     @Override

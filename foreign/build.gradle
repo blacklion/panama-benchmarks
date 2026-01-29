@@ -38,6 +38,12 @@ dependencies {
   implementation 'net.java.dev.jna:jna:5.18.1'
 }
 
+java {
+  toolchain {
+    languageVersion = JavaLanguageVersion.of(25)
+  }
+}
+
 jmh {
   jvmArgsPrepend = [
           '--enable-native-access=ALL-UNNAMED',
@@ -45,13 +51,7 @@ jmh {
           "-Djna.library.path=${project.projectDir}/libs",
           "-Djava.library.path=${project.projectDir}/libs"
   ]
-}
-
-task benchmarkJar(type: Jar, dependsOn: jmhJar) {
-  manifest {
-    attributes 'Main-Class': 'org.openjdk.jmh.Main'
-  }
-  from {
-    (jmhJar.outputs.files + configurations.jmh + configurations.jmhRuntime).collect { it.isDirectory() ? it : zipTree(it) }
+  if (project.hasProperty("benchmarks")) {
+    includes = project.property("benchmarks").toString().split("\\s*,\\s*")
   }
 }

@@ -37,20 +37,12 @@ apply plugin: 'java'
 apply plugin: 'idea' // To allow JMH plugin propagate its dependencies to IDEA
 apply plugin: 'me.champeau.jmh'
 
-jmh {
-  jmhVersion = '1.37'
-  fork = 2
-  warmupIterations = 5
-  warmup = '5s'
-  iterations = 10
-  timeOnIteration = '10s'
+java {
+  toolchain {
+    languageVersion = JavaLanguageVersion.of(25)
+  }
 }
 
-task benchmarkJar(type: Jar, dependsOn: jmhJar) {
-  manifest {
-	attributes 'Main-Class': 'org.openjdk.jmh.Main'
-  }
-  from {
-	(jmhJar.outputs.files + configurations.jmh + configurations.jmhRuntime).collect { it.isDirectory() ? it : zipTree(it) }
-  }
+jmh {
+  jmhVersion = '1.37'
 }
