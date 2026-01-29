@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2019, Lev Serebryakov <lev@serebryakov.spb.ru>
+ * Copyright (c) 2019-2026, Lev Serebryakov <lev@blacklion.dev>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
