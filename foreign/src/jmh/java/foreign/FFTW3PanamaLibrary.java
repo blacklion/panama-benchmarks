@@ -4,7 +4,7 @@ import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 
 class FFTW3PanamaLibrary implements AutoCloseable {
-    public static final String PANAMA_LIBRARY_NAME = "libfftw3";
+    public static final String PANAMA_LIBRARY_NAME = "fftw3";
 
     static MemoryLayout DOUBLE_COMPLEX = MemoryLayout.structLayout(
             ValueLayout.JAVA_DOUBLE.withName("re"),

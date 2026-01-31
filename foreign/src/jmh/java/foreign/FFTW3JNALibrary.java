@@ -8,7 +8,7 @@ import java.nio.DoubleBuffer;
  * @author Lev Serebryakov
  */
 public interface FFTW3JNALibrary extends Library {
-	public static final String JNA_LIBRARY_NAME = "libfftw3";
+	public static final String JNA_LIBRARY_NAME = "fftw3";
 	public static final FFTW3JNALibrary INSTANCE = Native.load(JNA_LIBRARY_NAME, FFTW3JNALibrary.class);
 
 	/**

@@ -25,7 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ****************************************************************************/
 plugins {
-  id 'me.champeau.jmh' version jmhPluginVersion
+  id 'me.champeau.jmh' version "$jmhPluginVersion"
 }
 version = '0.1'
 
