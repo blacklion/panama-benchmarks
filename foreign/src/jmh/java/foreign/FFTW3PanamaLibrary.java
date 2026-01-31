@@ -2,7 +2,6 @@ package foreign;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
-import java.nio.file.Path;
 
 class FFTW3PanamaLibrary implements AutoCloseable {
     public static final String PANAMA_LIBRARY_NAME = "libfftw3";
@@ -12,24 +11,16 @@ class FFTW3PanamaLibrary implements AutoCloseable {
             ValueLayout.JAVA_DOUBLE.withName("im")
     );
 
-    private final Arena arena;
     private final MethodHandle fftw_plan_dft_1d;
     private final MethodHandle fftw_execute;
     private final MethodHandle fftw_destroy_plan;
 
     // Resolve all functions and such
     FFTW3PanamaLibrary() {
-        arena = Arena.ofShared();
+        System.loadLibrary(PANAMA_LIBRARY_NAME);
 
         Linker linker = Linker.nativeLinker();
-        String libName;
-        if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
-            libName = PANAMA_LIBRARY_NAME + ".dll";
-        } else {
-            libName = PANAMA_LIBRARY_NAME;
-        }
-
-        SymbolLookup fftw3lib = SymbolLookup.libraryLookup(libName, arena);
+        SymbolLookup fftw3lib = SymbolLookup.loaderLookup();
         fftw_plan_dft_1d = linker.downcallHandle(
                 fftw3lib.find("fftw_plan_dft_1d").orElseThrow(),
                 FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS,  ValueLayout.JAVA_INT, ValueLayout.JAVA_INT)
@@ -67,7 +58,5 @@ class FFTW3PanamaLibrary implements AutoCloseable {
     }
 
     @Override
-    public void close() {
-        arena.close();
-    }
+    public void close() {}
 }
