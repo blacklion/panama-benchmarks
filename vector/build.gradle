@@ -28,16 +28,15 @@ apply plugin: 'java'
 // To allow JMH plugin propagate its dependencies to IDEA
 apply plugin: 'idea'
 apply plugin: 'me.champeau.jmh'
-apply plugin: 'application'
 
 repositories {
   mavenCentral()
 }
 
 dependencies {
-  testImplementation(platform('org.junit:junit-bom:6.0.2'))
-  testImplementation('org.junit.jupiter:junit-jupiter')
-  testRuntimeOnly('org.junit.platform:junit-platform-launcher')
+  testImplementation platform("org.junit:junit-bom:$junitBomVersion")
+  testImplementation 'org.junit.jupiter:junit-jupiter'
+  testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 java {
@@ -46,44 +45,30 @@ java {
   }
 }
 
+def customJvmOptions = ['--enable-preview', '--add-modules', 'jdk.incubator.vector']
+
 test {
   useJUnitPlatform()
 
-  jvmArgs(['--enable-preview'])
-  jvmArgs(['--add-modules', 'jdk.incubator.vector'])
+  jvmArgs(customJvmOptions)
 
   testLogging {
-    events "passed", "skipped", "failed"
+    events 'passed', 'skipped', 'failed'
   }
 }
 
-compileJava {
-  options.compilerArgs.addAll(['--enable-preview'])
-  options.compilerArgs.addAll(['--add-modules', 'jdk.incubator.vector'])
-}
-
-compileTestJava {
-  options.compilerArgs.addAll(['--enable-preview'])
-  options.compilerArgs.addAll(['--add-modules', 'jdk.incubator.vector'])
-}
-
-compileJmhJava {
-  options.compilerArgs.addAll(['--enable-preview'])
-  options.compilerArgs.addAll(['--add-modules', 'jdk.incubator.vector'])
-}
-
-application {
-  applicationDefaultJvmArgs = ['--enable-preview', '--add-modules', 'jdk.incubator.vector']
+tasks.withType(JavaCompile).configureEach {
+  options.compilerArgs.addAll(customJvmOptions)
 }
 
 jmhRunBytecodeGenerator {
-  jvmArgs.addAll(['--enable-preview'])
-  jvmArgs.addAll(['--add-modules', 'jdk.incubator.vector'])
+  jvmArgs.addAll(customJvmOptions)
 }
 
 jmh {
-  jvmArgsPrepend = ['--enable-preview', '--add-modules', 'jdk.incubator.vector']
-  if (project.hasProperty("benchmarks")) {
-    includes = project.property("benchmarks").toString().split("\\s*,\\s*").toList()
+  jmhVersion = project.jmhVersion
+  jvmArgsPrepend = customJvmOptions
+  if (project.hasProperty('benchmarks')) {
+    includes = project.property('benchmarks').toString().split('\\s*,\\s*').toList()
   }
 }

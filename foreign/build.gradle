@@ -34,8 +34,8 @@ repositories {
 }
 
 dependencies {
-  implementation 'com.github.wendykierp:JTransforms:3.2'
-  implementation 'net.java.dev.jna:jna:5.18.1'
+  jmh "com.github.wendykierp:JTransforms:$jtransformVersion"
+  jmh "net.java.dev.jna:jna:$jnaVersion"
 }
 
 java {
@@ -45,13 +45,14 @@ java {
 }
 
 jmh {
+  jmhVersion = project.jmhVersion
   jvmArgsPrepend = [
           '--enable-native-access=ALL-UNNAMED',
           '--sun-misc-unsafe-memory-access=allow',
           "-Djna.library.path=${project.projectDir}/libs",
           "-Djava.library.path=${project.projectDir}/libs"
   ]
-  if (project.hasProperty("benchmarks")) {
-    includes = project.property("benchmarks").toString().split("\\s*,\\s*").toList()
+  if (project.hasProperty('benchmarks')) {
+    includes = project.property('benchmarks').toString().split('\\s*,\\s*').toList()
   }
 }
