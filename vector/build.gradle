@@ -84,6 +84,6 @@ jmhRunBytecodeGenerator {
 jmh {
   jvmArgsPrepend = ['--enable-preview', '--add-modules', 'jdk.incubator.vector']
   if (project.hasProperty("benchmarks")) {
-    includes = project.property("benchmarks").toString().split("\\s*,\\s*")
+    includes = project.property("benchmarks").toString().split("\\s*,\\s*").toList()
   }
 }

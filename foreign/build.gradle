@@ -52,6 +52,6 @@ jmh {
           "-Djava.library.path=${project.projectDir}/libs"
   ]
   if (project.hasProperty("benchmarks")) {
-    includes = project.property("benchmarks").toString().split("\\s*,\\s*")
+    includes = project.property("benchmarks").toString().split("\\s*,\\s*").toList()
   }
 }
